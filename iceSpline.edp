@@ -22,7 +22,8 @@ load "Element_P3"
 //---------------------------------
 
 //------ Input data for the ice shelf.
-bool isUniform=getARGV("-isUni",1);
+bool isUniformIce=getARGV("-isUniIce",1);
+bool isUniformCav=getARGV("-isUniCav",1);
 int N1 = getARGV("-N",3);
 int N2 = getARGV("-N",3);
 real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
@@ -69,7 +70,7 @@ macro epsilon(u1,u2) [dx(u1), dy(u2), (dy(u1)+dx(u2))/sqrt(2.)]//EOM''
 
 //Construct the appropriate ice/shelf profiles
 real icetopleft, icebottomleft, icebottomright, ix2, iy2;
-if(isUniform==true){
+if(isUniformIce==true){
   icetopleft = (1-rhoi/rhow)*(th/Lc);
   icebottomleft = -(rhoi/rhow)*(th/Lc);
   icebottomright = -(rhoi/rhow)*(th/Lc);
@@ -145,7 +146,7 @@ for(int m=0; m<nev; m++)
 
 //------ Mesh the cavity region.
 real x1,x2,x3,uy1,y2,y3;
-if(isUniform){
+if(isUniformCav){
   x1=0.; uy1=-HH;
   x2=LL/2; y2=-HH;
   x3=LL; y3=-HH;
@@ -344,9 +345,9 @@ cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
 
 //--------------- Writing down all the data to a folder -----------------
 savemesh(ThIce,SolutionDir+"2_Deformation/iceMesh.msh");
-//mesh newThIce = movemesh(ThIce,[x+retax, y+retay]);
-//savemesh(newThIce,SolutionDir+"2_Deformation/movedIce"+iter+".msh");
-savemesh(ThIce,SolutionDir+"2_Deformation/cavityMesh.msh");
+mesh newThIce = movemesh(ThIce,[x+retax, y+retay]);
+savemesh(newThIce,SolutionDir+"2_Deformation/movedIce"+iter+".msh");
+savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
 //------ The reflection coefficient to a file.
 {
   ofstream file(SolutionDir+"2_RefCoeff/refCoeff"+iter+".dat");
@@ -495,3 +496,13 @@ Ph isigmaxy = 2*muhat*iexy;
     file<<abs(rsigmaxy[][m]+1i*isigmaxy[][m])<<endl;
 }
 */
+
+//------ Write down the potential
+Wh rphi = real(phi);
+{
+  ofstream file(SolutionDir+"2_Potential/potential"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<rphi.n<<" 2 \n";
+  for(int m=0; m<rphi[].n; m++)
+    file<<rphi[][m]<<endl;
+}

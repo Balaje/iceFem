@@ -1,0 +1,216 @@
+// Program to solve the coupled elasticity-ice shelf problem.
+verbosity=0;
+load "lapack"
+include "getARGV.idp"
+//------ From the Ice-Shelf toolbox ------
+include "dispersionFreeSurface.idp"
+include "getMatrices.idp"
+include "getProperties.idp"
+include "nonLocal.idp"
+include "refCoeff.idp"
+//----------------------------------------
+//Define some macros
+macro grad(u)[dx(u),dy(u)]//EOM"
+macro div(u,v)(dx(u)+dy(v))//EOM" 
+macro epsilon(u,v)[dx(u),dy(v),(dx(v)+dy(u))/sqrt(2.)]//EOM"
+
+//-----Input the dimensional parameters.
+real N1=getARGV("-N",7);
+real LL = getARGV("-L",10000.), HH = getARGV("-H",500.), tth = getARGV("-h",100.);
+real E, nu, rhow, rhoi, ag, Ad;
+real flag = getProps(E, nu, rhoi, rhow, ag, Ad);
+real EI = E*tth^3/(12*(1-nu^2));
+real dd = (rhoi/rhow)*tth;
+//Accept complex values for the wave period.
+real tr = getARGV("-Tr",200.);
+real ti = getARGV("-Ti",0.);
+complex t = tr+1i*ti;
+
+real lambda = E*nu/((1+nu)*(1-2*nu));
+real mu = E/(2*(1+nu));
+//lambda = (2*lambda*mu)/(lambda+mu); //Generalized Plane Stress.
+complex omega = 2*pi/t;
+complex Ap = (ag/(1i*omega))*Ad;
+//-------Characteristic constants
+real Lc = (EI/(rhow*ag))^(1./4.);
+real tc = sqrt(rhow*Lc^6/(EI*HH));
+//-------Input the non-dimensional parameters
+real L = LL/Lc, H = HH/Lc, d = dd/Lc, th = tth/Lc;
+complex ndOmega = 2*pi/(t/tc);
+complex alpha = ndOmega^2*H;
+//-------Display the non-dimensional quantities
+cout<<"------- Non dimensional quantities -------"<<endl;
+cout<<"Length L = "<<L<<endl;
+cout<<"Ocean Depth H = "<<H<<endl;
+cout<<"Submergence d = "<<d<<endl;
+cout<<"Thickness th = "<<th<<endl;
+cout<<"Dimensional omega(d) = "<<omega<<endl;
+cout<<"alpha = "<<alpha<<endl;
+cout<<"------------------------------------------"<<endl; 
+//-------Roots of the dispersion equations
+int NModes = 5;
+complex[int] k(NModes+1), kd(NModes+1);
+k = dispersionfreesurface(alpha,NModes,H);
+k[0]=-k[0];
+kd = dispersionfreesurface(alpha,NModes,H-d);
+kd[0]=-kd[0];
+
+//-------End roots of the dispersion equation
+//Mesh the cavity and the ice shelf
+real iceBottom = -d, iceTop = (1-rhoi/rhow)*th;
+real cavityBottom = -H;
+mesh ThIce = square(100*N1,10*N1,[L*x, iceBottom+(iceTop-iceBottom)*y]);
+mesh ThCavity = square(100*N1,10*N1,[L*x, cavityBottom+(iceBottom-cavityBottom)*y]);
+int iter=getARGV("-iter",0);
+string SolutionDir="1_DirectFEM/";
+savemesh(ThIce,SolutionDir+"2_Deformation/iceMesh.msh");
+savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
+
+//-------Construction of the non-local boundary condition.
+fespace Wh(ThCavity,P1);
+matrix<complex> MQ;
+MQ = getQphi(ThCavity, NModes, k, kd, H, d, Ap); //From "nonLocal.idp"
+complex [int] ctilde(NModes+1);
+ctilde = getChi(ThCavity, NModes, k, kd, H, d, Ap); //From "nonLocal.idp"
+Wh<complex> chi1;
+for(int m=0; m<NModes+1; m++)
+  {
+    Wh <complex> eigenfunc = ctilde[m]*cos(kd[m]*(y+H))/cos(kd[m]*(H-d));
+    chi1 = chi1 + eigenfunc;
+  }
+func fh = chi1; //Get the function in terms of y
+//----------------------------------------------------
+//Swiftly define all the bilinear forms to obtain the correspoding matrices.
+real lambdahat = lambda/Lc^2, muhat = mu/Lc^2;
+real gammahat = rhow/Lc, deltahat = rhow*ag/Lc;
+//On the ice
+fespace Vh(ThIce,[P1,P1]);
+fespace Xh(ThIce,P1);
+
+Vh<complex> [u,v], [uu,vv];
+Xh<complex> phi;
+varf ah([u,v],[uu,vv])=int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) - int2d(ThIce)(omega^2*rhoi*(u*uu+v*vv)) + on(2,u=0,v=0);
+varf l1d([u,v],[uu,vv])=int1d(ThIce,1,qforder=6)(-v*(uu*N.x+vv*N.y));
+varf coupled([phi,unused],[uu,vv])=int1d(ThIce,1,qforder=6)(phi*(uu*N.x+vv*N.y));
+//In the cavity.
+Wh<complex> phih, chih;
+fespace Yh(ThCavity,[P1,P1]); //vectorial fespace on the cavity for the displacement
+varf ap(phih,chih)=int2d(ThCavity)(grad(phih)'*grad(chih));
+varf bdyip([u,v],[chih,unused])=int1d(ThCavity,3,qforder=6)((u*N.x+v*N.y)*chih);
+//Source term due to chi from the nonlocal boundary conditions.
+varf source(unused,chih) = int1d(ThCavity,4,qforder=6)(-fh*chih);
+
+//Obtain all the matrices
+matrix<complex> iceK = ah(Vh,Vh);
+matrix<complex> iceB = l1d(Vh,Vh);
+matrix<complex> iceAB = coupled(Wh,Vh);
+matrix<complex> cavityP = ap(Wh,Wh);
+matrix<complex> cavityQ = bdyip(Vh,Wh);
+// We have MQ for the non local boundary condition
+// Linear part - Let us name it nlForce (non-local Force)
+Wh<complex> nlForce;
+nlForce[]=source(0,Wh);
+complex [int] force = nlForce[];
+
+int totalDof = 3*nlForce.n;
+//Get all the blocks of the full matrix
+matrix<complex> B1 = iceK + (deltahat)*iceB;
+matrix<complex> B2 = 1i*omega*gammahat*iceAB;
+matrix<complex> B3 = 1i*omega*Lc*cavityQ;
+matrix<complex> B4 = cavityP + MQ;
+
+matrix<complex> LHS;
+
+LHS = [[B1, B2], [B3, B4]];
+complex [int] RHS(totalDof);
+for(int m=0; m<force.n; m++)
+  RHS[2*force.n + m] = force[m];
+
+complex [int] sol(totalDof);
+set(LHS,solver=UMFPACK);
+sol = LHS^-1*RHS;
+
+//complex [int] uuu = sol(0:2:2*(sol.n)-2);
+int[int] EVEN = 0:2:2*force.n-2;
+int[int] ODD = 1:2:2*force.n-1;
+complex[int] UX(EVEN.n), UY(EVEN.n);
+for(int m=0;m<EVEN.n;m++)
+  {
+    UX(m) = sol(EVEN(m));
+    UY(m) = sol(ODD(m));
+  }
+
+Xh<complex> uhx = UX, uhy = UY;
+Wh<complex> pot = sol(2*force.n:totalDof-1);
+Wh<complex> derpot = dx(pot);
+real coef=1;
+mesh newThIce=movemesh(ThIce,[x+coef*real(uhx),y+coef*real(uhy)]);
+
+
+///------------------- Find out the values of the stress tensor components,
+fespace Ph0(ThIce,P0);
+Xh rux = real(uhx);
+Xh ruy = real(uhy);
+Ph0 ex = dx(rux), ey = dy(ruy);
+Ph0 exy = 1./2.*(dy(rux)+dx(ruy));
+
+Ph0 sigmax = lambdahat*(ex+ey) + 2*muhat*ex;
+Ph0 sigmay = lambdahat*(ex+ey) + 2*muhat*ey;
+Ph0 sigmaxy = 2*muhat*exy;
+Ph0 sigmaz = lambda*(ex+ey);
+
+Ph0 sigmavm = sqrt(0.5*((sigmax-sigmay)^2 + (sigmay-sigmaz)^2 + (sigmaz-sigmax)^2) + 3*(sigmaxy^2));
+
+plot(sigmax,wait=true,fill=true,value=true);
+plot(sigmay,wait=true,fill=true,value=true);
+plot(sigmaxy,wait=true,fill=true,value=true);
+
+//Trying to find out the reflection coefficient
+complex[int] phiVec(phi.n), c(NModes+1);
+phiVec = pot[]; //Get the vector form of the finite element function.
+complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, H, d, Ap, c); //From "refCoeff.idp"
+cout<<endl<<"Reflection Coefficient = "<<Ref<<endl;
+
+//--------------------- Writing down all the data to a folder -----------------------
+//int iter=getARGV("-iter",0);
+//string SolutionDir="1_DirectFEM/";
+//savemesh(ThIce,SolutionDir+"2_Deformation/iceMesh.msh");
+savemesh(newThIce,SolutionDir+"2_Deformation/movedIce"+iter+".msh");
+//savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
+//------ The reflection coefficient to a file.
+{
+  ofstream file(SolutionDir+"2_RefCoeff/refCoeff"+iter+".dat");
+  file.precision(16);
+  file<<real(Ref)<<" "<<imag(Ref)<<endl;
+}
+//------ The X-displacement and Y-Displacement to a file.
+//-1) Real Parts
+{  
+  ofstream file(SolutionDir+"2_Deformation/ReUx"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<uhx.n<<" 2 \n";
+  for(int m=0; m<uhx[].n; m++)
+    file<<real(uhx[][m])<<endl;
+}
+{  
+  ofstream file(SolutionDir+"2_Deformation/ReUy"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<uhy.n<<" 2 \n";
+  for(int m=0; m<uhy[].n; m++)
+    file<<real(uhy[][m])<<endl;
+}
+//-2) Imaginary Parts.
+{  
+  ofstream file(SolutionDir+"2_Deformation/ImUx"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<uhx.n<<" 2 \n";
+  for(int m=0; m<uhx[].n; m++)
+    file<<imag(uhx[][m])<<endl;
+}
+{  
+  ofstream file(SolutionDir+"2_Deformation/ImUy"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<uhy.n<<" 2 \n";
+  for(int m=0; m<uhy[].n; m++)
+    file<<imag(uhy[][m])<<endl;
+}

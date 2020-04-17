@@ -11,7 +11,6 @@ set(0,'defaultaxesfontsize',20);
 
 envvar = [pwd,'/include'];
 setenv('FF_INCLUDEPATH',envvar);
-[~,ffpath] = system('which FreeFem++');
 
 %% Get the properties of the shelf.
 [~,~,~,~,E,nu,rhow,rhoi,g,~] = getProperties();
@@ -47,23 +46,21 @@ rc = zeros(size(omega,1),size(omega,2));
 %% Run the FreeFem++ code and obtain the reflection coeffiecients.
 file = 'iceSpline.edp';
 file1 = '1_Forced/';
-ffpp=['/usr/local/bin/FreeFem++ -nw -ne -v 0 ', file];
-ffpp
+ffpp=['/usr/local/ff++/openmpi-2.1/3.61-1/bin/FreeFem++ -nw -ne -v 0 ', file];
 iter=1;
 for m=1:size(omega,1)
     for n=1:size(omega,2)
-      cmd=[ffpp,' -Tr ',num2str(real(T(m,n))),' -Ti ',num2str(imag(T(m,n))),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
-          ,num2str(th),' -N ',num2str(4), ' -iter ', num2str(iter),' -isUni ',num2str(1)];
-      [aa,bb]=system(cmd);
-bb
-      if(aa)
-          error('Cannot run program. Check path of FF++ or install it');
-      end
-
-      fprintf('Finish (m,n)= (%d,%d)\n',m,n);
-      RC = load(['1_NoForce/2_RefCoeff/refCoeff',num2str(iter),'.dat']);
-      rc(m,n) = RC(1)+1i*RC(2);
-      iter = iter+1;
+        cmd=[ffpp,' -Tr ',num2str(real(T(m,n))),' -Ti ',num2str(imag(T(m,n))),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
+            ,num2str(th),' -N ',num2str(4), ' -iter ', num2str(iter),' -isUni ',num2str(1)];
+        [aa,bb]=system(cmd);
+        if(aa)
+            error('Cannot run program. Check path of FF++ or install it');
+        end
+        
+        fprintf('Finish (m,n)= (%d,%d)\n',m,n);
+        RC = load([file1, '2_RefCoeff/refCoeff',num2str(iter),'.dat']);
+        rc(m,n) = RC(1)+1i*RC(2);
+        iter = iter+1;
     end
 end
 
@@ -201,8 +198,8 @@ for m=1:length(TSW)
     alpha = HH*ndOmegaSW^2;
     [c,R,~,kSw,A] = shallowmovingplate(LL,HH,dd,alpha,beta,gamma,ApSW(m));
     u_sh = @(x) ((H-d)*1/(1i*omegaSW(m)*Lc^2))*( c(1)*(kSw(1))^2*exp(kSw(1)*(x-LL)) + ...
-                c(2)*(kSw(2))^2*exp(kSw(2)*(x-LL)) + ...
-                sum(transpose(c(3:end)).*(kSw(3:6)).^2.*exp(kSw(3:6)*x)) );
+        c(2)*(kSw(2))^2*exp(kSw(2)*(x-LL)) + ...
+        sum(transpose(c(3:end)).*(kSw(3:6)).^2.*exp(kSw(3:6)*x)) );
     
     U_fd = zeros(length(x),1);
     U_sh = zeros(length(x),1);
