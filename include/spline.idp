@@ -1,0 +1,27 @@
+/*
+   Routine to write the function to generate the cubic spline curve for the ice shelf bottom and the sea-bed
+*/
+
+func real splineCurve(real t, real x1, real y1, real x2, real y2, real x3, real y3){
+  //Ice Shape - Using cubic spline.  
+  real a1 = (x1*(y2-y3)+x2*(y3-y1) + x3*(y1-y2))/(2*(x1-x2)^2*(x1-x3)*(x2-x3));
+  real b1 = (x1^2*(y3-y2)-x1*(x2*(-3*y1+y2+2*y3)+3*x3*(y1-y2))+x2^2*(y3-y1)
+             +x2*x3*(y2-y1)+2*x3^2*(y1-y2))/(2*(x1-x2)*(x1-x3)*(x2-x3));
+  real a2 = (x2-x1)/(x2-x3)*a1;
+  real b2 = (2*x1^2*(y2-y3)+x2*(x1*(y3-y2)+x3*(2*y1+y2-3*y3))+3*x1*x3*(y3-y2)+x2^2
+             *(y3-y1)+x3^2*(y2-y1))/(2*(x1-x2)*(x1-x3)*(x2-x3));
+
+  real f1 = (a1*(t-x1)^3 + b1*(t-x1) + y1);
+  real f2 = (a2*(t-x3)^3 + b2*(t-x3) + y3);
+
+  return (f1)*(t>=x1 && t<=x2) + (f2)*(t>=x2 && t<=x3);
+}
+
+
+func real splineCurveMound(real t, real x2, real y2, real w, real HH, bool flag)
+{
+  if(!flag)
+    return ((y2+HH)*exp(-w*(t-x2)^2) - HH);
+  else
+    return -HH;
+}

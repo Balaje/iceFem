@@ -1,0 +1,99 @@
+//Module to construct the nonlocal boundary conditions.
+func matrix<complex> getQphi(mesh &ThCavity, int NModes, complex[int] k, complex[int] kd, real HH, real dd, complex Ap)
+{
+  complex [int] f(NModes+1), g(NModes+1);
+  complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+  int nbv = ThCavity.nv;
+  // Get all the matrices
+  complex [int,int] D(nbv,NModes+1);
+  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);
+
+  //-----------------------------------------------------------------------
+  /*
+    This block is to find out the Q matrix so that the Neumann condition can be
+    written as M*Q, where M is the boundary mass matrix
+  */
+  fespace Wh(ThCavity,P1);
+  complex [int,int] pp(NModes+1,nbv);
+  pp = 0;
+  for(int m=0; m<NModes+1; m++)
+    {
+      func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+      varf boundaryip(unused,vh) = int1d(ThCavity,4,qforder=10)(eigenfunc*vh);
+      Wh <complex> ph;
+      ph[] = boundaryip(0,Wh);
+      pp(m,:) = ph[];
+    }
+
+  complex [int,int] MMinv = MM^-1;
+  complex [int,int] MMtinv = MMt^-1;
+  complex [int,int] TT = (MMtinv*A);
+  complex [int,int] T = TT*MMinv;
+  complex [int,int] tP = T*pp;
+  complex [int,int] Qp = D*tP;
+  matrix <complex> Q = Qp;
+  /*
+    Obtain the 1d Mass Matrix on the boundary
+    - Again straightforward because of FreeFEM++.
+  */
+  Wh <complex> uh,vh;
+  varf mh(uh,vh) = int1d(ThCavity,4,qforder=10)(uh*vh);
+  matrix <complex> MMatrix = mh(Wh,Wh);
+  matrix <complex> MQ = (MMatrix)*Q;
+
+  return MQ;
+}
+
+
+func complex[int] getChi(mesh &ThCavity, int NModes, complex[int] k, complex[int] kd, real HH, real dd, complex Ap)
+{
+  complex [int] f(NModes+1), g(NModes+1);
+  complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+  int nbv = ThCavity.nv;
+  complex [int,int] D(nbv,NModes+1);
+  // Get all the matrices
+  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);
+
+  //Obtain the right hand side function \chi(y);
+  complex [int,int] MMinv = MM^-1;
+  complex [int,int] MMtinv = MMt^-1;
+  complex [int,int] TT = (MMtinv*A);
+  complex [int,int] T = TT*MMinv;
+  complex [int] Mg = MMtinv*g;
+  complex [int] Tf = T*f,ctilde(NModes+1);
+  ctilde = Mg - Tf;
+
+  return ctilde;
+}
+
+/*
+  func complex[int] getPk(mesh &ThCavity, mesh &ThIce, real[int] etajx, real[int] etajy, complex[int] k, complex[int] kd, real HH, real dd, complex Ap, int NModes)
+  {
+  fespace Vh(ThCavity,P1);
+  fespace Wh(ThIce,[P1,P1]);
+
+  //Wh modejx = etajx;
+  //Wh modejy = etajy;
+  Wh [modejx,modejy];
+  modejx = etajx;
+  modejy = etajy;
+
+  int nbv = ThCavity.nv;
+  complex [int] f(NModes+1), g(NModes+1);
+  complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1, NModes+1), D(nbv,NModes+1);
+
+  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);
+  complex [int] pk(NModes+1);
+  for(int m=0; m<NModes+1; m++)
+  {
+  func phim = cos(k[m]*(y+HH))/cos(k[m]*HH);
+  //pk[m] = int1d(ThIce,5,qforder=10)((modejx*N.x+modejy*N.y)*phim);
+  pk[m] = int1d(ThIce,5,qforder=10)(-modejx*phim);
+  }
+  complex [int,int] MMtinv = MMt^-1;
+  pk = MMtinv*pk;
+
+  return pk;
+  }
+*/
+//----- End of module to compute the non local boundary condition -----

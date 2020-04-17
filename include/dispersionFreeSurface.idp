@@ -1,0 +1,98 @@
+/*
+Module to compute the roots of the dispersion equation
+ */
+
+func complex oneroot(complex alpha, complex guess)
+{
+  complex ans1 = guess + 1;
+  complex out = guess;
+  complex f, difff;
+  while (abs(ans1-out) > 1e-9)
+    {
+      ans1 = out;
+      f = ans1*tanh(ans1) - alpha;
+      difff = tanh(ans1) + ans1*(1/cosh(ans1))^2;
+      out = ans1 - f/difff;
+    }
+  return out;
+}
+func complex homotopy(complex alpha, int N1)
+{
+  complex mroot;
+  if(N1==0)
+    mroot = oneroot(1,1);
+  else
+    mroot = oneroot(1,1i*N1*pi);
+
+  real step = 0.043;
+  //This function is used only in homotopy() - To generate the alphastep vector
+  func real[int] genalphastep(int start, real last, real step)
+  {
+    int length = floor((last-start)/step);
+    real[int] alphastep(length+2);
+    for (int m=0; m<length+2; m++)
+      alphastep[m] = start  + m*step;
+    alphastep[length+1] = abs(last);
+    return alphastep;
+  }
+  //End of Function
+  real [int] alphastep = genalphastep(1, abs(alpha), -step*(abs(alpha)<1) + step*(abs(alpha)>=1));
+  for (int m=1; m<alphastep.n; m++)
+    mroot = oneroot(alphastep[m], mroot);
+
+  real [int] argstep = genalphastep(0, arg(alpha), -(pi/30.)*(arg(alpha)<0) + (pi/30.)*(arg(alpha)>=0));
+  argstep[(argstep.n)-1] = arg(alpha);
+  complex [int] newalphastep(argstep.n);
+  for (int m=1; m<argstep.n; m++)
+    {
+      newalphastep[m] = abs(alpha)*exp(1i*argstep[m]);
+      mroot = oneroot(newalphastep[m], mroot);
+    }
+
+  return mroot;
+}
+func complex[int] dispersionfreesurface(complex alph, int N1, real H)
+{
+  // Scale alpha = alpha*h;
+  complex alpha = alph*H;
+  complex [int] mroots(N1+1);
+  int count;
+  if (N1==0)
+    {
+      count = 0;
+      mroots[count] = homotopy(alpha,count);
+    }
+  else
+    {
+      count = 0;
+      mroots[count] = homotopy(alpha,count);
+      count = count + 1;
+      while (0<=1)
+        {
+          mroots[count] = homotopy(alpha,count);
+          if(abs( mroots[count] - (1i*(count)*pi+alpha/(1i*(count)*pi)) ) < 0.01)
+            {
+              while (0<=1)
+                {
+                  mroots[count] = oneroot(alpha, 1i*(count)*pi + alpha/(1i*(count)*pi));
+                  if(abs( mroots[count] - (1i*(count)*pi + alpha/(1i*(count)*pi)) ) < 1e-15)
+                    {
+                      for(int m=0; m<N1-count; m++)
+                        mroots[count+m+1] = 1i*(count+m)*pi + alpha/(1i*(count+m)*pi);
+                      count = N1;
+                      break;
+                    }
+                  if(count==N1)
+                    break;
+                  count = count + 1;
+                }
+            }
+          if(count==N1)
+            break;
+          count = count + 1;
+        }
+    }
+  mroots = -(1i/H)*mroots;
+  mroots[0] = -mroots[0];
+  return mroots;
+}

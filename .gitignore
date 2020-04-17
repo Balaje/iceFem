@@ -1,0 +1,15 @@
+*.DS_Store
+*.dat
+*.bb
+*.msh
+*.avi
+*.m4v
+*.mp4
+Beamers/AMSI
+Ignored/*
+*.mat
+*.pdf
+*.eps
+*.zip
+*.txt
+*.png
