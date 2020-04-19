@@ -9,7 +9,7 @@ the governing equations are shown in the Figure below.
 <img width="760" height="345" src="./Images/iceGeo.png" border="0">
 </p>
 
-To use the package, open up terminal and type
+To use the package, cd into the package directory, open up terminal and type
 
 ```shell
 FreeFem++ -ne iceSpline.edp
@@ -37,13 +37,14 @@ FreeFem++ -ne -v 0 iceSpline.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS 
 **Example: Run**
 
 ```shell
->>> FreeFem++ -ne -v 0 iceSpline.edp -L 10000 -H 800 -h 200 -N 4 -Tr 100 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 1 -isForced 0                                            
->>> FreeFem++ -ne -v 0 iceSpline.edp -L 15000 -H 800 -h 200 -N 4 -Tr 200 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 0 -isForced 0
+FreeFem++ -ne -v 0 iceSpline.edp -L 10000 -H 800 -h 200 -N 4 -Tr 100 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 1 -isForced 0    
+                                        
+FreeFem++ -ne -v 0 iceSpline.edp -L 15000 -H 800 -h 200 -N 4 -Tr 200 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 0 -isForced 0
 ```
 
 MATLAB can be used to visualize the solution generated using FreeFem++. A FreeFem++ to MATLAB converter is available online. If using this package, the required files are located in the `modules/` directory. To generate good PDF plots, it is recommended to use `export_fig` MATLAB package. To visualize the solution obtained by FreeFem++, we use this MATLAB code:
 
-```matlab
+```Matlab
 % From the FreeFem to MATLAB converter.
 [pts1,seg1,tri1] = importfilemesh('1_Forced/2_Deformation/movedIce0.msh');
 [pts2,seg2,tri2] = importfilemesh('1_Forced/2_Deformation/cavityMesh.msh');
@@ -60,15 +61,15 @@ pdeplot(pts2,seg2,tri2,'XYData',real(PHILE)','colormap','jet');
 ```
 The following plots are generated.
 
-| ![Example 1](./Images/eg1.png) | ![Example 2](./Images/eg2.png) |
-| ---------------------------------- | ------------------------------ |
+  | ![Example 1](./Images/eg1.png) | ![Example 2](./Images/eg2.png) |
+  | ---------------------------------- | ------------------------------ |
 
 The Reflection Coefficients are tabulated below.
 
-| Reflection Coefficient, R | abs(R)  |
-| ---------------------------------- | ------------------------------ |
-| (0.8507259058288464,0.525609582438974) | 0.9999999999999919 |
-| (-0.3166231272563836,0.9485514194213012) | 0.9999999999998886 |
+  | Reflection Coefficient, R | abs(R)  |
+  | ---------------------------------- | ------------------------------ |
+  | (0.8507259058288464,0.525609582438974) | 0.9999999999999919 |
+  | (-0.3166231272563836,0.9485514194213012) | 0.9999999999998886 |
 
 **NOTE:** `refCoeff_cplx.m` **computes the Analytic extension of the solution for complex frequencies. The routine computes the solution for a large number of incident frequencies and hence takes a long time to run on a personal laptop.**
 
@@ -97,10 +98,10 @@ There are different ice-shelf examples that can be solved.
   | ---------------------------------- | ------------------------------ |
 
 
- Will support 3D models in the future. Some examples currently in the works are shown below.
+Will support 3D models in the future. Some examples currently in the works are shown below.
 
-| ![3D_1](./Images/Displacement.png) | ![3D_2](./Images/Velocity.png) |
-| ---------------------------------- | ------------------------------ |
+ | ![3D_1](./Images/Displacement.png) | ![3D_2](./Images/Velocity.png) |
+ | ---------------------------------- | ------------------------------ |
 
 More coming soon.
 
