@@ -53,3 +53,7 @@ assist with the visualization of the solution. A fancier example is to find solu
 *Do this in your personal laptop at your own risk! The code takes a long time to run on a personal laptop. My laptop almost died; but, fortunately she hung on.*
 
 More examples coming soon.
+
+Contact:
+
+Balaje K,  Email:[balaje6@gmail.com](mailto:balaje6@gmail.com)
