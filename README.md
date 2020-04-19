@@ -14,13 +14,13 @@ In future, the
 program will be extended to solve more problems in fluid-structure
 interaction.
 
-There are three different ice--shelf examples that can be solved.
+There are different ice-shelf examples that can be solved.
 
 1. `iceshelf_submerged_moving.edp` assumes that the ice--shelf is a
 1D thin-plate and the vibrations are modelled using the
 Euler-Bernoulli beam theory. The vibration of the ice-shelf and the
 velocity potential in the cavity region for an
-incident wave-forcing of 200 s is shown below. Figure on the left shows the solution on a non uniform cavity and on the right, the solution on a uniform cavity. In this case, the problem is solved using the modal expansion technique, which is used for solving hydro-elasticity problems of large container ships.
+incident wave-forcing of 200 s (in the frequency domain) is shown below. Figure on the left shows the solution on a non uniform cavity and on the right, the solution on a uniform cavity. In this case, the problem is solved using the modal expansion technique, which is used for solving hydro-elasticity problems of large container ships.
 
 | ![Non-Uniform cavity](./Images/femEB1.png) | ![Uniform Cavity](./Images/femEB2.png) |
 | ---------------------------------- | ------------------------------ |
@@ -28,7 +28,7 @@ incident wave-forcing of 200 s is shown below. Figure on the left shows the solu
 
 2. `iceSpline.edp` uses the 2D linear elasticity equations under plane strain
 conditions for the ice-shelf. Figure on the left shows the finite element meshes used for the cavity and the ice-shelves (both non-uniform).
-The governing equations are solved using the combined approach of modal expansion and the fintie element method.
+The governing equations are solved using the combined approach of modal expansion and the finitie element method.
 
 | ![Meshes](./Images/femLEmesh.png) | ![Solution](./Images/femLE.png) |
 | ---------------------------------- | ------------------------------ |
@@ -39,7 +39,14 @@ The solution to the linear elasticity problem agrees with the thin-plate solutio
 | ---------------------------------- | ------------------------------ |
 
 
-3. `icefem.eps` solves the coupled linear elasticity equations using the direct method. This can be used as a check to verify the solutions. The agreement can be seen in the Figures below.
+MATLAB routines
+```matlab
+leSolu.m
+femEBvsFull.m
+thinVsFull.m
+```
+assist with the visualization of the solution. A more fancier example is the solution to the linear elasticity problem in the frequency domain for complex incident frequencies. Run `matlab refCoeff_cplx.m` to obtain the Figure below.
 
-| ![Meshes](./Images/femLEvsEB1.png) | ![Solution](./Images/femLEvsEB2.png) |
-| ---------------------------------- | ------------------------------ |
+<p style='text-align: center;'>
+<img width="760" height="345" src="/Images/resonance3.png" border="0">
+</p>
