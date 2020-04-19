@@ -28,8 +28,7 @@ incident wave-forcing of 200 s is shown below.
 
 
 2. `iceSpline.edp` uses the 2D linear elasticity equations under plane strain
-conditions for the ice-shelf.
+conditions for the ice-shelf. Figure on 
 
-| ---------------------------------- | ------------------------------ |
 | ![Image 1](./Images/femLEmesh.png) | ![Image 1](./Images/femLE.png) |
 | ---------------------------------- | ------------------------------ |
