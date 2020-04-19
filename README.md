@@ -5,18 +5,9 @@ program is written to model vibrations of ice-shelves (1D, 2D and 3D), an
 example of a fluid-structure interaction problem. The schematic and
 the governing equations are shown in the Figure below.
 
-<style type="text/css">
-.centerImage
-{
- text-align:center;
- display:block;
-}
-</style>
-
 <p style='text-align: center;'>
 <img width="760" height="345" src="./Images/iceGeo.png" border="0">
 </p>
-
 
 In future, the
 program will be extended to solve more problems in fluid-structure
