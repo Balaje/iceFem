@@ -44,16 +44,17 @@ leSolu.m
 femEBvsFull.m
 thinVsFull.m
 ```
-assist with the visualization of the solution. A fancier example is to find solution to the linear elasticity problem in the frequency domain for complex incident frequencies. Run `refCoeff_cplx.m` to obtain the Figure below, which shows the reflection coefficient as a function of the incident frequency in the complex plane. The white dots indicate the resonance frequencies.
+assist with the visualization of the solution.
 
-<p style='text-align: center;'>
-<img width="530" height="345" src="/Images/resonance3.png" border="0">
-</p>
+
+3. 'ice3d.edp' implements a basic example of a 3D ice-shelf model. As you can tell by the plots, the model is in its early stages ...
+
+| ![Meshes](./Images/meshes3d.png) | ![Solution](./Images/mesh3d.png) |
+| ---------------------------------- | ------------------------------ |
+
 
 *Do this in your personal laptop at your own risk! The code takes a long time to run on a personal laptop. My laptop almost died; but, fortunately she hung on.*
 
 More examples coming soon.
 
-Contact:
-
-Balaje K,  Email:[balaje6@gmail.com](mailto:balaje6@gmail.com)
+Contact: Balaje K,  Email: [balaje6@gmail.com](mailto:balaje6@gmail.com)
