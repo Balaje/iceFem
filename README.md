@@ -38,10 +38,7 @@ FreeFem++ -ne -v 0 iceSpline.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS 
 
 ```shell
 >>> FreeFem++ -ne -v 0 iceSpline.edp -L 10000 -H 800 -h 200 -N 4
-                      -Tr 100 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 1 -isForced 0
-```
-
-```shell
+                      -Tr 100 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 1 -isForced 0                                            
 >>> FreeFem++ -ne -v 0 iceSpline.edp -L 15000 -H 800 -h 200 -N 4
                       -Tr 200 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 0 -isForced 0
 ```
