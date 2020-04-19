@@ -37,10 +37,8 @@ FreeFem++ -ne -v 0 iceSpline.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS 
 **Example: Run**
 
 ```shell
->>> FreeFem++ -ne -v 0 iceSpline.edp -L 10000 -H 800 -h 200 -N 4
-                      -Tr 100 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 1 -isForced 0                                            
->>> FreeFem++ -ne -v 0 iceSpline.edp -L 15000 -H 800 -h 200 -N 4
-                      -Tr 200 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 0 -isForced 0
+>>> FreeFem++ -ne -v 0 iceSpline.edp -L 10000 -H 800 -h 200 -N 4 -Tr 100 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 1 -isForced 0                                            
+>>> FreeFem++ -ne -v 0 iceSpline.edp -L 15000 -H 800 -h 200 -N 4 -Tr 200 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 0 -isForced 0
 ```
 
 MATLAB can be used to visualize the solution generated using FreeFem++. A FreeFem++ to MATLAB converter is available online. If using this package, the required files are located in the `modules/` directory. To generate good PDF plots, it is recommended to use `export_fig` MATLAB package. To visualize the solution obtained by FreeFem++, we use this MATLAB code:
