@@ -12,10 +12,12 @@ the governing equations are shown in the Figure below.
 To use the package, cd into the package directory, open up terminal and type
 
 ```shell
+chmod +x genDir.sh
+./genDir 1_Forced
 FreeFem++ -ne iceSpline.edp
 ```
 
-This computes the solution for a default uniform ice-shelf and cavity with
+`genDir.sh` is a shell script to generate the directories used by the FreeFem++ routine to write the appropriate files. The last command computes the solution for a default uniform ice-shelf and cavity with
 
 * Length L=20 km
 * Thickness h=200 m
@@ -38,7 +40,7 @@ FreeFem++ -ne -v 0 iceSpline.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS 
 
 ```shell
 FreeFem++ -ne -v 0 iceSpline.edp -L 10000 -H 800 -h 200 -N 4 -Tr 100 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 1 -isForced 0    
-                                        
+
 FreeFem++ -ne -v 0 iceSpline.edp -L 15000 -H 800 -h 200 -N 4 -Tr 200 -Ti 0 -iter 0 -isUniIce 1 -isUniCav 0 -isForced 0
 ```
 
@@ -79,7 +81,11 @@ There are different ice-shelf examples that can be solved.
   1D thin-plate and the vibrations are modelled using the
   Euler-Bernoulli beam theory. The vibration of the ice-shelf and the
   velocity potential in the cavity region for an
-  incident wave-forcing of 200 s (in the frequency domain) is shown below. Figure on the left shows the solution on a non uniform cavity and on the right, the solution on a uniform cavity. In this case, the problem is solved using the modal expansion technique, which is used for solving hydro-elasticity problems of large container ships.
+  incident wave-forcing of 200 s (in the frequency domain) is shown below. Figure on the left shows the solution on a non uniform cavity and on the right, the solution on a uniform cavity. In this case, the problem is solved using the modal expansion technique, which is used for solving hydro-elasticity problems of large container ships. To use this module, generate the appropriate directory by running
+
+  ```shell
+  mkdir 1_ThinPlate
+  ```
 
   | ![Non-Uniform cavity](./Images/femEB1.png) | ![Uniform Cavity](./Images/femEB2.png) |
   | ---------------------------------- | ------------------------------ |
@@ -87,7 +93,7 @@ There are different ice-shelf examples that can be solved.
 
 2. `iceSpline.edp` uses the 2D linear elasticity equations under plane strain
   conditions for the ice-shelf. Figure on the left shows the finite element meshes used for the cavity and the ice-shelves (both non-uniform).
-  The governing equations are solved using the combined approach of modal expansion and the finitie element method.
+  The governing equations are solved using the combined approach of modal expansion and the finite element method.
 
   | ![Meshes](./Images/femLEmesh.png) | ![Solution](./Images/femLE.png) |
   | ---------------------------------- | ------------------------------ |
@@ -96,6 +102,12 @@ There are different ice-shelf examples that can be solved.
 
   | ![Meshes](./Images/femLEvsEB3.png) | ![Solution](./Images/femLEvsEB4.png) |
   | ---------------------------------- | ------------------------------ |
+
+3. `icefem.edp` is used to solve the coupled problem on uniform meshes. Since the mesh points match exactly at the shelf/cavity interface, the coupled problem is solved directly using the finite element method without modal expansions.  To generate the appropriate directories, run
+
+```shell
+./genDir.sh 1_DirectFEM
+```
 
 
 Will support 3D models in the future. Some examples currently in the works are shown below.
