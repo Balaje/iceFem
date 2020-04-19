@@ -49,10 +49,8 @@ assist with the visualization of the solution.
 
 Will support 3D models in the future. Some examples currently in the works are shown below.
 
-| ![3D_1](./Images/boat11.png) | ![3D_2](./Images/mesh3d.png) |
+| ![3D_1](./Images/Displacement.png) | ![3D_2](./Images/velocity.png) |
 | ---------------------------------- | ------------------------------ |
-| ![3D_3](./Images/velPot.png)
-|----------------------------------------------------------------------|
 
 
 More examples coming soon.
