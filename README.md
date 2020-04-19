@@ -9,9 +9,26 @@ the governing equations are shown in the Figure below.
 <img width="760" height="345" src="./Images/iceGeo.png" border="0">
 </p>
 
-In future, the
-program will be extended to solve more problems in fluid-structure
-interaction.
+To use the package, open up terminal and type
+
+```shell
+FreeFem++ -ne iceSpline.edp
+```
+
+This computes the solution for a default uniform ice-shelf and cavity with
+* Length L=20 km
+* Thickness h=200 m
+* Cavity Depth H=800 m
+* Incident Wave period T=200 s
+
+To specify more inputs, one can use the following command
+
+```shell
+FreeFem++ -ne -v 0 iceSpline.edp -L [*length*]
+```
+
+
+**NOTE:** `refCoeff_cplx.m` **computes the Analytic extension of the solution for complex frequencies. The routine computes the solution for a large number of incident frequencies and hence takes a long time to run on a personal laptop.**
 
 There are different ice-shelf examples that can be solved.
 
@@ -44,15 +61,11 @@ leSolu.m
 femEBvsFull.m
 thinVsFull.m
 ```
-assist with the visualization of the solution.
-
-
-Will support 3D models in the future. Some examples currently in the works are shown below.
+assist with the visualization of the solution. Will support 3D models in the future. Some examples currently in the works are shown below.
 
 | ![3D_1](./Images/Displacement.png) | ![3D_2](./Images/Velocity.png) |
 | ---------------------------------- | ------------------------------ |
 
-
-More examples coming soon.
+More coming soon.
 
 Contact: Balaje K,  Email: [balaje6@gmail.com](mailto:balaje6@gmail.com)
