@@ -6,7 +6,7 @@ example of a fluid-structure interaction problem. The schematic and
 the governing equations are shown in the Figure below.
 
 <p style='text-align: center;'>
-<img width="760" height="345" src="./images/iceGeo.png" border="0">
+<img width="760" height="345" src="./Images/iceGeo.png" border="0">
 </p>
 
 
@@ -23,7 +23,7 @@ velocity potential in the cavity region for an
 incident wave-forcing of 200 s is shown below.
 
 <p style='text-align: center;'>
-<img width="525" height="388" src="./images/femEB.png" border="0">
+<img width="525" height="388" src="./Images/femEB.png" border="0">
 </p>
 
 
@@ -32,6 +32,6 @@ conditions for the ice-shelf.
 
 :-------------------------:|:-------------------------:
 <p style='text-align: center;'> <img width="525" height="388"
-src="./images/femLEmesh.png" border="0"> </p>  | <p
+src="./Images/femLEmesh.png" border="0"> </p>  | <p
 style='text-align:center;'> <img width="525" height="388"
-src="./images/femLE.png" border="0"></p>
+src="./Images/femLE.png" border="0"></p>
