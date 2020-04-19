@@ -96,12 +96,7 @@ There are different ice-shelf examples that can be solved.
   The governing equations are solved using the combined approach of modal expansion and the finite element method.
 
   | ![Meshes](./Images/femLEmesh.png) | ![Solution](./Images/femLE.png) |
-  | ---------------------------------- | ------------------------------ |
-
-  The solution to the linear elasticity problem agrees with the thin-plate solution when the ice-shelf is uniform and thin!
-
-  | ![Meshes](./Images/femLEvsEB3.png) | ![Solution](./Images/femLEvsEB4.png) |
-  | ---------------------------------- | ------------------------------ |
+  | ---------------------------------- | ------------------------------ |  
 
 3. `icefem.edp` is used to solve the coupled problem on uniform meshes. Since the mesh points match exactly at the shelf/cavity interface, the coupled problem is solved directly using the finite element method without modal expansions.  To generate the appropriate directories, run
 
@@ -109,6 +104,10 @@ There are different ice-shelf examples that can be solved.
 ./genDir.sh 1_DirectFEM
 ```
 
+The solution to the linear elasticity problem agrees with the thin-plate solution when the ice-shelf is uniform and thin!
+
+| ![Meshes](./Images/femLEvsEB3.png) | ![Solution](./Images/femLEvsEB4.png) |
+| ---------------------------------- | ------------------------------ |
 
 Will support 3D models in the future. Some examples currently in the works are shown below.
 
