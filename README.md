@@ -47,10 +47,10 @@ thinVsFull.m
 assist with the visualization of the solution.
 
 
-3. `ice3d.edp` implements a basic example of a 3D ice-shelf model. As you can tell by the plots, the model is in its early stages ...
+Will support 3D models in the future. Some examples currently in the works are shown below.
 
-| ![Meshes](./Images/meshes3d.png) | ![Solution](./Images/mesh3d.png) |
-| ---------------------------------- | ------------------------------ |
+| ![3D_1](./Images/DeformedBoat.png) | ![3D_2](./Images/mesh3d.png) | ![3D_3](./Images/velPot.png)
+| ---------------------------------- | ------------------------------ | ------------------------------ |
 
 
 More examples coming soon.
