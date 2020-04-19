@@ -6,7 +6,7 @@ example of a fluid-structure interaction problem. The schematic and
 the governing equations are shown in the Figure below.
 
 <p style='text-align: center;'>
-<img width="760" height="345" src="./Images/iceGeo.png" border="0">
+<img width="760" height="345" align="middle" src="./Images/iceGeo.png" border="0">
 </p>
 
 
@@ -48,7 +48,7 @@ thinVsFull.m
 assist with the visualization of the solution. A fancier example is to find solution to the linear elasticity problem in the frequency domain for complex incident frequencies. Run `refCoeff_cplx.m` to obtain the Figure below, which shows the reflection coefficient as a function of the incident frequency in the complex plane. The white dots indicate the resonance frequencies.
 
 <p style='text-align: center;'>
-<img width="530" height="345" src="/Images/resonance3.png" border="0">
+<img width="530" height="345" align="middle" src="/Images/resonance3.png" border="0">
 </p>
 
 *Do this in your personal laptop at your own risk! The code takes a long time to run on a personal laptop. My laptop almost died; but, fortunately she hung on.*
