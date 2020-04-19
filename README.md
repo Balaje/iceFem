@@ -45,8 +45,8 @@ leSolu.m
 femEBvsFull.m
 thinVsFull.m
 ```
-assist with the visualization of the solution. A more fancier example is the solution to the linear elasticity problem in the frequency domain for complex incident frequencies. Run `matlab refCoeff_cplx.m` to obtain the Figure below.
+assist with the visualization of the solution. A more fancier example is the solution to the linear elasticity problem in the frequency domain for complex incident frequencies. Run `refCoeff_cplx.m` to obtain the Figure below.
 
 <p style='text-align: center;'>
-<img width="660" height="345" src="/Images/resonance3.png" border="0">
+<img width="560" height="345" src="/Images/resonance3.png" border="0">
 </p>
