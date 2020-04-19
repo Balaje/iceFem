@@ -22,13 +22,12 @@ Euler-Bernoulli beam theory. The vibration of the ice-shelf and the
 velocity potential in the cavity region for an
 incident wave-forcing of 200 s is shown below.
 
-<p style='text-align: center;'>
-<img width="525" height="388" src="./Images/femEB.png" border="0">
-</p>
+| ![Non-Uniform cavity](./Images/femEB1.png) | ![Uniform Cavity](./Images/femEB2.png) |
+| ---------------------------------- | ------------------------------ |
 
 
 2. `iceSpline.edp` uses the 2D linear elasticity equations under plane strain
-conditions for the ice-shelf. Figure on 
+conditions for the ice-shelf. Figure on
 
-| ![Image 1](./Images/femLEmesh.png) | ![Image 1](./Images/femLE.png) |
+| ![Meshes](./Images/femLEmesh.png) | ![Solution](./Images/femLE.png) |
 | ---------------------------------- | ------------------------------ |
