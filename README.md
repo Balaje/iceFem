@@ -84,7 +84,7 @@ There are different ice-shelf examples that can be solved.
   incident wave-forcing of 200 s (in the frequency domain) is shown below. Figure on the left shows the solution on a non uniform cavity and on the right, the solution on a uniform cavity. In this case, the problem is solved using the modal expansion technique, which is used for solving hydro-elasticity problems of large container ships. To use this module, generate the appropriate directory by running
 
   ```shell
-  mkdir 1_ThinPlate
+  mkdir -v 1_ThinPlate
   ```
 
   | ![Non-Uniform cavity](./Images/femEB1.png) | ![Uniform Cavity](./Images/femEB2.png) |
@@ -93,7 +93,13 @@ There are different ice-shelf examples that can be solved.
 
 2. `iceSpline.edp` uses the 2D linear elasticity equations under plane strain
   conditions for the ice-shelf. Figure on the left shows the finite element meshes used for the cavity and the ice-shelves (both non-uniform).
-  The governing equations are solved using the combined approach of modal expansion and the finite element method.
+  The governing equations are solved using the combined approach of modal expansion and the finite element method. Run
+
+  ```shell
+  ./genDir.sh 1_Forced
+  ```
+
+  to generate the solution directories before running the solver.
 
   | ![Meshes](./Images/femLEmesh.png) | ![Solution](./Images/femLE.png) |
   | ---------------------------------- | ------------------------------ |  
