@@ -32,7 +32,7 @@ FreeFem++ -ne -v 0 iceSpline.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS 
                                  -Tr [REAL(PERIOD)] -Ti [IMAGE(period)]
                                  -iter [SOL. INDEX]
                                  -isUniIce [ON/OFF UNIFORM/NON UNIFORM ICE]
-                                 -isUniCav [FLAG TO INDICATE UNIFORM/NON UNIFORM CAVITY]
+                                 -isUniCav [ON/OFF UNIFORM/NON UNIFORM CAVITY]
                                  -isForced [ON/OFF SHELF-FRONT FORCES]
 ```
 
