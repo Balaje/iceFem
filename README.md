@@ -74,6 +74,22 @@ The Reflection Coefficients are tabulated below.
   | (0.8507259058288464,0.525609582438974) | 0.9999999999999919 |
   | (-0.3166231272563836,0.9485514194213012) | 0.9999999999998886 |
 
+There are four demo MATLAB scripts that are written to generate the plots shown below.
+```Matlab
+thinVsFull.m
+femEBvsFull.m
+leSolu.m
+refCoeff_cplx.m
+```
+
+**Note: Before using the MATLAB scripts, it is essential to run the `genDir.sh` script to generate the following directories.**
+
+```shell
+./genDir.sh 1_DirectFEM
+./genDir.sh 1_ThinPlate
+./genDir.sh 1_DirectFEM
+```
+
 **NOTE:** `refCoeff_cplx.m` **computes the Analytic extension of the solution for complex frequencies. The routine computes the solution for a large number of incident frequencies and hence takes a long time to run on a personal laptop.**
 
 There are different ice-shelf examples that can be solved.
