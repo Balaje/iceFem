@@ -14,6 +14,7 @@ To use the package, cd into the package directory, open up terminal and type
 ```shell
 chmod +x genDir.sh
 ./genDir 1_Forced
+export FF_INCLUDEPATH="./include" #Add the include/ folder into the FreeFem++ environment variable. Needs to be run for the first time.
 FreeFem++ -ne iceSpline.edp
 ```
 
