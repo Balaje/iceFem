@@ -13,7 +13,7 @@ To setup and use the package, cd into the package directory, open up terminal an
 
 ```shell
 chmod +x genDir.sh
-./genDir 1_Forced
+./genDir.sh 1_Forced
 ./genDir.sh 1_ThinPlate
 ./genDir.sh 1_DirectFEM
 export FF_INCLUDEPATH="./include" #Add the include/ folder into the FreeFem++ environment variable. Needs to be run for the first time.
