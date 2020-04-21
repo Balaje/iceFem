@@ -56,7 +56,6 @@ PHILE = importfiledata('1_Forced/2_Potential/potential0.bb');
 figure(1)
 subplot(2,1,1);
 pdeplot(pts1,seg1,tri1)
-axis equal
 axis equal tight
 grid on
 subplot(2,1,2)
@@ -85,7 +84,7 @@ refCoeff_cplx.m
 **Note: Before using the MATLAB scripts, it is essential to run the `genDir.sh` script to generate the following directories.**
 
 ```shell
-./genDir.sh 1_DirectFEM
+./genDir.sh 1_Forced
 ./genDir.sh 1_ThinPlate
 ./genDir.sh 1_DirectFEM
 ```
