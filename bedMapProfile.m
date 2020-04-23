@@ -36,11 +36,12 @@ iceCavInt=ice(find(ice(:,2)<0),:);
 iceTop=ice(find(ice(:,2)>0),:);
 
 %% Plot the data to verify
-plot(iceCavInt(:,1),iceCavInt(:,2),'m.');
+plot(iceCavInt(:,1)/1000,iceCavInt(:,2),'m.','LineWidth',2);
 hold on
-plot(iceTop(:,1),iceTop(:,2),'m.');
-plot(bedPts(:,1),bedPts(:,2),'m.');
-pause(2);
+plot(iceTop(:,1)/1000,iceTop(:,2),'m.','LineWidth',2);
+plot(bedPts(:,1)/1000,bedPts(:,2),'m.','LineWidth',2);
+pause();
+
 %%
 ppIceCavInt=spline(iceCavInt(:,1),iceCavInt(:,2));
 ppIceTop=spline(iceTop(:,1),iceTop(:,2));
@@ -76,11 +77,21 @@ end
 [pts1,seg1,tri1]=importfilemesh('cavMeshBEDMAP.msh');
 
 %% Plot the results
+fig=figure(10);
+set(fig,'Position',[284    23   952   634]);
 pp1=pdeplot(pts,seg,tri); hold on
 pp2=pdeplot(pts1,seg1,tri1);
 set(pp2,'Color','b')
 %axis equal
 axis square tight %To view the profiles
+grid on
+
+fig=figure(11);
+set(fig,'Position',[284    23   952   634]);
+pp1=pdeplot(pts,seg,tri); hold on
+pp2=pdeplot(pts1,seg1,tri1);
+set(pp2,'Color','b')
+xlim([0.45*10^5,0.55*10^5]);
 grid on
 
 % %% Generate the cubic spline curve (This is to test. Real code in FF++)
