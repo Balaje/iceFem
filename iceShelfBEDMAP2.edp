@@ -1,0 +1,33 @@
+//Program to generate the meshes using the data from BEDMAP2
+
+verbosity=0.;
+
+load "lapack"
+include "spline.idp"
+
+
+ifstream file("./Meshes/BEDMAP2/iceCavInt.dat");
+ifstream file1("./Meshes/BEDMAP2/iceCavInt_Breaks.dat");
+ifstream file2("./Meshes/BEDMAP2/iceCavInt_Coeffs.dat");
+
+real iceBegin, iceEnd;
+int npieces;
+file>>iceBegin>>iceEnd>>npieces;
+
+real[int,int] coefs(npieces,4);
+real[int] breaks(npieces+1);
+
+for(int m=0; m<npieces; m++)  
+  file2>>coefs(m,0)>>coefs(m,1)>>coefs(m,2)>>coefs(m,3);  
+for(int m=0; m<npieces+1; m++)  
+  file1>>breaks[m];
+
+
+border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefs,breaks,t,npieces); label=1;};
+border C02(t=splineRecon(coefs,breaks,iceEnd,npieces),100){x=iceEnd; y=t; label=2;};
+border C03(t=iceEnd,iceBegin){x=t; y=100; label=3;};
+border C04(t=100,splineRecon(coefs,breaks,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+mesh Th=buildmesh(C01(3000)+C02(200)+C03(3000)+C04(200));
+
+plot(Th,wait=1);
+savemesh(Th,"iceMeshBEDMAP.msh");
