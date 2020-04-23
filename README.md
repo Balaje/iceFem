@@ -82,6 +82,7 @@ thinVsFull.m
 femEBvsFull.m
 leSolu.m
 refCoeff_cplx.m
+timeDomain.m
 ```
 
 **NOTE: Before using the MATLAB scripts, it is essential to run the `genDir.sh` script to generate the following directories.**
@@ -92,7 +93,7 @@ refCoeff_cplx.m
 ./genDir.sh 1_DirectFEM
 ```
 
-**NOTE:** `refCoeff_cplx.m` **computes the Analytic extension of the solution for complex frequencies. The routine computes the solution for a large number of incident frequencies and hence takes a long time to run on a personal laptop.**
+**WARNING:** `refCoeff_cplx.m` **computes the Analytic extension of the solution for complex frequencies. `timeDomain.m` computes the solution in the time domain from the frequency domain solution. These routines compute the solution for a large number of incident frequencies and hence take a long time to run on a personal laptop.**
 
 There are different ice-shelf examples that can be solved.
 
