@@ -93,7 +93,7 @@ timeDomain.m
 ./genDir.sh 1_DirectFEM
 ```
 
-**WARNING:** `refCoeff_cplx.m` **computes the Analytic extension of the solution for complex frequencies. `timeDomain.m` computes the solution in the time domain from the frequency domain solution. These routines compute the solution for a large number of incident frequencies and hence take a long time to run on a personal laptop.**
+**WARNING: `refCoeff_cplx.m` computes the Analytic extension of the solution for complex frequencies. `timeDomain.m` computes the solution in the time domain from the frequency domain solution. These routines compute the solution for a large number of incident frequencies and hence take a long time to run on a personal laptop.**
 
 There are different ice-shelf examples that can be solved.
 
