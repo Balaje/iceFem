@@ -35,7 +35,7 @@ func real splineRecon(real[int,int] coefs, real[int] breaks, real t, int npieces
   for(int m=0; m<npieces; m++)
     {
       a=coefs(m,0); b=coefs(m,1); c=coefs(m,2); d=coefs(m,3);
-      if(t>=breaks[m] && t<breaks[m+1])        
+      if(t>=breaks[m] && t<=breaks[m+1])        
           V=a*(t-breaks[m])^3+b*(t-breaks[m])^2+c*(t-breaks[m])+d;        
     }
   return V;
