@@ -173,7 +173,7 @@ fespace Wh(ThCavity,P1);
 //The number of cavity degrees of freedom.
 cout<<"Number of cavity degrees of freedom = "<<Wh.ndof<<endl;
 matrix<complex> MQ;
-MQ = getQphi(ThCavity, NModes, k, kd, HH, dd, Ap); //From "nonLocal.idp"
+MQ = getQphi(ThCavity, NModes, k, kd, HH, dd, Ap, 4); //From "nonLocal.idp"
 complex [int] ctilde(NModes+1);
 ctilde = getChi(ThCavity, NModes, k, kd, HH, dd, Ap); //From "nonLocal.idp"
 Wh<complex> chi1;

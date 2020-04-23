@@ -1,5 +1,5 @@
 //Module to construct the nonlocal boundary conditions.
-func matrix<complex> getQphi(mesh &ThCavity, int NModes, complex[int] k, complex[int] kd, real HH, real dd, complex Ap)
+func matrix<complex> getQphi(mesh &ThCavity, int NModes, complex[int] k, complex[int] kd, real HH, real dd, complex Ap, int bInd)
 {
   complex [int] f(NModes+1), g(NModes+1);
   complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
@@ -19,7 +19,7 @@ func matrix<complex> getQphi(mesh &ThCavity, int NModes, complex[int] k, complex
   for(int m=0; m<NModes+1; m++)
     {
       func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
-      varf boundaryip(unused,vh) = int1d(ThCavity,4,qforder=10)(eigenfunc*vh);
+      varf boundaryip(unused,vh) = int1d(ThCavity,bInd,qforder=10)(eigenfunc*vh);
       Wh <complex> ph;
       ph[] = boundaryip(0,Wh);
       pp(m,:) = ph[];
@@ -37,7 +37,7 @@ func matrix<complex> getQphi(mesh &ThCavity, int NModes, complex[int] k, complex
     - Again straightforward because of FreeFEM++.
   */
   Wh <complex> uh,vh;
-  varf mh(uh,vh) = int1d(ThCavity,4,qforder=10)(uh*vh);
+  varf mh(uh,vh) = int1d(ThCavity,bInd,qforder=10)(uh*vh);
   matrix <complex> MMatrix = mh(Wh,Wh);
   matrix <complex> MQ = (MMatrix)*Q;
 
