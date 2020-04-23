@@ -136,7 +136,7 @@ The solution to the linear elasticity problem agrees with the thin-plate solutio
 
 ## BEDMAP2 Integration
 
-Real-life ice-shelf profiles can be obtained using the BEDMAP2 dataset to generate the finite element meshes. Download the BEDMAP2 dataset ![here](https://www.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab).
+Real-life ice-shelf profiles can be obtained using the BEDMAP2 dataset to generate the finite element meshes. Download the BEDMAP2 dataset [here](https://www.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab).
 
 To generate the profiles, run `bedMapProfile.m`. A map of Antarctica along with the ice-shelves appear (left). Click two points on the map to define a path as shown (right).
 
