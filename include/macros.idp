@@ -1,0 +1,11 @@
+//List of useful set of macros that could be used
+macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
+  macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
+  macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
+  macro bilinLap(u,v)(dx(u)*dx(v)+dy(u)*dy(v))//EOM"
+  macro bilinElas(u,v,uu,vv,a,b)(a*div(u,v)*div(uu,vv) + 2*b*epsilon(u,v)'*epsilon(uu,vv))//EOM"
+  macro ipScalar(u,v)(u*v)//EOM"
+  macro ipVector(u,v,uu,vv)(u*uu+v*vv)//EOM"
+
+
+                             
