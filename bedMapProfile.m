@@ -78,22 +78,41 @@ end
 
 %% Plot the results
 fig=figure(10);
-set(fig,'Position',[284    23   952   634]);
+subplot(2,2,[1,2]);
+%set(fig,'Position',[284    23   952   634]);
+set(fig,'Position',[0 0 2880 1800]);
+ptsScaled=[pts(1,:)/10; pts(2,:)];
+pts1Scaled=[pts1(1,:)/10; pts1(2,:)];
+pp1=pdeplot(ptsScaled,seg,tri); hold on
+pp2=pdeplot(pts1Scaled,seg1,tri1);
+set(pp2,'Color','b')
+title('Scaled $x-$axis $(0.1 \times)$')
+axis equal
+xlabel('$x$')
+ylabel('$z$')
+grid on
+
+subplot(2,2,3)
 pp1=pdeplot(pts,seg,tri); hold on
 pp2=pdeplot(pts1,seg1,tri1);
 set(pp2,'Color','b')
-%axis equal
-axis square tight %To view the profiles
+axis equal
+xlim([0.15*10^5,0.25*10^5]);
+title('Real $x-$axis $(1 \times)$')
 grid on
+xlabel('$x$')
+ylabel('$z$')
 
-fig=figure(11);
-set(fig,'Position',[284    23   952   634]);
-pp1=pdeplot(pts,seg,tri); hold on
-pp2=pdeplot(pts1,seg1,tri1);
+subplot(2,2,4)
+pp1=pdeplot(ptsScaled,seg,tri); hold on
+pp2=pdeplot(pts1Scaled,seg1,tri1);
 set(pp2,'Color','b')
-xlim([0.45*10^5,0.55*10^5]);
+axis equal
+xlim([1.8*10^4,2*10^4]);
+title('Scaled $x-$axis $(0.1 \times)$')
 grid on
-
+xlabel('$x$')
+ylabel('$z$')
 % %% Generate the cubic spline curve (This is to test. Real code in FF++)
 % xq=linspace(min(iceCavInt(:,1)),max(iceCavInt(:,1)),1000);
 % yq=zeros(length(xq),1);
