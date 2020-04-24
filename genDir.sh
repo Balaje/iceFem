@@ -10,3 +10,5 @@ mkdir -v Interpolated_F Interpolated_H Interpolated_L
 cd ..
 cd 2_RefCoeff
 mkdir -v Interpolated_R RefCoeff_Dif RefCoeff_Rad
+
+mkdir -v Meshes/ Meshes/BEDMAP2
