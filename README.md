@@ -139,15 +139,15 @@ The solution to the linear elasticity problem agrees with the thin-plate solutio
 
 Real-life ice-shelf profiles can be obtained using the BEDMAP2 dataset to generate the finite element meshes. Download the BEDMAP2 dataset [here](https://www.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab).
 
-To generate the profiles, run `bedMapProfile.m`. A map of Antarctica along with the ice-shelves appear (left). Click two points on the map to define a path as shown (right).
+To generate the profiles, run `bedMapProfile.m`. A map of Antarctica along with the ice-shelves appears.
 
-| ![Meshes](./Images/antmap.png) | ![Solution](./Images/antmap1.png) |
-| ---------------------------------- | ------------------------------ |
+| ![Meshes](./Images/antmap.png)
+| ----------------------------------
 
-Undo points by hit **Backspace**. When you're satisfied with a path you've drawn, hit **Enter** to create a profile. To quit the user interface without creating a profile, hit **Esc**.
+Click two points on the map to define a path as shown. Undo points by hit **Backspace**. When you're satisfied with a path you've drawn, hit **Enter** to create a profile. To quit the user interface without creating a profile, hit **Esc**.
 
-| ![Meshes](./Images/ice-cavity.png)
-| ------------------------------ |
+| ![Solution](./Images/antmap1.png) | ![Meshes](./Images/ice-cavity.png) |
+| ------------------------------ | ------------------------------ |
 
 The program generates 3 profiles:
 
@@ -161,7 +161,7 @@ func real splineRecon(real[int, int], real[int], real, int){
   :
 }
 ```
-in `include/spline.idp`. The program `iceShelfBEDMAP2.edp` uses this parametrization and generates the meshes which is written as `Meshes/iceMeshBEDMAP.msh` and `Meshes/cavMeshBEDMAP.msh`. Figure below shows the mesh for the profile shown in the previous Figure. 
+in `include/spline.idp`. The program `iceShelfBEDMAP2.edp` uses this parametrization and generates the meshes which is written as `Meshes/iceMeshBEDMAP.msh` and `Meshes/cavMeshBEDMAP.msh`. Figure below shows the mesh for the profile shown in the previous Figure.
 
 | ![Meshes](./Images/meshProfiles.png) | ![Solution](./Images/meshFront.png) | ![Solution](./Images/meshSomewhere.png)
 | ---------------------------------- | ------------------------------ | ------------------------------ |
