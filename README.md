@@ -155,7 +155,13 @@ The program generates 3 profiles:
 2. The submerged section of the ice-shelf,
 3. The seabed profile of the cavity underneath the ice-shelf.
 
-The description of the cubic-spline curve describing these profiles will be written to files located in `Meshes/BEDMAP2` folder. The cubic-spline curve will then be re-constructed in FreeFem++ to parametrize the curves and generate the meshes.
+The description of the cubic-spline curve describing these profiles will be written to files located in `Meshes/BEDMAP2` folder. The cubic-spline curve will then be re-constructed in FreeFem++ to parametrize the curves and generate the meshes. The parametrization is done by the function
+```cpp
+func real splineRecon(real[int, int], real[int], real, int){
+  :
+}
+```
+in `include/spline.idp`. The program `iceShelfBEDMAP2.edp` uses this parametrization and generates the meshes which is written as `Meshes/iceMeshBEDMAP.msh` and `Meshes/cavMeshBEDMAP.msh`. Figure below shows the mesh for the profile shown in the previous Figure. 
 
 | ![Meshes](./Images/meshProfiles.png) | ![Solution](./Images/meshFront.png) | ![Solution](./Images/meshSomewhere.png)
 | ---------------------------------- | ------------------------------ | ------------------------------ |
