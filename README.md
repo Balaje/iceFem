@@ -144,7 +144,7 @@ To generate the profiles, run `bedMapProfile.m`. A map of Antarctica along with 
 | ![Meshes](./Images/antmap.png)
 | ----------------------------------
 
-Click two points on the map to define a path as shown. Undo points by hit **Backspace**. When you're satisfied with a path you've drawn, hit **Enter** to create a profile. To quit the user interface without creating a profile, hit **Esc**.
+Click two points on the map to define a path as shown. Undo points by hitting **Backspace**. When you're satisfied with a path you've drawn, hit **Enter** to create a profile. To quit the user interface without creating a profile, hit **Esc**.
 
 | ![Solution](./Images/antmap1.png) | ![Meshes](./Images/ice-cavity.png) |
 | ------------------------------ | ------------------------------ |
