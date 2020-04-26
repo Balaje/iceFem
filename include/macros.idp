@@ -1,4 +1,4 @@
-//List of useful set of macros that could be used
+//List of useful set of macros.
 macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
   macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
   macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
@@ -8,4 +8,152 @@ macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
   macro ipVector(u,v,uu,vv)(u*uu+v*vv)//EOM"
 
 
-                             
+  mesh ThIce=square(10,10);
+mesh ThCavity=square(10,10);
+
+fespace Vh(ThIce,P1);
+fespace Xh(ThIce,[P1,P1]);
+fespace Wh(ThCavity,P1);
+
+real lambdahat, muhat, rhoi;
+real rhow, Ad;
+real Lc, tc;
+int NModes=3, nev=20, iter;
+real LL,HH,dd, ag;
+complex omega, Ap;
+complex [int] k(NModes+1), kd(NModes+1);
+macro setProblem()
+{
+  bool isUniformIce=getARGV("-isUniIce",1);
+  bool isUniformCav=getARGV("-isUniCav",1);
+  int N1 = getARGV("-N",3), N2 = getARGV("-N",3);
+  real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
+  iter=getARGV("-iter",0);
+  real E, nu;
+  real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
+  real d = rhoi/rhow*th;
+  real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
+  complex t = Tr+1i*Ti;
+  real EI = E*th^3/(12*(1-nu^2));
+  Lc = (EI/(rhow*ag))^(1./4.);
+  tc = sqrt(rhow*Lc^6/(EI*H));
+  omega = 2*pi/t;
+  LL = L/Lc;
+  HH = H/Lc;
+  dd = d/Lc;
+  real tth = th/Lc;
+  complex tt = t/tc, ndOmega = 2*pi/tt;
+  complex alpha = HH*ndOmega^2;
+  Ap = ag/(1i*omega)*Ad;
+  k = dispersionfreesurface(alpha, NModes, HH);
+  k[0] = -k[0];
+  kd = dispersionfreesurface(alpha, NModes, HH-dd);
+  kd[0] = -kd[0];
+  real mu = elasCons[0], lambda = elasCons[1];
+  muhat = mu/Lc^2;
+  lambdahat = lambda/Lc^2;
+  real icetopleft, icebottomleft, icebottomright, ix2, iy2;
+  if(isUniformIce==true)
+    {
+      icetopleft = (1-rhoi/rhow)*(th/Lc);
+      icebottomleft = -(rhoi/rhow)*(th/Lc);
+      icebottomright = -(rhoi/rhow)*(th/Lc);
+      ix2 = 3.7*LL/4;
+      iy2 = -(rhoi/rhow)*(th/Lc);
+    }
+  else
+    {
+      icetopleft = (1-rhoi/rhow)*(th/Lc);
+      icebottomleft = -(rhoi/rhow)*(th/Lc);
+      icebottomright = -3.*th/Lc;
+      ix2 = 3.7*LL/4;
+      iy2 = -2.5*(th/Lc);
+    }
+  real ix1 = 0, iy1 = icebottomleft;
+  real ix3 = LL, iy3 = icebottomright;
+  border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3); label=1;};
+  border I02(t=iy3,icetopleft) {x=LL; y=t; label=2;};
+  border I03(t=LL,0) {x=t; y=icetopleft; label=3;};
+  border I04i(t=icetopleft,0) {x=0; y=t; label=4;};
+  border I04ii(t=0,icebottomleft){x=0; y=t; label=5;};
+  ThIce = buildmesh(I01(L/th*N1)+I02(N1)+I03(L/th*N1)+I04i(L/th*N1)+I04ii(L/th*N1));
+  real x1,x2,x3,uy1,y2,y3;
+  if(isUniformCav)
+    {
+      x1=0.; uy1=-HH;
+      x2=LL/2; y2=-HH;
+      x3=LL; y3=-HH;
+    }
+  else
+    {
+      x1=0.; uy1=-HH;
+      x2=LL/2; y2=-0.5*HH;
+      x3=LL; y3=-HH;
+    }
+  border C01(t=0,LL){x = t; y = splineCurve(t,x1,uy1,x2,y2,x3,y3); label=1;};
+  border C02(t=y3,iy3) {x=LL; y=t; label=2;};
+  border C03(t=LL,0) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3); label=3;};
+  border C04(t=icebottomleft,uy1) {x=0; y=t; label=4;};
+  ThCavity = buildmesh(C01(L/th*N2)+C02(N2)+C03(L/th*N2)+C04(N2));
+
+}//This is a macro for getting the parameters and creating the meshes.
+
+
+macro solveEigen()
+{
+  Xh [u,v],[uu,vv];
+  varf a([u,v],[uu,vv]) = int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
+  varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv));
+  matrix stima = a(Xh,Xh,solver=sparsesolver);
+  matrix massma = b(Xh,Xh,solver=sparsesolver);
+  int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
+}//This is a macro for solving the Eigenvalue problem.
+
+
+macro writeEigen()
+{
+  for(int m=0; m<nev; m++)
+    {
+      Vh modeX = VX[m];
+      Vh modeY = VY[m];
+      {
+        ofstream file(SolutionDir+"2_Modes/modex"+m+".bb");
+        file.precision(16);
+        file<<"2 1 1 "<<modeX.n<<" 2 \n";
+        for(int p=0; p<modeX[].n; p++)
+          file<<modeX[][p]<<endl;
+        ofstream file2(SolutionDir+"2_Modes/MODEX"+m+".dat");
+        file2.precision(16);
+        file2<<modeX[]<<endl;
+      }
+      {
+        ofstream file(SolutionDir+"2_Modes/modey"+m+".bb");
+        file.precision(16);
+        file<<"2 1 1 "<<modeY.n<<" 2 \n";
+        for(int p=0; p<modeY[].n; p++)
+          file<<modeY[][p]<<endl;
+
+        ofstream file2(SolutionDir+"2_Modes/MODEY"+m+".dat");
+        file2.precision(16);
+        file2<<modeY[]<<endl;
+      }
+    }
+}//Macro to write the Eigenfunctions.
+
+
+matrix<complex> STIMA,BMASSMA;
+matrix<complex> LHS;
+Wh<complex> RHS,phih;
+macro getLaplaceMat(a,b){  
+  Wh<complex> psih;
+  varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih));
+  varf lh(unused,psih) = int1d(ThCavity,4,qforder=10)(-fh*psih)+ int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
+  varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
+  STIMA=ah(Wh,Wh);
+  BMASSMA=bMh(Wh,Wh);
+  RHS[]=lh(0,Wh);
+}//Macro to compute the STIFFNESS,MASS matrices and the RHS vector .
+
+
+matrix <complex> K, B, AB, H;
+

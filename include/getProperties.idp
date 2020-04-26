@@ -1,6 +1,6 @@
 //Function to load the default properties for the ice-shelf.
 
-func real getProps(real &E, real &nu, real &rhoi, real &rhow, real &ag, real &Ad)
+func real[int] getProps(real &E, real &nu, real &rhoi, real &rhow, real &ag, real &Ad)
 {
   E = 11*10^9;
   nu = 0.33;
@@ -9,5 +9,8 @@ func real getProps(real &E, real &nu, real &rhoi, real &rhow, real &ag, real &Ad
   ag= 9.8;
   Ad = 1;
 
-  return 0;
+  real[int] elasCons(2);
+  elasCons=[E/(2*(1+nu)), E*nu/((1+nu)*(1-2*nu))];
+
+  return elasCons;
 }

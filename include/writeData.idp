@@ -1,0 +1,19 @@
+func real[int] writeMatrices(string filename, int prec, real[int,int] A)
+{
+  ofstream file(filename);
+  file.precision(prec);
+  for(int m=0; m<A.n; m++){
+    for(int n=0; n<A.n; n++)
+      file<<A(m,n)<<endl;
+    file<<endl;
+  }
+}
+
+func real[int] writeVectors(string filename, int prec, real[int] A)
+{
+  ofstream file(filename);
+  file.precision(prec);
+  for(int m=0; m<A.n; m++){
+    file<<A[m]<<endl;
+  }
+}
