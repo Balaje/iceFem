@@ -174,12 +174,25 @@ macro getLaplaceMat(a,b){
 }//Macro to compute the STIFFNESS,MASS matrices and the RHS vector .
 
 
-macro buildReducedSystem(VX,VY,phi0,phij,phid,phiminus,isForcedFront)
-{
+macro buildReducedSystem(VX,VY,phi0,phij,c0,cc,isForcedFront)
+{  
+  func phid = isForcedFront*(Ap*cos(k[0]*(y+HH))/cos(k[0]*HH) +
+                             c0[0]*cos(k[0]*(y+HH))/cos(k[0]*HH) +
+                             c0[1]*cos(k[1]*(y+HH))/cos(k[1]*HH) +
+                             c0[2]*cos(k[2]*(y+HH))/cos(k[2]*HH) +
+                             c0[3]*cos(k[3]*(y+HH))/cos(k[3]*HH) );  
   for(int m=0; m<nev; m++)
     {
+
       F[m] = -(1i*omega*gammahat)*(int1d(ThIce,1,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y) ) +
-                                   int1d(ThIce,5,qforder=10)( phid*(VX[m]*N.x + VY[m]*N.y) ));
+                                   int1d(ThIce,5,qforder=10)( phid*(VX[m]*N.x + VY[m]*N.y) ));      
+      complex[int] cm=cc(:,m);      
+      func phiminus = isForcedFront*(Ap*cos(k[0]*(y+HH))/cos(k[0]*HH) +
+                            cm[0]*cos(k[0]*(y+HH))/cos(k[0]*HH) +
+                            cm[1]*cos(k[1]*(y+HH))/cos(k[1]*HH) +
+                            cm[2]*cos(k[2]*(y+HH))/cos(k[2]*HH) +
+                            cm[3]*cos(k[3]*(y+HH))/cos(k[3]*HH));
+      
       for(int n=0; n<nev; n++)
         {
           B(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n] + VY[m]*VY[n]);

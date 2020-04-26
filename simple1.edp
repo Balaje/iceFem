@@ -49,7 +49,10 @@ for(int m=0; m<nev; m++)
   }
 
 //Build the reduced system and solve it.
-buildReducedSystem(VX,VY,phi0,phij,0,0,0);
+complex[int] c0(NModes+1);
+complex[int,int] cc(NModes+1,nev);
+c0=0.; cc=0.;
+buildReducedSystem(VX,VY,phi0,phij,c0,cc,0.);
 complex[int] xi(nev);
 solveReducedSystem;
 
