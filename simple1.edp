@@ -1,0 +1,72 @@
+//Simple example to demonstrate the ice-shelf toolbox;
+
+verbosity=0.;
+bool debug=true;
+include "macros.idp"
+string SolutionDir="1_Forced/";
+
+//Sets up an example problem. Can control input using CMD line args.
+//For a detailed list of default args. Refer the manual.
+setProblem;
+
+
+//  1) Solve the in-vacuo eigenvalue problem.
+Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
+real[int] ev(nev); //Define a real array for the eigenvalues.
+solveEigen;
+
+
+//  2) Get the Non-local boundary condition
+matrix<complex> MQ;
+complex[int] ctilde(NModes+1);
+MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
+ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
+Wh<complex> chi1;
+for(int m=0; m<NModes+1; m++)
+  chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+
+
+//  3) Solve for the diffraction potential.
+Wh<complex> phi0;
+func fh=chi1;//Store in fh, the right-hand side function on the ocean-cavity interface.
+getLaplaceMat(0,0);
+LHS=STIMA+(MQ);
+set(LHS,solver=sparsesolver);
+phih[]=LHS^-1*RHS[];
+phi0=phih;//Store in phi0;
+
+
+//  4) Solve for radiation potential.
+Wh<complex>[int] phij(nev);
+for(int m=0; m<nev; m++)
+  {
+    func fh=0;
+    getLaplaceMat(VX[m],VY[m]);
+    LHS=STIMA+(MQ);
+    set(LHS,solver=sparsesolver);
+    phih[]=LHS^-1*RHS[];
+    phij[m]=phih;
+  }
+
+//Build the reduced system and solve it.
+buildReducedSystem(VX,VY,phi0,phij,0,0,0);
+complex[int] xi(nev);
+solveReducedSystem;
+
+//Compute the solution.
+Vh <complex> etax, etay;
+Wh<complex> phi;
+phi = phi0;
+for(int m=0; m<nev; m++)
+  {
+    phi = phi + xi[m]*phij[m];
+    etax = etax + xi[m]*VX[m];
+    etay = etay + xi[m]*VY[m];
+  }
+
+//Compute the reflection coefficient.
+complex[int] phiVec(phi.n), c(NModes+1);
+phiVec = phi[]; //Get the vector form of the finite element function.
+complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
+cout.precision(16);
+cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;

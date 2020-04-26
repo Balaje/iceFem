@@ -1,14 +1,25 @@
+//Import everything from the include folder.
+load "lapack"
+include "getARGV.idp"
+
+include "dispersionFreeSurface.idp"
+include "getMatrices.idp"
+include "spline.idp"
+include "nonLocal.idp"
+include "refCoeff.idp"
+include "getProperties.idp"
+
 //List of useful set of macros.
 macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
-  macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
-  macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
-  macro bilinLap(u,v)(dx(u)*dx(v)+dy(u)*dy(v))//EOM"
-  macro bilinElas(u,v,uu,vv,a,b)(a*div(u,v)*div(uu,vv) + 2*b*epsilon(u,v)'*epsilon(uu,vv))//EOM"
-  macro ipScalar(u,v)(u*v)//EOM"
-  macro ipVector(u,v,uu,vv)(u*uu+v*vv)//EOM"
+macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
+macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
+macro bilinLap(u,v)(dx(u)*dx(v)+dy(u)*dy(v))//EOM"
+macro bilinElas(u,v,uu,vv,a,b)(a*div(u,v)*div(uu,vv) + 2*b*epsilon(u,v)'*epsilon(uu,vv))//EOM"
+macro ipScalar(u,v)(u*v)//EOM"
+macro ipVector(u,v,uu,vv)(u*uu+v*vv)//EOM"
 
 
-  mesh ThIce=square(10,10);
+mesh ThIce=square(10,10);
 mesh ThCavity=square(10,10);
 
 fespace Vh(ThIce,P1);
@@ -20,8 +31,14 @@ real rhow, Ad;
 real Lc, tc;
 int NModes=3, nev=20, iter;
 real LL,HH,dd, ag;
+real gammahat, deltahat;
+
 complex omega, Ap;
 complex [int] k(NModes+1), kd(NModes+1);
+
+complex [int,int] B(nev,nev), K(nev,nev), AB(nev,nev), Hmat(nev,nev);
+complex [int] F(nev);
+
 macro setProblem()
 {
   bool isUniformIce=getARGV("-isUniIce",1);
@@ -96,6 +113,8 @@ macro setProblem()
   border C04(t=icebottomleft,uy1) {x=0; y=t; label=4;};
   ThCavity = buildmesh(C01(L/th*N2)+C02(N2)+C03(L/th*N2)+C04(N2));
 
+  gammahat = rhow/Lc;
+  deltahat = rhow*ag/Lc;
 }//This is a macro for getting the parameters and creating the meshes.
 
 
@@ -144,7 +163,7 @@ macro writeEigen()
 matrix<complex> STIMA,BMASSMA;
 matrix<complex> LHS;
 Wh<complex> RHS,phih;
-macro getLaplaceMat(a,b){  
+macro getLaplaceMat(a,b){
   Wh<complex> psih;
   varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih));
   varf lh(unused,psih) = int1d(ThCavity,4,qforder=10)(-fh*psih)+ int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
@@ -155,5 +174,30 @@ macro getLaplaceMat(a,b){
 }//Macro to compute the STIFFNESS,MASS matrices and the RHS vector .
 
 
-matrix <complex> K, B, AB, H;
+macro buildReducedSystem(VX,VY,phi0,phij,phid,phiminus,isForcedFront)
+{
+  for(int m=0; m<nev; m++)
+    {
+      F[m] = -(1i*omega*gammahat)*(int1d(ThIce,1,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y) ) +
+                                   int1d(ThIce,5,qforder=10)( phid*(VX[m]*N.x + VY[m]*N.y) ));
+      for(int n=0; n<nev; n++)
+        {
+          B(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n] + VY[m]*VY[n]);
+          K(n,m) = (deltahat)*(int1d(ThIce,1,qforder=10)(-VY[m]*(VX[n]*N.x+VY[n]*N.y)) +
+                               int1d(ThIce,5,qforder=10)(-isForcedFront*y*(VX[n]*N.x+VY[n]*N.y)));
+          AB(n,m) = (1i*omega*gammahat)*( int1d(ThIce,1,qforder=10)(phij[m]*(VX[n]*N.x + VY[n]*N.y)) +
+                                          int1d(ThIce,5,qforder=10)(phiminus*(VX[n]*N.x + VY[n]*N.y)) );
+        }
+    }
+}//Macro to build the reduced system. (Needs to be generalized even further. User should just specify the wetted surface and this should be computed).
 
+
+macro solveReducedSystem(){
+  matrix<complex> Kmat, Bmat, ABmat;
+  Kmat = K;
+  Bmat=B;
+  ABmat=AB;
+  matrix<complex> HHmat=Kmat+Bmat+ABmat;
+  set(HHmat,solver=UMFPACK);
+  xi=HHmat^-1*F;
+}//Macro to solve the reduced system
