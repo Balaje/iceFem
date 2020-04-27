@@ -230,6 +230,14 @@ Vh aeta = abs(eta);
 Vh ieta = imag(eta);
 Vh reta = real(eta);
 
+
+complex[int] phiVec(phi.n), c(NModes+1);
+phiVec=phi[];
+complex Ref=getRefCoeff(Th,NModes,kd,k,phiVec,HH,dd,Ap,c);
+cout.precision(16);
+cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
+
+
 //plot(aeta,wait=debug,fill=debug,value=debug,cmm="Final solution for the Displacement",dim=3);
 Vh dxphi = real(dx(phi));
 Vh dyphi = real(dy(phi));
