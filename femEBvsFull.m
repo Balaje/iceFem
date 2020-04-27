@@ -3,15 +3,7 @@
 close all
 clear
 clc
-
-addpath('./modules/');
-
-set(0,'defaultLegendInterpreter','latex');
-set(0,'defaulttextInterpreter','latex');
-set(0,'defaultaxesfontsize',24);
-
-envvar = [pwd,'/include'];
-setenv('FF_INCLUDEPATH',envvar);
+global ff
 
 %% Get the Parameters of the ice.
 [~,~,~,~,E,nu,rhow,rhoi,g,~] = getProperties();
@@ -37,7 +29,7 @@ Ap = ((g./(1i*omega))*Ad);
 
 %% FreeFem++ Part to solve the problem using LE method
 file = 'iceSpline.edp';
-ffpp=['/usr/local/ff++/openmpi-2.1/3.61-1/bin/FreeFem++ -nw -ne ', file];
+ffpp=[ff,' -nw -ne ', file];
 cmd=[ffpp,' -Tr ',num2str(real(T)),' -Ti ',num2str(imag(T)),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
     ,num2str(th),' -N ',num2str(5),' -isUniCav ',num2str(0)];
 [aa1,bb1]=system(cmd);
@@ -50,7 +42,7 @@ RefIV = RC1(1)+1i*RC1(2);
 
 %% FreeFem++ Part to solve the FEM-EulerBernoulli Problem
 file = 'iceshelf_submerged_moving.edp';
-ffpp=['/usr/local/ff++/openmpi-2.1/3.61-1/bin/FreeFem++ -nw -ne ', file];
+ffpp=[ff,' -nw -ne ', file];
 cmd=[ffpp,' -Tr ',num2str(real(T)),' -Ti ',num2str(imag(T)),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
     ,num2str(th),' -N ',num2str(5),' -isUniCav ',num2str(0)];
 

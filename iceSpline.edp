@@ -152,7 +152,7 @@ savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
   file.precision(16);
   for(int m=0; m<nev; m++) {
     for(int n=0; n<nev; n++)
-      file<<real(K(m,n)+B(m,n)+AB(m,n))<<endl;
+      file<<real(K(m,n)+B(m,n)+AB(m,n))<<" ";
     file<<endl;
   }
 }
@@ -161,7 +161,7 @@ savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
   file.precision(16);
   for(int m=0; m<nev; m++) {
     for(int n=0; n<nev; n++)
-      file<<imag(K(m,n)+B(m,n)+AB(m,n))<<endl;
+      file<<imag(K(m,n)+B(m,n)+AB(m,n))<<" ";
     file<<endl;
   }
 }

@@ -1,4 +1,4 @@
-function omegaNew = interpolateFreq(a,b,omega,Nev,filePath,npts)
+function [omegaNew,detH,condH] = interpolateFreq(a,b,omega,Nev,filePath,npts,isSolve)
 %% Interpolate the matrix to a larger frequency space.
 omegaNew = linspace(a,b,npts+1);
 
@@ -9,14 +9,16 @@ for iter=1:length(omega(:))
     HRe = load([filePath,'ReH',num2str(iter),'.dat']);
     HIm = load([filePath,'ImH',num2str(iter),'.dat']);
     HMat = HRe + 1i*HIm;
-    
-    FRe = load([filePath,'ReF',num2str(iter),'.dat']);
-    FIm = load([filePath,'ImF',num2str(iter),'.dat']);
-    FMat = FRe + 1i*FIm;
-    
     % Store all the Entries - (Frequency-wise)
     H(:,iter) = HMat(:);
-    F(:,iter) = FMat;
+    
+    if(isSolve)
+        FRe = load([filePath,'ReF',num2str(iter),'.dat']);
+        FIm = load([filePath,'ImF',num2str(iter),'.dat']);
+        FMat = FRe + 1i*FIm;
+        F(:,iter) = FMat;
+    end
+    
 end
 
 %% Use Matlab's interp2 function to interpolate the values in the matrix H
@@ -27,12 +29,12 @@ FNew = zeros(Nev,length(omegaNew(:)));
 for m=1:Nev^2
     ReH = real(H(m,:));
     ImH = imag(H(m,:));
-
+    
     ReHnew = interp1(omega, ReH, omegaNew,'pchip');
     ImHnew = interp1(omega, ImH, omegaNew,'pchip');
     HNew(m,:) = ReHnew(:) + 1i*ImHnew(:);
     
-    if(m <= Nev)
+    if(m <= Nev && isSolve)
         ReF = real(F(m,:));
         ImF = imag(F(m,:));
         ReFnew = interp1(omega, ReF, omegaNew,'pchip');
@@ -42,11 +44,20 @@ for m=1:Nev^2
     
 %     figure(1);
 %     subplot(1,2,1);
-%     plot(omega,abs(H(m,:)));
+%     plot(omega,abs(H(m,:)),'+');
+%     hold on
 %     subplot(1,2,2);
-%     plot(omegaNew,abs(HNew(m,:)));
-%     
-%     pause();
+%     plot(omegaNew,abs(HNew(m,:)),'+');    
+%     hold on
+%     pause(0.01);
+end
+
+detH=zeros(length(omegaNew),1);
+condH=zeros(length(omegaNew),1);
+for m=1:length(omegaNew)
+    AA=reshape(HNew(:,m),Nev,Nev);    
+    detH(m)=det(AA);
+    condH(m)=cond(AA);
 end
 
 %% Dump all the Interpolated matrices into a folder.
@@ -61,15 +72,16 @@ end
 %     ,imag(FNew),'delimiter',' ');
 
 %% Solve for lambdaj for each frequency and dump the solution onto a file.
-lambdaj = zeros(Nev,length(omegaNew(:)));
-for p=1:length(omegaNew(:))
-    Hmat = reshape(HNew(:,p),[Nev,Nev]);
-    Fmat = FNew(:,p);
-    lambdajNew = Hmat\Fmat;
-    lambdaj(:,p) = lambdajNew;
+if(isSolve)
+    lambdaj = zeros(Nev,length(omegaNew(:)));
+    for p=1:length(omegaNew(:))
+        Hmat = reshape(HNew(:,p),[Nev,Nev]);
+        Fmat = FNew(:,p);
+        lambdajNew = Hmat\Fmat;
+        lambdaj(:,p) = lambdajNew;
+    end
+    
+    dlmwrite([filePath,'Interpolated_L/lambdaRe.dat'],real(lambdaj)','delimiter',' ');
+    dlmwrite([filePath,'Interpolated_L/lambdaIm.dat'],imag(lambdaj)','delimiter',' ');
 end
-
-dlmwrite([filePath,'Interpolated_L/lambdaRe.dat'],real(lambdaj)','delimiter',' ');
-dlmwrite([filePath,'Interpolated_L/lambdaIm.dat'],imag(lambdaj)','delimiter',' ');
-
 end

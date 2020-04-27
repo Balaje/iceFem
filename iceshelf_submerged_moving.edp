@@ -65,7 +65,7 @@ bool isUniformCav = getARGV("-isUniCav",1);
 real L = getARGV("-L",10000.), H = getARGV("-H",500.), th = getARGV("-h",100.);
 int iter=getARGV("-iter",0);
 real E, nu, rhow, rhoi, ag, Ad;
-real flag = getProps(E, nu, rhoi, rhow, ag, Ad);
+real[int] LC = getProps(E, nu, rhoi, rhow, ag, Ad);
 real d = rhoi/rhow*th;
 //---Complex Wave-Periods
 real tr = getARGV("-Tr",200.); //
@@ -108,7 +108,7 @@ if(isUniformCav){
   x2=LL/2; y2=-0.5*HH;
   x3=LL; y3=-HH;
  }
-int N2=getARGV("-N",40);
+int N2=getARGV("-N",4);
 border C01(t=0,LL) {x = t; y = splineCurve(t,x1,y1,x2,y2,x3,y3); label=1;};
 border C02(t=y3,-dd) {x=LL; y=t; label=2;};
 border C03(t=LL,0) {x=t; y=-dd; label=3;};
@@ -126,7 +126,7 @@ plot(Th,wait=true);
 */
 fespace Vh(Th,P1);
 matrix<complex> MQ;
-MQ = getQphi(Th, NModes, k, kd, HH, dd, Ap);
+MQ = getQphi(Th, NModes, k, kd, HH, dd, Ap,4);
 complex [int] ctilde(NModes+1);
 ctilde = getChi(Th, NModes, k, kd, HH, dd, Ap);
 Vh<complex> chi1;
@@ -218,12 +218,12 @@ for(int m=0; m<Nfreq; m++)
     //func etajxx = (mu[m]^2*(cos(mu[m]*x) - cosh(mu[m]*x))*(sin(LL*mu[m]) + sinh(LL*mu[m])) - mu[m]^2*(sin(mu[m]*x) - sinh(mu[m]*x))*(cos(LL*mu[m]) + cosh(LL*mu[m])))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
 
     phi = phi + lambda[m]*phij[m];
-    eta = eta + lambda[m]*etaj;    
+    eta = eta + lambda[m]*etaj;
   }
 // Neatly display the modes
-cout<<"The value lambda_j's"<<endl;
-for(int m=0; m<Nfreq; m++)
-  cout<<lambda[m]<<endl;
+//cout<<"The value lambda_j's"<<endl;
+//for(int m=0; m<Nfreq; m++)
+//  cout<<lambda[m]<<endl;
 // Plot the function in FreeFEM++
 //plot(phi,wait=debug,fill=debug,value=debug,cmm="Final solution for the Potential",dim=3);
 Vh aeta = abs(eta);
@@ -255,7 +255,7 @@ plot([dxphi,dyphi],wait=debug,fill=debug,value=debug,cmm="Velocity Plot");
   ofstream file1("1_ThinPlate/displacement_abs"+iter+".txt");
   ofstream file2("1_ThinPlate/displacement_real"+iter+".txt");
   ofstream file3("1_ThinPlate/displacement_imag"+iter+".txt");
-  
+
 
   for(int m=0; m<Th.nv; m++)
     {

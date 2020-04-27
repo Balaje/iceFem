@@ -15,10 +15,10 @@ macro div(u,v)(dx(u)+dy(v))//EOM"
 macro epsilon(u,v)[dx(u),dy(v),(dx(v)+dy(u))/sqrt(2.)]//EOM"
 
 //-----Input the dimensional parameters.
-real N1=getARGV("-N",7);
-real LL = getARGV("-L",10000.), HH = getARGV("-H",500.), tth = getARGV("-h",100.);
+real N1=getARGV("-N",3);
+real LL = getARGV("-L",20000.), HH = getARGV("-H",500.), tth = getARGV("-h",200.);
 real E, nu, rhow, rhoi, ag, Ad;
-real flag = getProps(E, nu, rhoi, rhow, ag, Ad);
+real[int] LC = getProps(E, nu, rhoi, rhow, ag, Ad);
 real EI = E*tth^3/(12*(1-nu^2));
 real dd = (rhoi/rhow)*tth;
 //Accept complex values for the wave period.
@@ -26,8 +26,8 @@ real tr = getARGV("-Tr",200.);
 real ti = getARGV("-Ti",0.);
 complex t = tr+1i*ti;
 
-real lambda = E*nu/((1+nu)*(1-2*nu));
-real mu = E/(2*(1+nu));
+real lambda = LC[1];;
+real mu = LC[0];
 //lambda = (2*lambda*mu)/(lambda+mu); //Generalized Plane Stress.
 complex omega = 2*pi/t;
 complex Ap = (ag/(1i*omega))*Ad;
@@ -69,7 +69,7 @@ savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
 //-------Construction of the non-local boundary condition.
 fespace Wh(ThCavity,P1);
 matrix<complex> MQ;
-MQ = getQphi(ThCavity, NModes, k, kd, H, d, Ap); //From "nonLocal.idp"
+MQ = getQphi(ThCavity, NModes, k, kd, H, d, Ap,4); //From "nonLocal.idp"
 complex [int] ctilde(NModes+1);
 ctilde = getChi(ThCavity, NModes, k, kd, H, d, Ap); //From "nonLocal.idp"
 Wh<complex> chi1;
@@ -145,10 +145,10 @@ Wh<complex> pot = sol(2*force.n:totalDof-1);
 Wh<complex> derpot = dx(pot);
 real coef=1;
 mesh newThIce=movemesh(ThIce,[x+coef*real(uhx),y+coef*real(uhy)]);
-
-
+plot(newThIce,wait=0);
+/*
 ///------------------- Find out the values of the stress tensor components,
-fespace Ph0(ThIce,P0);
+fespace Ph0(ThIce,P1);
 Xh rux = real(uhx);
 Xh ruy = real(uhy);
 Ph0 ex = dx(rux), ey = dy(ruy);
@@ -165,11 +165,13 @@ plot(sigmax,wait=true,fill=true,value=true);
 plot(sigmay,wait=true,fill=true,value=true);
 plot(sigmaxy,wait=true,fill=true,value=true);
 
+*/
 //Trying to find out the reflection coefficient
 complex[int] phiVec(phi.n), c(NModes+1);
 phiVec = pot[]; //Get the vector form of the finite element function.
 complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, H, d, Ap, c); //From "refCoeff.idp"
 cout<<endl<<"Reflection Coefficient = "<<Ref<<endl;
+cout<<abs(Ref)<<endl;
 
 //--------------------- Writing down all the data to a folder -----------------------
 //int iter=getARGV("-iter",0);

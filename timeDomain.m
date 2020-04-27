@@ -3,14 +3,7 @@
 clc
 clear
 close all
-
-addpath('modules');
-set(0,'defaultLegendInterpreter','latex');
-set(0,'defaulttextInterpreter','latex');
-set(0,'defaultaxesfontsize',16);
-
-envvar = [pwd,'/include'];
-setenv('FF_INCLUDEPATH',envvar);
+global ff
 
 %% Get the properties of the shelf.
 [~,~,~,~,E,nu,rhow,rhoi,g,~] = getProperties();
@@ -29,7 +22,7 @@ LL = L/Lc; HH = H/Lc; dd = d/Lc;
 
 %% Run the FreeFem++ code.
 file = 'iceSpline.edp';
-ffpp=['/usr/local/ff++/openmpi-2.1/3.61-1/bin/FreeFem++ -nw -ne ', file];
+ffpp=[ff,' -nw -ne ', file];
 for m=1:length(omega)
     cmd=[ffpp,' -Tr ',num2str(real(T)),' -Ti ',num2str(imag(T)),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
     ,num2str(th),' -N ',num2str(3), ' -isUniIce ',num2str(0), ' -isUniCav ',num2str(0)];

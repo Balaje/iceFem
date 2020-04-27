@@ -25,7 +25,7 @@ int N1 = getARGV("-N",40);
 int N2 = getARGV("-N",40);
 real L = getARGV("-L",10000.), H = getARGV("-H",500.), th = getARGV("-h",100.);
 real E, nu, rhow, rhoi, ag, Ad;
-real flag = getProps(E, nu, rhoi, rhow, ag, Ad);
+real[int] LC = getProps(E, nu, rhoi, rhow, ag, Ad);
 real d = rhoi/rhow*th;
 //--- Complex Wave-Periods
 real tr = getARGV("-Tr",200.);
@@ -54,8 +54,8 @@ kd = dispersionfreesurface(alpha, NModes, HH-dd); //From "dispersionFreeSurface.
 kd[0] = -kd[0];
 
 //------ Find the Lame constants.
-real mu = E/(2*(1+nu));
-real lambda = E*nu/((1+nu)*(1-2*nu));
+real mu = LC[0];
+real lambda = LC[1];
 real muhat = mu/Lc^2;
 real lambdahat = lambda/Lc^2;
 
@@ -141,7 +141,7 @@ plot(ThCavity,ThIce,wait=true);
 */
 fespace Wh(ThCavity,P1);
 matrix<complex> MQ;
-MQ = getQphi(ThCavity, NModes, k, kd, HH, dd, Ap); //From "nonLocal.idp"
+MQ = getQphi(ThCavity, NModes, k, kd, HH, dd, Ap, 4); //From "nonLocal.idp"
 complex [int] ctilde(NModes+1);
 ctilde = getChi(ThCavity, NModes, k, kd, HH, dd, Ap); //From "nonLocal.idp"
 Wh<complex> chi1;

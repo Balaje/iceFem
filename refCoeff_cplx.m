@@ -3,14 +3,7 @@
 clear
 clc
 close all
-
-addpath('modules');
-set(0,'defaultLegendInterpreter','latex');
-set(0,'defaulttextInterpreter','latex');
-set(0,'defaultaxesfontsize',20);
-
-envvar = [pwd,'/include'];
-setenv('FF_INCLUDEPATH',envvar);
+global ff
 
 %% Get the properties of the shelf.
 [~,~,~,~,E,nu,rhow,rhoi,g,~] = getProperties();
@@ -43,10 +36,10 @@ ApNew = (g./(1i*omegaNew))*Ad;
 %% Define Reflection Coefficient Matrix.
 rc = zeros(size(omega,1),size(omega,2));
 
-%% Run the FreeFem++ code and obtain the reflection coeffiecients.
+%% Run the FreeFem++ code and obtain the reflection coefficients.
 file = 'iceSpline.edp';
 file1 = '1_Forced/';
-ffpp=['/usr/local/ff++/openmpi-2.1/3.61-1/bin/FreeFem++ -nw -ne -v 0 ', file];
+ffpp=[ff,' -nw -ne ', file];
 iter=1;
 for m=1:size(omega,1)
     for n=1:size(omega,2)
@@ -78,7 +71,7 @@ disp(flag1);
 
 %% Interpolate the mode contributions
 filePath = [file1,'2_ModesMatrix'];
-flag2 = interpolateFreqComplex(omega,omegaNew,nev,filePath);
+flag2 = interpolateFreqComplex(omega,omegaNew,nev,filePath,1);
 
 disp(flag2);
 
@@ -127,7 +120,7 @@ guesses = [0.02,0.03,0.04,0.05,0.06,0.08,0.1];
 roots = zeros(length(guesses),1);
 for m=1:length(guesses)
     guess=guesses(m);
-    roots(m) = findResonanceCplx(L,H,th,guess);
+    roots(m) = findResonanceCplx(L,H,th,guess,file,file1);
 end
 
 %% Mark the root on the complex plane

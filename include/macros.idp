@@ -173,6 +173,16 @@ macro getLaplaceMat(a,b){
   RHS[]=lh(0,Wh);
 }//Macro to compute the STIFFNESS,MASS matrices and the RHS vector .
 
+macro getLaplaceMatDBC(a,b){
+  Wh<complex> psih;
+  varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=fh);
+  varf lh(unused,psih) = int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
+  varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
+  STIMA=ah(Wh,Wh);
+  BMASSMA=bMh(Wh,Wh);
+  RHS[]=lh(0,Wh);
+}//Same as above but for DBC
+
 
 macro buildReducedSystem(VX,VY,phi0,phij,c0,cc,isForcedFront)
 {  

@@ -3,13 +3,7 @@
 close all
 clear
 clc
-
-addpath('./modules/');
-set(0,'defaultLegendInterpreter','latex');
-set(0,'defaulttextInterpreter','latex');
-set(0,'defaultaxesfontsize',20);
-envvar = [pwd,'/include'];
-setenv('FF_INCLUDEPATH',envvar);
+global ff
 
 %% Get the Parameters of the ice.
 [~,~,~,~,E,nu,rhow,rhoi,g,~] = getProperties();
@@ -40,7 +34,7 @@ RefTP = a(1)/Ap;
 
 %% FreeFem++ Part to solve the problem using invacuo modes
 file = 'iceSpline.edp';
-ffpp=['/usr/local/ff++/openmpi-2.1/3.61-1/bin/FreeFem++ -nw -ne ', file];
+ffpp=[ff,' -nw -ne ', file];
 cmd=[ffpp,' -Tr ',num2str(real(T)),' -Ti ',num2str(imag(T)),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
     ,num2str(th),' -N ',num2str(5)];
 [aa,bb1]=system(cmd);

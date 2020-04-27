@@ -44,7 +44,7 @@ border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); 
 border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
 
 mesh ThIce=buildmesh(C01(3000)+C02(300)+C03(3000)+C04(300));
-savemesh(ThIce,"iceMeshBEDMAP.msh");
+savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
 cout<<"Built Ice-Mesh\n";
 
 //Build cavity mesh
@@ -56,7 +56,7 @@ border S03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); 
 border S04(t=y3,y4){x=(t-y3)/(y4-y3)*(cavBegin-iceBegin)+iceBegin; y=t; label=4;};
 
 mesh ThCav=buildmesh(S01(3000)+S02(300)+S03(3000)+S04(300));
-savemesh(ThCav,"cavMeshBEDMAP.msh");
+savemesh(ThCav,"Meshes/cavMeshBEDMAP.msh");
 cout<<"Built Cavity-Mesh";
 
 plot(ThIce,ThCav,wait=1);

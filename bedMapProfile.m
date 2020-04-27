@@ -1,15 +1,7 @@
 clc
 clear
 close all
-
-addpath('./modules/');
-
-set(0,'defaultLegendInterpreter','latex');
-set(0,'defaulttextInterpreter','latex');
-set(0,'defaultaxesfontsize',20);
-
-envvar = [pwd,'/include'];
-setenv('FF_INCLUDEPATH',envvar);
+global ff
 
 %% Generate the map of Antarctica and the ice--shelves
 antmap
@@ -67,14 +59,16 @@ dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
 
 %% Run the meshing code and plot the results
 fprintf('Running Mesher ....\n');
-[aa,bb]=system('/usr/local/ff++/openmpi-2.1/3.61-1/bin/FreeFem++ -ne -nw iceShelfBEDMAP2.edp');
+file='iceShelfBEDMAP2.edp';
+ffpp=[ff,' -nw -ne ', file];
+[aa,bb]=system(ffpp);
 if(aa)
    error('Cannot run mesher. Check output\n'); 
 end
 
 %% Load the mesh 
-[pts,seg,tri]=importfilemesh('iceMeshBEDMAP.msh');
-[pts1,seg1,tri1]=importfilemesh('cavMeshBEDMAP.msh');
+[pts,seg,tri]=importfilemesh('Meshes/iceMeshBEDMAP.msh');
+[pts1,seg1,tri1]=importfilemesh('Meshes/cavMeshBEDMAP.msh');
 
 %% Plot the results
 fig=figure(10);
