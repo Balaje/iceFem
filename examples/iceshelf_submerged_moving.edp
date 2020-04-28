@@ -1,0 +1,286 @@
+/*
+  Program to solve for moving ice with submergence
+  We assume temporarily that
+  - H = 1;
+  - L = 1;
+  - d = 0.2; //Submerged Depth.
+*/
+load "lapack"
+bool debug = true;
+verbosity = 0;
+include "getARGV.idp"
+//Add modules from the ice-shelf toolbox
+include "dispersionFreeSurface.idp"
+include "getMatrices.idp"
+include "spline.idp"
+include "nonLocal.idp"
+include "refCoeff.idp"
+include "getProperties.idp"
+
+
+//-------- BEGIN FUNCTIONS TO BE USED IN THE CODE LATER ---------------------
+
+// ------ Module to find the roots of the beam frequency equation --------------
+func real [int] VCRroots(int N, real L)
+{
+  real [int] RR(N);
+  real xbar = pi/(2.*L);
+  RR = 0.;
+  int count=1;
+
+  real f, difff;
+  while (1>=0)
+    {
+      //Find the root with xbar as the guess
+      real tol = 1e-9, error = 1;
+      real r = xbar, rr;
+      while (error > tol)
+        {
+          f = cos(r*L)*cosh(r*L) + 1;
+          difff = L*cos(r*L)*sinh(r*L) - L*sin(r*L)*cosh(r*L);
+
+          rr = r - f/difff;
+
+          error = abs(r-rr);
+          r = rr;
+        }
+      // Here r is the root.
+      real eps = 1e-10;
+      if(abs(r - RR[count-1]) > eps)
+        {
+          RR[count-1] = r;
+          count = count + 1;
+
+        }
+      xbar = (count - 0.5)*pi/L;
+      if(count==N+1)
+        break;
+    }
+  return RR;
+}
+// ------ End of Module to find the roots of the beam frequency equation--------
+
+//-------------------Input data for the ice shelf
+bool isUniformCav = getARGV("-isUniCav",1);
+real L = getARGV("-L",10000.), H = getARGV("-H",500.), th = getARGV("-h",100.);
+int iter=getARGV("-iter",0);
+real E, nu, rhow, rhoi, ag, Ad;
+real[int] LC = getProps(E, nu, rhoi, rhow, ag, Ad);
+real d = rhoi/rhow*th;
+//---Complex Wave-Periods
+real tr = getARGV("-Tr",200.); //
+real ti = getARGV("-Ti",0.);
+complex t = tr+1i*ti;
+//---
+real EI = E*th^3/(12*(1-nu^2));
+real Lc = (EI/(rhow*ag))^(1./4.), tc = sqrt(rhow*Lc^6/(EI*H));
+complex omega = 2*pi/t;
+
+//Write all non dimensional quantities
+real LL = L/Lc, HH = H/Lc, dd = d/Lc;
+complex tt = t/tc;
+complex ndOmega = 2*pi/tt;
+int NModes = 5;
+int Nfreq = 20;
+macro grad(u)[dx(u),dy(u)]//EOM"
+  complex alpha = HH*ndOmega^2;
+real beta = 1;
+real gamma = (rhoi*th)/(rhow*Lc);
+complex Ap = ag/(1i*omega)*Ad;
+//-----------------End Input data for the ice shelf.
+complex [int] k(NModes+1), kd(NModes+1);
+k = dispersionfreesurface(alpha, NModes, HH);
+k[0] = -k[0];
+kd = dispersionfreesurface(alpha, NModes, HH-dd);
+kd[0] = -kd[0];
+//--- Solve the beam-dispersion equation
+real [int] mu(Nfreq);
+mu = VCRroots(Nfreq, LL);// Find the beam frequency
+
+//----------- Define the mesh for the Cavity Region.
+real x1,x2,x3,y1,y2,y3;
+if(isUniformCav){
+  x1=0.; y1=-HH;
+  x2=LL/2; y2=-HH;
+  x3=LL; y3=-HH;
+ } else{
+  x1=0.; y1=-HH;
+  x2=LL/2; y2=-0.5*HH;
+  x3=LL; y3=-HH;
+ }
+int N2=getARGV("-N",4);
+border C01(t=0,LL) {x = t; y = splineCurve(t,x1,y1,x2,y2,x3,y3); label=1;};
+border C02(t=y3,-dd) {x=LL; y=t; label=2;};
+border C03(t=LL,0) {x=t; y=-dd; label=3;};
+//border C03(t=LL,0) {x=t; y=icebottomleft+(iy3-icebottomleft)/LL*t; label=3;};
+border C04(t=-dd,y1) {x=0; y=t; label=4;};
+//-------- Change the mesh here from square to spline-type
+mesh Th = buildmesh(C01(L/th*N2)+C02(N2)+C03(L/th*N2)+C04(N2));
+plot(Th,wait=true);
+// -----------------------------
+
+
+/*
+  Block to get the Non-Local Boundary condition
+  -> First obtain the Q-operator and the function \chi
+*/
+fespace Vh(Th,P1);
+matrix<complex> MQ;
+MQ = getQphi(Th, NModes, k, kd, HH, dd, Ap,4);
+complex [int] ctilde(NModes+1);
+ctilde = getChi(Th, NModes, k, kd, HH, dd, Ap);
+Vh<complex> chi1;
+for(int m=0; m<NModes+1; m++)
+  {
+    Vh<complex> eigenfunc = ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+    chi1 = chi1 + eigenfunc;
+  }
+func fh = chi1;
+
+
+/*
+  Now we solve the problem to obtain the potential.
+  - First we solve for the diffraction potential using FEM.
+  - Next, we solve for the radiation potential using FEM.
+*/
+Vh <complex> phi,phi0;
+Vh <complex> uh,vh;
+//--------------------------------------------------------
+//--------------------------------------------------------
+varf ah(uh,vh) = int2d(Th)(grad(uh)'*grad(vh));
+varf lh(unused,vh) = -int1d(Th,4,qforder=10)(fh*vh);//Normal derivative points in the negative direction
+//Get the LHS and RHS
+matrix <complex> KMatrix = ah(Vh,Vh);
+matrix <complex> LHS = KMatrix + (MQ);//Normal derivative points in the negative direction
+Vh <complex> RHS;
+RHS[] = lh(0,Vh);
+//Solve the system
+set(LHS,solver=sparsesolver);
+uh[] = LHS^-1*RHS[];
+phi0 = uh;
+//plot(phi0,wait=debug,fill=debug,value=debug,cmm="Plot showing the Diffraction Potential",dim=3);
+
+//Solve for the radiation potentials
+//First we obtain the diagonal matrix corresponding to the inner product
+complex [int,int] B(Nfreq,Nfreq);
+B = 0.;
+for(int m=0; m<Nfreq; m++)
+  {
+    B(m,m) = (cosh(LL*mu[m])*sin(LL*mu[m]) - cos(LL*mu[m])*sinh(LL*mu[m]) - (cos(LL*mu[m])^2*sinh(2*LL*mu[m]))/2 + (cosh(LL*mu[m])^2*sin(2*LL*mu[m]))/2 - LL*mu[m]*cos(LL*mu[m])^2 + LL*mu[m]*cosh(LL*mu[m])^2 + 2*LL*mu[m]*sin(LL*mu[m])*sinh(LL*mu[m]))/(mu[m]*(cos(LL*mu[m]) + cosh(LL*mu[m]))^2);
+    //B(m,m) = sqrt(B(m,m));
+    //Id(m,m) = 1.;
+  }
+//Loop over all the modes
+complex [int,int] AB(Nfreq,Nfreq), M(Nfreq,Nfreq), K(Nfreq,Nfreq), Hmat(Nfreq,Nfreq);
+complex [int] F(Nfreq);
+Vh <complex> [int] phij(Nfreq); //Array of FE Functions
+for(int v=0; v<Nfreq; v++)
+  {
+    //Displacement Function
+    func etaj = ((cos(LL*mu[v]) + cosh(LL*mu[v]))*(sin(mu[v]*x) + sinh(mu[v]*x)) - (sin(LL*mu[v]) + sinh(LL*mu[v]))*(cos(mu[v]*x) + cosh(mu[v]*x)))/(cos(LL*mu[v]) + cosh(LL*mu[v]));
+
+    //Solve for the jth radiation problem
+    varf ah(uh,vh) = int2d(Th)(grad(uh)'*grad(vh));
+    varf lh(unused,vh) = -int1d(Th,3,qforder=10)(1i*Lc*omega*etaj*vh);//Normal direction points towards positive y
+    matrix <complex> KMatrix = ah(Vh,Vh);
+    matrix <complex> LHS = KMatrix + (MQ);//Normal points towards negative x
+    Vh <complex> RHS;
+    RHS[] = lh(0,Vh);
+    set(LHS,solver=sparsesolver);
+    uh[] = LHS^-1*RHS[];
+    //Store the solution in the array of finite element functions
+    phij[v] = uh;
+    //plot(phij[v],wait=debug,value=debug,cmm="Plots showing the radiation potential",dim=3,fill=debug);
+    //Obtain the system to solve for \lambda_j
+    K(v,v) = beta*mu[v]^4*B(v,v);
+    M(v,v) = -gamma*alpha*B(v,v);
+    F(v) = (1i)*(omega/ag)*int1d(Th,3,qforder=10)(phi0*etaj);
+    for (int w=0; w<Nfreq; w++)
+      {
+        func etak = ((cos(LL*mu[w]) + cosh(LL*mu[w]))*(sin(mu[w]*x) + sinh(mu[w]*x)) - (sin(LL*mu[w]) + sinh(LL*mu[w]))*(cos(mu[w]*x) + cosh(mu[w]*x)))/(cos(LL*mu[w]) + cosh(LL*mu[w]));
+        AB(w,v) = (1i)*(omega/ag)*int1d(Th,3,qforder=10)(phij[v]*etak);
+      }
+  }
+for(int v=0; v<Nfreq; v++)
+  for(int w=0; w<Nfreq; w++)
+    Hmat(v,w) = K(v,w) + M(v,w) + B(v,w) - AB(w,v);
+
+matrix <complex> HHmat = Hmat;
+set(HHmat,solver=GMRES);
+complex [int] lambda(Nfreq);
+lambda = HHmat^-1*F;//Solve for lambda
+//Combine the solutions to obtain the final solution for the potential and displacement
+phi = phi0;
+Vh<complex> eta = 0;
+for(int m=0; m<Nfreq; m++)
+  {
+    func etaj = ((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+    //func etajxx = (mu[m]^2*(cos(mu[m]*x) - cosh(mu[m]*x))*(sin(LL*mu[m]) + sinh(LL*mu[m])) - mu[m]^2*(sin(mu[m]*x) - sinh(mu[m]*x))*(cos(LL*mu[m]) + cosh(LL*mu[m])))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+
+    phi = phi + lambda[m]*phij[m];
+    eta = eta + lambda[m]*etaj;
+  }
+// Neatly display the modes
+//cout<<"The value lambda_j's"<<endl;
+//for(int m=0; m<Nfreq; m++)
+//  cout<<lambda[m]<<endl;
+// Plot the function in FreeFEM++
+//plot(phi,wait=debug,fill=debug,value=debug,cmm="Final solution for the Potential",dim=3);
+Vh aeta = abs(eta);
+Vh ieta = imag(eta);
+Vh reta = real(eta);
+
+
+complex[int] phiVec(phi.n), c(NModes+1);
+phiVec=phi[];
+complex Ref=getRefCoeff(Th,NModes,kd,k,phiVec,HH,dd,Ap,c);
+cout.precision(16);
+cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
+
+
+//plot(aeta,wait=debug,fill=debug,value=debug,cmm="Final solution for the Displacement",dim=3);
+Vh dxphi = real(dx(phi));
+Vh dyphi = real(dy(phi));
+Vh rphi = real(phi);
+plot(rphi,wait=debug,fill=debug,value=debug,cmm="Final solution for the Potential",dim=3);
+plot([dxphi,dyphi],wait=debug,fill=debug,value=debug,cmm="Velocity Plot");
+//Vh soluh = real(eta);
+//mesh Thd = movemesh(Th, [x+soluh*2, y+soluh*2]);
+//plot(Thd,wait=debug,fill=debug,value=debug);
+
+// Dump the FreeFEM++ solution for displacement
+/*
+  savemesh(Th,"./disp/mesh.msh");
+  {
+  ofstream file("disp/displacement_fe.bb");
+  file << "2 1 1 "<< phi[].n << " 2 \n";
+  for (int m=0;m<aeta[].n ; m++)
+  file << abs(aeta[][m]) << endl;
+  }
+*/
+
+{
+  ofstream file1("1_ThinPlate/displacement_abs"+iter+".txt");
+  ofstream file2("1_ThinPlate/displacement_real"+iter+".txt");
+  ofstream file3("1_ThinPlate/displacement_imag"+iter+".txt");
+
+
+  for(int m=0; m<Th.nv; m++)
+    {
+      if(Th(m).y == -dd)
+        {
+          file1<<Th(m).x<<" "<<aeta[][m]/Ad<<endl;
+          file2<<Th(m).x<<" "<<reta[][m]/Ad<<endl;
+          file3<<Th(m).x<<" "<<ieta[][m]/Ad<<endl;
+        }
+    }
+}
+
+savemesh(Th,"1_ThinPlate/cavityMesh.msh");
+{
+  ofstream file("1_ThinPlate/potential"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<rphi.n<<" 2 \n";
+  for(int m=0; m<rphi[].n; m++)
+    file<<rphi[][m]<<endl;
+}

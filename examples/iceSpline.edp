@@ -1,0 +1,307 @@
+/*
+  Ice shelf with linear elasticity (complete)
+  ********************************************************************************
+  -> iceSpline.edp VERIFIED WITH square/ndIceShelf.edp
+  -> square/ndIceShelf.edp VERIFIED WITH square/icefem.edp
+  -> square/icefem.edp VERIFIED WITH MATLAB's Euler Bernoulli for the thin case
+  ********************************************************************************
+  */
+//Function to compute the roots of the dispersion equation
+verbosity = 0;
+bool debug = false;
+include "macros.idp"
+string SolutionDir="1_Forced/";
+//---------------------------------
+
+//Set the problem parameters
+setProblem; 
+
+//Solve the eigenvalue problem to obtain the in-vacuo mode.
+Xh[int][VX,VY](nev);
+real[int] ev(nev);
+solveEigen;
+writeEigen;
+
+//  Begin block to get the Non-Local boundary condition.
+//  -> First obtain the Q operator and the function chi(z)
+//  -> The boundary condition on the shelf-front is accounted in the for-loop.
+matrix<complex> MQ;
+complex [int] ctilde(NModes+1);
+MQ = getQphi(ThCavity, NModes, k, kd, HH, dd, Ap, 4); //From "nonLocal.idp"
+ctilde = getChi(ThCavity, NModes, k, kd, HH, dd, Ap); //From "nonLocal.idp"
+Wh<complex> chi1;
+for(int m=0; m<NModes+1; m++)
+  chi1 = chi1 + ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+
+//-> First,compute the Diffraction potential
+Wh<complex> phi0;
+func fh = chi1;
+getLaplaceMat(0,0);
+LHS=STIMA+(MQ);
+set(LHS,solver=sparsesolver);
+phih[] = LHS^-1*RHS[];
+phi0 = phih;
+plot(phi0,wait=debug,fill=debug,value=debug);
+
+//Compute and store the diffraction reflection coefficient.
+complex [int] phiVec0(phih.n), c0(NModes+1), pk2(NModes+1);
+phiVec0 = phi0[]; //Get the vector form of the finite element function.
+complex Ref0 = getRefCoeff(ThCavity, NModes, kd, k, phiVec0, HH, dd, Ap, c0); //From "refCoeff.idp"
+{
+  ofstream file(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
+  file.precision(16);
+  file<<real(c0[0])<<" "<<imag(c0[0])<<endl;
+}
+
+//Get the diffraction potential in the open ocean.
+real ffff = getARGV("-isForced",0);
+if(ffff==0)
+  cout<<"Free Boundary"<<endl;
+ else
+   cout<<"Forced Boundary"<<endl;
+
+
+//-> Next,solve for Radiation potentials and get the system of equations for the modes.
+Wh <complex> [int] phij(nev);
+complex[int,int] cm(NModes+1,nev);
+ofstream fileCoeff(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refC_"+iter+".dat");
+fileCoeff.precision(16);
+
+for(int m=0; m<nev; m++)
+  {
+    //Part to get the forcing on the submerged part of the ice.
+    complex[int] pk(NModes+1), pk1(NModes+1);
+    int nbv = ThCavity.nv;
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1), D(nbv,NModes+1);
+    int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);
+    for(int p=0; p<NModes+1; p++)
+      {
+        func phim = cos(k[p]*(y+HH))/cos(k[p]*HH);
+        pk1[p] = int1d(ThIce,5,qforder=10)(-1i*omega*Lc*VX[m]*N.x*phim); //The contribution to the kinematic boundary condition.
+      }
+    complex [int,int] MMtinv = MMt^-1;
+    pk = MMtinv*pk1;
+    Wh<complex> chi1;
+    for(int p=0; p<NModes+1; p++)
+      chi1 = chi1 + pk[p]*cos(kd[p]*(y+HH))/cos(kd[p]*(HH-dd));;
+    func fk=ffff*chi1;
+
+    //Compute the diffraction potential
+    func fh=fk;
+    getLaplaceMat(VX[m],VY[m]);
+    LHS=STIMA+(MQ);
+    set(LHS,solver=sparsesolver);
+    phih[] = LHS^-1*RHS[];
+    phij[m]=phih;
+    plot(phij[m],wait=debug,fill=true,value=true,dim=3);
+
+    //Compute and store the diffraction reflection coefficient.
+    complex [int] phiVecm(phih.n), cc(NModes+1);
+    phiVecm = phij[m][]; //Get the vector form of the finite element function.
+    complex Refm = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1); //From "refCoeff.idp"
+    cm(:,m)=cc;
+    fileCoeff<<real(cc[0])<<" "<<imag(cc[0])<<endl;
+  }
+
+//Build and solve the reduced system
+buildReducedSystem(VX,VY,phi0,phij,c0,cm,ffff);
+complex[int] xi(nev);
+solveReducedSystem;
+
+
+//Get the solution.
+Wh<complex> phi;
+Vh<complex> etax, etay;
+phi = phi0;
+for(int m=0; m<nev; m++)
+  {
+    phi = phi + xi[m]*phij[m];
+    etax = etax + xi[m]*VX[m];
+    etay = etay + xi[m]*VY[m];
+  }
+
+Vh retax = real(etax), retay = real(etay), ietax = imag(etax), ietay = imag(etay);
+Vh aetax = abs(etax), aetay = abs(etay);
+cout<<"Maximum Displacement = "<<sqrt(aetax[].max^2 + aetay[].max^2)<<endl;
+
+//------ Find out the Reflection Coefficient
+complex[int] phiVec(phi.n), c(NModes+1);
+phiVec = phi[]; //Get the vector form of the finite element function.
+complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
+cout.precision(16);
+cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
+
+
+//--------------- Writing down all the data to a folder -----------------
+savemesh(ThIce,SolutionDir+"2_Deformation/iceMesh.msh");
+mesh newThIce = movemesh(ThIce,[x+retax, y+retay]);
+savemesh(newThIce,SolutionDir+"2_Deformation/movedIce"+iter+".msh");
+savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
+
+//------ The reflection coefficient to a file.
+{
+  ofstream file(SolutionDir+"2_RefCoeff/refCoeff"+iter+".dat");
+  file.precision(16);
+  file<<real(Ref)<<" "<<imag(Ref)<<endl;
+}
+
+//------ The H matrix to a file.
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/ReH"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++) {
+    for(int n=0; n<nev; n++)
+      file<<real(K(m,n)+B(m,n)+AB(m,n))<<" ";
+    file<<endl;
+  }
+}
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/ImH"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++) {
+    for(int n=0; n<nev; n++)
+      file<<imag(K(m,n)+B(m,n)+AB(m,n))<<" ";
+    file<<endl;
+  }
+}
+
+//------ The F vector to a file.
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/ReF"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++) {
+    file<<real(F[m])<<endl;
+  }
+}
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/ImF"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++) {
+    file<<imag(F[m])<<endl;
+  }
+}
+
+//------ Write the c-vector
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/reC"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<NModes+1; m++) {
+    file<<real(c[m])<<endl;
+  }
+}
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/imC"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<NModes+1; m++) {
+    file<<imag(c[m])<<endl;
+  }
+}
+
+//------ Write the solution vector.
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/lambdaj"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++){
+    file<<abs(xi[m])<<endl;
+  }
+}
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/lambdajRe"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++){
+    file<<real(xi[m])<<endl;
+  }
+}
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/lambdajIm"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++){
+    file<<imag(xi[m])<<endl;
+  }
+}
+
+
+//------ The X-displacement and Y-Displacement to a file.
+//-1) Real Parts
+{
+  ofstream file(SolutionDir+"2_Deformation/ReUx"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<retax.n<<" 2 \n";
+  for(int m=0; m<retax[].n; m++)
+    file<<retax[][m]<<endl;
+}
+{
+  ofstream file(SolutionDir+"2_Deformation/ReUy"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<retay.n<<" 2 \n";
+  for(int m=0; m<retay[].n; m++)
+    file<<retay[][m]<<endl;
+}
+//-2) Imaginary Parts.
+{
+  ofstream file(SolutionDir+"2_Deformation/ImUx"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<ietax.n<<" 2 \n";
+  for(int m=0; m<ietax[].n; m++)
+    file<<ietax[][m]<<endl;
+}
+{
+  ofstream file(SolutionDir+"2_Deformation/ImUy"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<ietay.n<<" 2 \n";
+  for(int m=0; m<ietay[].n; m++)
+    file<<ietay[][m]<<endl;
+}
+
+//------ Write down the potential
+Wh rphi = real(phi);
+{
+  ofstream file(SolutionDir+"2_Potential/potential"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<rphi.n<<" 2 \n";
+  for(int m=0; m<rphi[].n; m++)
+    file<<rphi[][m]<<endl;
+}
+
+/*
+//Data for FUN!!
+//------ Compute the von-mises stress.
+fespace Ph(ThIce,P0);
+Ph rex = dx(retax);
+Ph rey = dy(retay);
+Ph rexy = 0.5*(dy(retax)+dx(retay));
+Ph rsigmax = lambdahat*(rex+rey)+2*muhat*rex;
+Ph rsigmay = lambdahat*(rex+rey)+2*muhat*rey;
+Ph rsigmaxy = 2*muhat*rexy;
+
+Ph iex = dx(ietax);
+Ph iey = dy(ietay);
+Ph iexy = 0.5*(dy(ietax)+dx(ietay));
+Ph isigmax = lambdahat*(iex+iey)+2*muhat*iex;
+Ph isigmay = lambdahat*(iex+iey)+2*muhat*iey;
+Ph isigmaxy = 2*muhat*iexy;
+
+//------ Write down the von-mises stress file
+{
+ofstream file(SolutionDir+"2_Stresses/axialStressX"+iter+".bb");
+file.precision(16);
+file<<"2 1 1 "<<rsigmay.n<<" 2 \n";
+for(int m=0; m<rsigmax[].n; m++)
+file<<abs(rsigmax[][m]+1i*isigmax[][m])<<endl;
+}
+{
+ofstream file(SolutionDir+"2_Stresses/axialStressY"+iter+".bb");
+file.precision(16);
+file<<"2 1 1 "<<rsigmay.n<<" 2 \n";
+for(int m=0; m<rsigmay[].n; m++)
+file<<abs(rsigmay[][m]+1i*isigmay[][m])<<endl;
+}
+{
+ofstream file(SolutionDir+"2_Stresses/axialStressXY"+iter+".bb");
+file.precision(16);
+file<<"2 1 1 "<<rsigmaxy.n<<" 2 \n";
+for(int m=0; m<rsigmaxy[].n; m++)
+file<<abs(rsigmaxy[][m]+1i*isigmaxy[][m])<<endl;
+}
+*/
