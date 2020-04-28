@@ -216,3 +216,13 @@ savemesh(newThIce,SolutionDir+"2_Deformation/movedIce"+iter+".msh");
   for(int m=0; m<uhy[].n; m++)
     file<<imag(uhy[][m])<<endl;
 }
+
+//------ Write down the potential
+Wh rphi = real(pot);
+{
+  ofstream file(SolutionDir+"2_Potential/potential"+iter+".bb");
+  file.precision(16);
+  file<<"2 1 1 "<<rphi.n<<" 2 \n";
+  for(int m=0; m<rphi[].n; m++)
+    file<<rphi[][m]<<endl;
+}
