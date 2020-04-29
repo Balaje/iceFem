@@ -62,7 +62,7 @@ func real [int] VCRroots(int N, real L)
 
 //-------------------Input data for the ice shelf
 bool isUniformCav = getARGV("-isUniCav",1);
-real L = getARGV("-L",10000.), H = getARGV("-H",500.), th = getARGV("-h",100.);
+real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
 int iter=getARGV("-iter",0);
 real E, nu, rhow, rhoi, ag, Ad;
 real[int] LC = getProps(E, nu, rhoi, rhow, ag, Ad);
