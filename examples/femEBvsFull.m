@@ -115,7 +115,7 @@ yticklabels([-H,-(H+d)/2,-d]);
 pos2=get(sp2,'Position');
 set(sp1,'Position',[pos2(1),pos1(2),pos2(3),pos2(4)]);
 
-%% Save figure file
-saveas(gcf,['femEBCompareT',num2str(T),'.fig'],'fig');
-set(gcf, 'color', 'white');
-export_fig(['femEBCompareT',num2str(T),'.pdf'],'-pdf','-transparent',gcf);
+%% Save figure file (Uncomment to save)
+% saveas(gcf,['femEBCompareT',num2str(T),'.fig'],'fig');
+% set(gcf, 'color', 'white');
+% export_fig(['femEBCompareT',num2str(T),'.pdf'],'-pdf','-transparent',gcf);

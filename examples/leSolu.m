@@ -98,7 +98,8 @@ xticklabels(1/1000*[L-L/5,L]);
 grid on
 hold on
 
-export_fig('meshes.pdf','-pdf','-transparent',fig1);
+% Uncomment to write a file
+%export_fig('meshes.pdf','-pdf','-transparent',fig1);
 
 %% Plot the Potential and the response
 fig2=figure(2);
@@ -127,7 +128,7 @@ xticks([0,LL/4,LL/2,3*LL/4,LL]);
 xticklabels([0,L/4000,L/2000,3*L/4000,L/1000]);
 
 
-%% Save figure file
-saveas(fig2,['femLEnon',num2str(T),'.fig'],'fig');
-set(fig2, 'color', 'white');
-export_fig(['femLEnon',num2str(T),'.pdf'],'-pdf','-transparent',fig2);
+%% Save figure file (Uncomment to write the figure)
+% saveas(fig2,['femLEnon',num2str(T),'.fig'],'fig');
+% set(fig2, 'color', 'white');
+% export_fig(['femLEnon',num2str(T),'.pdf'],'-pdf','-transparent',fig2);

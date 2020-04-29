@@ -21,7 +21,7 @@ setProblem;
 solveDispersion;
 
 //Build the meshes. If isUni** = true, the values are by-passed.
-real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2/5*tth;
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
 setMeshIce(botRight, midPX, midPY);
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
 setMeshCav(midx, midy, endy); 

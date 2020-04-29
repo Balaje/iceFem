@@ -156,16 +156,16 @@ ylabel('$z$');
 xlabel('$x$ (in km)');
 grid on
 
-%% Save figure file
-saveas(fig,['Compare1T',num2str(T),'.fig'],'fig');
-saveas(fig2,['Compare2T',num2str(T),'.fig'],'fig');
-filename1=['Compare1T',num2str(T),'.pdf'];
-filename2=['Compare2T',num2str(T),'.pdf'];
-
-set(fig,'color','white');
-export_fig(filename1,'-pdf','-transparent',fig);
-set(fig2,'color','white');
-export_fig(filename2,'-pdf','-transparent',fig2);
+%% Save figure file (Uncomment to save)
+% saveas(fig,['Compare1T',num2str(T),'.fig'],'fig');
+% saveas(fig2,['Compare2T',num2str(T),'.fig'],'fig');
+% filename1=['Compare1T',num2str(T),'.pdf'];
+% filename2=['Compare2T',num2str(T),'.pdf'];
+% 
+% set(fig,'color','white');
+% export_fig(filename1,'-pdf','-transparent',fig);
+% set(fig2,'color','white');
+% export_fig(filename2,'-pdf','-transparent',fig2);
 
 
 %% Print the Uniform square mesh.
@@ -227,4 +227,5 @@ xticklabels(1/1000*[L-L/5,L]);
 grid on
 hold on
 
-export_fig('meshesUni.pdf','-pdf','-transparent',fig10);
+% Uncomment to write to a file.
+%export_fig('meshesUni.pdf','-pdf','-transparent',fig10);

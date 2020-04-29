@@ -2,7 +2,7 @@ function CreatePaths
 clc
 close all
 
-fprintf('Run:\n\nwhich FreeFem++\n\nin your command line to get the path for FreeFem++.\n Set the full path in the variable `ff` in startup.m\n');
+fprintf('Run:\n\nwhich FreeFem++\n\nin your command line to get the path for FreeFem++.\n Set the full path in the variable `ff` in CreatePaths.m\n');
 addpath([pwd,'/modules/']);
 set(0,'defaultLegendInterpreter','latex');
 set(0,'defaulttextInterpreter','latex');

@@ -205,6 +205,8 @@ end
 
 
 %% Plot the analytic extension against the resonance modes.
+%{ 
+(To test only)
 lmdm = load('lmdmLambda.dat');
 maxDisp = load('maxDispLambda.dat');
 maxlocs = load('maxlocs.dat');
@@ -273,7 +275,8 @@ scatter(omegaSW(ls3),maxdisp_sh(ls3),'o');
 xlim([omegaSW(1),omegaSW(end)]);
 grid on
 
-%% Save all the figures.
-saveas(fig1,'out1.png','png');
-saveas(fig2,'out2.png','png');
-saveas(fig3,'out3,png','png');
+%}
+%% Save all the figures. (Uncomment to save)
+% saveas(fig1,'out1.png','png');
+% saveas(fig2,'out2.png','png');
+% saveas(fig3,'out3,png','png');
