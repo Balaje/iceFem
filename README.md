@@ -16,7 +16,7 @@ chmod +x genDir.sh
 ./genDir.sh 1_Forced
 ./genDir.sh 1_ThinPlate
 ./genDir.sh 1_DirectFEM
-export FF_INCLUDEPATH="./include" #Add the include/ folder into the FreeFem++ environment variable. Needs to be run for the first time.
+export FF_INCLUDEPATH="$PWD/include" #Add the include/ folder into the FreeFem++ environment variable. Needs to be run for the first time.
 FreeFem++ -ne iceSpline.edp
 ```
 
