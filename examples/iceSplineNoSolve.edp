@@ -21,8 +21,8 @@ include "getProperties.idp"
 //---------------------------------
 //------ Input data for the ice shelf.
 bool isUniform=getARGV("-isUni",1);
-int N1 = getARGV("-N",40);
-int N2 = getARGV("-N",40);
+int N1 = getARGV("-N",4);
+int N2 = getARGV("-N",4);
 real L = getARGV("-L",10000.), H = getARGV("-H",500.), th = getARGV("-h",100.);
 real E, nu, rhow, rhoi, ag, Ad;
 real[int] LC = getProps(E, nu, rhoi, rhow, ag, Ad);
@@ -224,7 +224,7 @@ for(int m=0; m<nev; m++)
 
 //--------------------- Writing down all the data to a folder -----------------------
 int iter=getARGV("-iter",0);
-string SolutionDir="1_NoSolve/";
+string SolutionDir="./1_NoSolve/";
 //------ The H matrix to a file.
 {
   ofstream file(SolutionDir+"2_ModesMatrix/ReH"+iter+".dat");

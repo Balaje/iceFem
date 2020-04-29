@@ -10,11 +10,21 @@
 verbosity = 0;
 bool debug = false;
 include "macros.idp"
-string SolutionDir="1_Forced/";
+string SolutionDir="./1_Forced/";
 //---------------------------------
 
 //Set the problem parameters
-setProblem; 
+nev=20;
+setProblem;
+
+//Solve the dispersion equations
+solveDispersion;
+
+//Build the meshes. If isUni** = true, the values are by-passed.
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2/5*tth;
+setMeshIce(botRight, midPX, midPY);
+real midx=LL/2., midy=-0.5*HH, endy=-HH;
+setMeshCav(midx, midy, endy); 
 
 //Solve the eigenvalue problem to obtain the in-vacuo mode.
 Xh[int][VX,VY](nev);

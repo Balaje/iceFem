@@ -62,7 +62,7 @@ real cavityBottom = -H;
 mesh ThIce = square(100*N1,10*N1,[L*x, iceBottom+(iceTop-iceBottom)*y]);
 mesh ThCavity = square(100*N1,10*N1,[L*x, cavityBottom+(iceBottom-cavityBottom)*y]);
 int iter=getARGV("-iter",0);
-string SolutionDir="1_DirectFEM/";
+string SolutionDir="./1_DirectFEM/";
 savemesh(ThIce,SolutionDir+"2_Deformation/iceMesh.msh");
 savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
 
