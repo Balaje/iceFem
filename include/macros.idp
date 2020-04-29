@@ -138,7 +138,7 @@ macro setMeshCav(midx, midy, endy)
 }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
 macro solveEigen()
-{
+{  
   Xh [u,v],[uu,vv];
   varf a([u,v],[uu,vv]) = int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
   varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv));
