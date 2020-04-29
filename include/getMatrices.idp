@@ -17,7 +17,7 @@ func complex innerproduct(complex k, complex kappa, real H, real d)
 
 // Get the elementary matrices associated with the innerproduct.
 func int getMat(mesh &ThCavity, complex[int] k, complex[int] kd, real HH, real dd, complex Ap, int NModes, complex [int,int] &A, complex [int] &f, complex [int] &g, complex [int,int] &MM, complex [int,int] &MMt, complex [int, int] &D)
-{
+{  
   // Initialize the matrices to 0
   A = 0.; MM = 0.; D = 0.; MMt = 0.; f = 0.; g = 0.;
 

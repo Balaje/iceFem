@@ -7,7 +7,17 @@ string SolutionDir="1_Forced/";
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
+nev=20;
 setProblem;
+
+//Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
+solveDispersion;
+
+//Build the meshes.
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2/5*tth;
+setMeshIce(botRight, midPX, midPY);
+real midx=LL/2., midy=-0.5*HH, endy=-HH;
+setMeshCav(midx, midy, endy); 
 
 
 //  1) Solve the in-vacuo eigenvalue problem.
@@ -24,7 +34,6 @@ ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
 Wh<complex> chi1;
 for(int m=0; m<NModes+1; m++)
   chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
-
 
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
@@ -45,7 +54,7 @@ for(int m=0; m<nev; m++)
     LHS=STIMA+(MQ);
     set(LHS,solver=sparsesolver);
     phih[]=LHS^-1*RHS[];
-    phij[m]=phih;
+    phij[m]=phih;    
   }
 
 //Build the reduced system and solve it.

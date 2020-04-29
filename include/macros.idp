@@ -18,7 +18,6 @@ macro bilinElas(u,v,uu,vv,a,b)(a*div(u,v)*div(uu,vv) + 2*b*epsilon(u,v)'*epsilon
 macro ipScalar(u,v)(u*v)//EOM"
 macro ipVector(u,v,uu,vv)(u*uu+v*vv)//EOM"
 
-
 mesh ThIce=square(10,10);
 mesh ThCavity=square(10,10);
 
@@ -29,21 +28,18 @@ fespace Wh(ThCavity,P1);
 real lambdahat, muhat, rhoi;
 real rhow, Ad;
 real Lc, tc;
-int NModes=3, nev=20, iter;
-real LL,HH,dd, ag;
-real gammahat, deltahat;
+int iter, NModes=3, nev=20;
+real LL,HH,dd,tth, ag;
+real gammahat, deltahat, densRat;
+complex omega, Ap, tt;
+bool isUniformIce, isUniformCav;
 
-complex omega, Ap;
 complex [int] k(NModes+1), kd(NModes+1);
-
 complex [int,int] B(nev,nev), K(nev,nev), AB(nev,nev), Hmat(nev,nev);
 complex [int] F(nev);
 
 macro setProblem()
 {
-  bool isUniformIce=getARGV("-isUniIce",1);
-  bool isUniformCav=getARGV("-isUniCav",1);
-  int N1 = getARGV("-N",3), N2 = getARGV("-N",3);
   real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
   iter=getARGV("-iter",0);
   real E, nu;
@@ -58,42 +54,69 @@ macro setProblem()
   LL = L/Lc;
   HH = H/Lc;
   dd = d/Lc;
-  real tth = th/Lc;
-  complex tt = t/tc, ndOmega = 2*pi/tt;
+  tth = th/Lc;
+  tt = t/tc;
+  complex ndOmega = 2*pi/tt;
   complex alpha = HH*ndOmega^2;
   Ap = ag/(1i*omega)*Ad;
+  real mu1 = elasCons[0], lambda = elasCons[1];
+  muhat = mu1/Lc^2;
+  lambdahat = lambda/Lc^2;
+  gammahat = rhow/Lc;
+  deltahat = rhow*ag/Lc;
+  densRat = rhoi/rhow;
+}//This is a macro for getting the parameters to set the problem
+
+macro solveDispersion()
+{
+  k.resize(NModes+1);
+  kd.resize(NModes+1);
+  complex ndOmega = 2*pi/tt;
+  complex alpha = HH*ndOmega^2;  
   k = dispersionfreesurface(alpha, NModes, HH);
   k[0] = -k[0];
   kd = dispersionfreesurface(alpha, NModes, HH-dd);
   kd[0] = -kd[0];
-  real mu = elasCons[0], lambda = elasCons[1];
-  muhat = mu/Lc^2;
-  lambdahat = lambda/Lc^2;
-  real icetopleft, icebottomleft, icebottomright, ix2, iy2;
+}//Macro to solve the dispersion equations
+
+real ix1, iy1, ix2, iy2, ix3, iy3;
+real icetopleft=(1-densRat)*tth, icebottomleft=-(densRat)*tth, icebottomright;
+
+isUniformIce=getARGV("-isUniIce",1);
+macro setMeshIce(brx, midx, midy)
+{
+  int N1 = getARGV("-N",3);
   if(isUniformIce==true)
     {
-      icetopleft = (1-rhoi/rhow)*(th/Lc);
-      icebottomleft = -(rhoi/rhow)*(th/Lc);
-      icebottomright = -(rhoi/rhow)*(th/Lc);
+      icetopleft = (1-rhoi/rhow)*tth;
+      icebottomleft = -(rhoi/rhow)*tth;
+      icebottomright = -(rhoi/rhow)*tth;
       ix2 = 3.7*LL/4;
-      iy2 = -(rhoi/rhow)*(th/Lc);
+      iy2 = -(rhoi/rhow)*tth;
     }
   else
     {
-      icetopleft = (1-rhoi/rhow)*(th/Lc);
-      icebottomleft = -(rhoi/rhow)*(th/Lc);
-      icebottomright = -3.*th/Lc;
-      ix2 = 3.7*LL/4;
-      iy2 = -2.5*(th/Lc);
+      icetopleft = (1-rhoi/rhow)*tth;
+      icebottomleft = -(rhoi/rhow)*tth;
+      icebottomright = -3.*tth;
+      ix2 = midx;
+      iy2 = midy;
     }
-  real ix1 = 0, iy1 = icebottomleft;
-  real ix3 = LL, iy3 = icebottomright;
+  ix1 = 0; iy1 = icebottomleft;
+  ix3 = LL; iy3 = icebottomright;
+
   border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3); label=1;};
   border I02(t=iy3,icetopleft) {x=LL; y=t; label=2;};
   border I03(t=LL,0) {x=t; y=icetopleft; label=3;};
   border I04i(t=icetopleft,0) {x=0; y=t; label=4;};
   border I04ii(t=0,icebottomleft){x=0; y=t; label=5;};
-  ThIce = buildmesh(I01(L/th*N1)+I02(N1)+I03(L/th*N1)+I04i(L/th*N1)+I04ii(L/th*N1));
+  ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04i(LL/tth*N1)+I04ii(LL/tth*N1));
+}//This is a macro for creating the ice mesh using 3 point cubic spline.
+
+isUniformCav=getARGV("-isUniCav",1);
+macro setMeshCav(midx, midy, endy)
+{
+  int N2 = getARGV("-N",3);
   real x1,x2,x3,uy1,y2,y3;
   if(isUniformCav)
     {
@@ -104,19 +127,15 @@ macro setProblem()
   else
     {
       x1=0.; uy1=-HH;
-      x2=LL/2; y2=-0.5*HH;
-      x3=LL; y3=-HH;
+      x2=midx; y2=midy;
+      x3=LL; y3=endy;
     }
   border C01(t=0,LL){x = t; y = splineCurve(t,x1,uy1,x2,y2,x3,y3); label=1;};
   border C02(t=y3,iy3) {x=LL; y=t; label=2;};
   border C03(t=LL,0) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3); label=3;};
   border C04(t=icebottomleft,uy1) {x=0; y=t; label=4;};
-  ThCavity = buildmesh(C01(L/th*N2)+C02(N2)+C03(L/th*N2)+C04(N2));
-
-  gammahat = rhow/Lc;
-  deltahat = rhow*ag/Lc;
-}//This is a macro for getting the parameters and creating the meshes.
-
+  ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(LL/tth*N2)+C04(N2));
+}//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
 macro solveEigen()
 {
@@ -126,7 +145,48 @@ macro solveEigen()
   matrix stima = a(Xh,Xh,solver=sparsesolver);
   matrix massma = b(Xh,Xh,solver=sparsesolver);
   int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
-}//This is a macro for solving the Eigenvalue problem.
+}//This is a macro for solving the elasticity Eigenvalue problem.
+
+
+real[int] mu(nev);
+macro solveEigenEB()
+{
+  mu.resize(nev);
+  func real[int] EBroots(int nev, real L)
+  {
+    real[int] RR(nev);
+    real xbar = pi/(2.*L);
+    RR=0.;
+    int count=1;
+
+    real f,difff;
+    while(1>=0)
+      {
+        real tol=1e-9, error=1;
+        real r=xbar, rr;
+        while(error>tol)
+          {
+            f=cos(r*L)*cosh(r*L)+1;
+            difff=L*cos(r*L)*sinh(r*L)-L*sin(r*L)*cosh(r*L);
+            rr=r-f/difff;
+            error=abs(r-rr);
+            r=rr;
+          }
+
+        real eps=1e-10;
+        if(abs(r-RR[count-1]) > eps)
+          {
+            RR[count-1]=r;
+            count=count+1;
+          }
+        xbar=(count-0.5)*pi/L;
+        if(count==nev+1)
+          break;
+      }
+    return RR;
+  }
+  mu=EBroots(nev,LL);
+}//This is a marco to compute the eigenmodes of the Euler Bernoulli equation
 
 
 macro writeEigen()
@@ -171,7 +231,18 @@ macro getLaplaceMat(a,b){
   STIMA=ah(Wh,Wh);
   BMASSMA=bMh(Wh,Wh);
   RHS[]=lh(0,Wh);
-}//Macro to compute the STIFFNESS,MASS matrices and the RHS vector .
+}//Macro to compute the STIFFNESS,MASS matrices and the RHS vector for the LE modes.
+
+macro getLaplaceMatEB(m,rad){
+  Wh<complex> psih;
+  func etaj = rad*((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+  varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih));
+  varf lh(unused,psih) = int1d(ThCavity,4,qforder=10)(-fh*psih)+ int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*etaj*psih);
+  varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
+  STIMA=ah(Wh,Wh);
+  BMASSMA=bMh(Wh,Wh);
+  RHS[]=lh(0,Wh);
+}//Macro to compute the STIFFNESS,MASS matrices and the RHS vector for the EB modes.
 
 macro getLaplaceMatDBC(a,b){
   Wh<complex> psih;
@@ -185,24 +256,28 @@ macro getLaplaceMatDBC(a,b){
 
 
 macro buildReducedSystem(VX,VY,phi0,phij,c0,cc,isForcedFront)
-{  
+{
+  B.resize(nev,nev);
+  K.resize(nev,nev);
+  AB.resize(nev,nev);
+  F.resize(nev);
   func phid = isForcedFront*(Ap*cos(k[0]*(y+HH))/cos(k[0]*HH) +
                              c0[0]*cos(k[0]*(y+HH))/cos(k[0]*HH) +
                              c0[1]*cos(k[1]*(y+HH))/cos(k[1]*HH) +
                              c0[2]*cos(k[2]*(y+HH))/cos(k[2]*HH) +
-                             c0[3]*cos(k[3]*(y+HH))/cos(k[3]*HH) );  
+                             c0[3]*cos(k[3]*(y+HH))/cos(k[3]*HH) );
   for(int m=0; m<nev; m++)
     {
 
       F[m] = -(1i*omega*gammahat)*(int1d(ThIce,1,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y) ) +
-                                   int1d(ThIce,5,qforder=10)( phid*(VX[m]*N.x + VY[m]*N.y) ));      
-      complex[int] cm=cc(:,m);      
+                                   int1d(ThIce,5,qforder=10)( phid*(VX[m]*N.x + VY[m]*N.y) ));
+      complex[int] cm=cc(:,m);
       func phiminus = isForcedFront*(Ap*cos(k[0]*(y+HH))/cos(k[0]*HH) +
-                            cm[0]*cos(k[0]*(y+HH))/cos(k[0]*HH) +
-                            cm[1]*cos(k[1]*(y+HH))/cos(k[1]*HH) +
-                            cm[2]*cos(k[2]*(y+HH))/cos(k[2]*HH) +
-                            cm[3]*cos(k[3]*(y+HH))/cos(k[3]*HH));
-      
+                                     cm[0]*cos(k[0]*(y+HH))/cos(k[0]*HH) +
+                                     cm[1]*cos(k[1]*(y+HH))/cos(k[1]*HH) +
+                                     cm[2]*cos(k[2]*(y+HH))/cos(k[2]*HH) +
+                                     cm[3]*cos(k[3]*(y+HH))/cos(k[3]*HH));
+
       for(int n=0; n<nev; n++)
         {
           B(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n] + VY[m]*VY[n]);
@@ -212,15 +287,48 @@ macro buildReducedSystem(VX,VY,phi0,phij,c0,cc,isForcedFront)
                                           int1d(ThIce,5,qforder=10)(phiminus*(VX[n]*N.x + VY[n]*N.y)) );
         }
     }
-}//Macro to build the reduced system. (Needs to be generalized even further. User should just specify the wetted surface and this should be computed).
+}//Macro to build the reduced system for the linear elasticity case. (Needs to be generalized even further. User should just specify the wetted surface and this should be computed).
+
+macro buildReducedSystemEB(mu, phi0, phij, alpha, beta, gamma)
+{
+  B.resize(nev,nev);
+  K.resize(nev,nev);
+  AB.resize(nev,nev);
+  F.resize(nev);
+  for(int m=0; m<nev; m++)
+    {
+      func etaj = ((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+
+      B(m,m)=(1-gamma*alpha)*(cosh(LL*mu[m])*sin(LL*mu[m]) - cos(LL*mu[m])*sinh(LL*mu[m]) - (cos(LL*mu[m])^2*sinh(2*LL*mu[m]))/2 + (cosh(LL*mu[m])^2*sin(2*LL*mu[m]))/2 - LL*mu[m]*cos(LL*mu[m])^2 + LL*mu[m]*cosh(LL*mu[m])^2 + 2*LL*mu[m]*sin(LL*mu[m])*sinh(LL*mu[m]))/(mu[m]*(cos(LL*mu[m]) + cosh(LL*mu[m]))^2);
+      K(m,m)=beta*mu[m]^4*B(m,m);
+      F[m]= (1i)*(omega/ag)*int1d(ThCavity,3,qforder=10)(phi0*etaj);
+
+      for(int n=0; n<nev; n++)
+        {
+          func etak = ((cos(LL*mu[n]) + cosh(LL*mu[n]))*(sin(mu[n]*x) + sinh(mu[n]*x)) - (sin(LL*mu[n]) + sinh(LL*mu[n]))*(cos(mu[n]*x) + cosh(mu[n]*x)))/(cos(LL*mu[n]) + cosh(LL*mu[n]));
+          AB(n,m)= -(1i)*(omega/ag)*int1d(ThCavity,3,qforder=10)(phij[m]*etak);
+        }
+    }
+}//Build the reduced system for the Euler Bernoulli case.
 
 
+matrix<complex> HHmat;
 macro solveReducedSystem(){
   matrix<complex> Kmat, Bmat, ABmat;
   Kmat = K;
   Bmat=B;
   ABmat=AB;
-  matrix<complex> HHmat=Kmat+Bmat+ABmat;
+  HHmat=Kmat+Bmat+ABmat;
   set(HHmat,solver=UMFPACK);
   xi=HHmat^-1*F;
 }//Macro to solve the reduced system
+
+func eta = 0;
+macro constructEBdisp()
+{
+  for(int m=0; m<nev; m++)
+    {
+      func etaj = ((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+      eta = eta + lambda[m]*etaj;
+    }
+}//Macro to construct the EB solution.
