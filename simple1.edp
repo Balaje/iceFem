@@ -14,7 +14,7 @@ setProblem;
 solveDispersion;
 
 //Build the meshes.
-real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2/5*tth;
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
 setMeshIce(botRight, midPX, midPY);
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
 setMeshCav(midx, midy, endy); 
@@ -84,4 +84,13 @@ cout.precision(16);
 cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
 
 mesh ThNewIce=movemesh(ThIce,[x+real(etax),y+real(etay)]);
-plot(ThNewIce,wait=1);
+plot(ThNewIce,wait=1,ps="deformedMesh.eps");
+Wh rphi=real(phi);
+plot(rphi,wait=1,fill=1,value=1,ps="velocity.eps");
+
+//Write data to MATLAB
+//iter could be used to index the solution.
+Vh ux=real(etax), uy=real(etay);
+writeToMATLAB(ux,ThIce,"xDisp"+iter+".bb","meshIce"+iter+".msh")
+writeToMATLAB(uy,ThIce,"yDisp"+iter+".bb","meshIce"+iter+".msh");
+writeToMATLAB(rphi,ThCavity,"potentialCav"+iter+".bb","meshCav"+iter+".msh");
