@@ -4,6 +4,7 @@ close all
 
 fprintf('>> Run:\n\n   which FreeFem++\n\n   in your command line to get the path for FreeFem++.\n   Set the full path in the variable `ff` in CreatePaths.m\n');
 addpath([pwd,'/modules/']);
+addpath([pwd,'/examples/']);
 set(0,'defaultLegendInterpreter','latex');
 set(0,'defaulttextInterpreter','latex');
 set(0,'defaultaxesfontsize',20);
