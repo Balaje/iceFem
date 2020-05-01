@@ -18,9 +18,9 @@ FreeFem++ -ne simple1.edp
 More examples are located in the `examples/` folder. The script file `genDir.sh` is used to generate the directories used by the FreeFem++ routine to write the appropriate files.
 ```shell
 chmod +x genDir.sh
-./genDir.sh 1_Forced
-./genDir.sh 1_ThinPlate
-./genDir.sh 1_DirectFEM
+./examples/genDir.sh 1_Forced
+./examples/genDir.sh 1_ThinPlate
+./examples/genDir.sh 1_DirectFEM
 ```
 
 Use this before testing the examples. The last command computes the solution for a default uniform ice-shelf and cavity with
