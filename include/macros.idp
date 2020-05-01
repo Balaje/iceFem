@@ -332,3 +332,15 @@ macro constructEBdisp()
       eta = eta + lambda[m]*etaj;
     }
 }//Macro to construct the EB solution.
+
+
+macro writeToMATLAB(uh,Th,solfilename,meshfilename)
+{
+  savemesh(Th,meshfilename);
+  ofstream file(solfilename);
+  file.precision(16);
+  file<<"2 1 1 "<<uh.n<<" 2 \n";
+  for(int m=0; m<uh[].n; m++)
+    file<<uh[][m]<<endl;
+    
+}//Macro to write the mesh and solution data for MATLAB visualization.

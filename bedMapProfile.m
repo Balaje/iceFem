@@ -2,6 +2,7 @@ clc
 clear
 close all
 global ff
+system('mkdir $PWD/Meshes/BEDMAP2');
 
 %% Generate the map of Antarctica and the ice--shelves
 antmap
