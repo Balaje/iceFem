@@ -11,22 +11,9 @@ envvar = [pwd,'/include'];
 setenv('FF_INCLUDEPATH',envvar);
 
 if exist('~/bedmap2/','dir')
- addpath('~/bedmap2/')
+ adddir('~/bedmap2/')
 else
- fprintf('>> Must addpath to bedmap2\n')
-end
-
-if exist('~/Documents/MATLAB/bedmap2_toolbox_v4.6.2/','dir')
- addpath('~/Documents/MATLAB/bedmap2_toolbox_v4.6.2/')
-else
- fprintf('>> Must addpath to bedmap2_toolbox*\n')
-end
-
-if exist('~/Library/Application Support/MathWorks/MATLAB Add-Ons/Toolboxes/Antarctic Mapping Tools/AntarcticMappingTools/','dir')
- addpath('~/Library/Application Support/MathWorks/MATLAB Add-Ons/Toolboxes/Antarctic Mapping Tools/AntarcticMappingTools/')
-else
- fprintf('>> Must addpath to Antarctic Mapping Tools\n')
-end
+ fprintf('>> Must 
 
 %% Should be set manually by the user.
 global ff
