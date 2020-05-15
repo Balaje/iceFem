@@ -1,0 +1,79 @@
+//The Eigenvalue problem with Purely Neumann boundary condition.
+verbosity=0.;
+bool debug=true;
+include "macros.idp"
+string SolutionDir="1_EigenModes/";
+
+//Set problem
+nev=20;
+setProblem;
+
+
+setMeshIce(0,0,0);
+setMeshCav(0,0,0);
+
+plot(ThIce,ThCavity,wait=1);
+
+savemesh(ThIce,SolutionDir+"2_ModesMatrix/iceMesh.msh");
+Xh[int][VX,VY](nev);
+real[int] ev(nev);
+solveEigen;
+
+writeEigen;
+
+//Radiation potential bases.
+Wh<complex>[int] phij(nev);
+Wh pp;
+for(int m=0; m<nev; m++)
+  {
+    func fh=0;
+    getLaplaceMatDBC(VX[m],VY[m]);
+    LHS=STIMA;    
+    set(LHS,solver=sparsesolver);
+    phih[]=LHS^-1*RHS[];
+    phij[m]=phih;
+    
+    plot(phij[m],wait=debug,value=1,fill=1,dim=3);
+  }
+
+//Build the reduced system. (Can call the module. But testing)
+for(int m=0; m<nev; m++)
+{
+  F[m] = -(1i*omega*gammahat)*(int1d(ThIce,1)(0*(VX[m]*N.x+VY[m]*N.y)));
+  for(int n=0; n<nev; n++)
+    {
+      B(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n]+VY[m]*VY[n]);
+      K(n,m) = deltahat*int1d(ThIce,1)(-VY[m]*(VX[n]*N.x+VY[n]*N.y));
+      //K(n,m) = deltahat*int1d(ThIce,1)(VX[m]*VX[n] + VY[m]*VY[n]);
+      AB(n,m) = (1i*omega*gammahat)*int1d(ThIce,1)(phij[m]*(VX[n]*N.x+VY[n]*N.y));
+    }
+}
+
+
+//Get the H matrix
+matrix<complex> Kmat, Bmat, ABmat;
+Kmat=K;
+Bmat=B;
+ABmat=AB;
+HHmat=Kmat+Bmat+ABmat;
+
+//Write the H-matrix to the 1_Forced/ folder.
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/ReH"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++){
+    for(int n=0; n<nev; n++)
+      file<<real(K(m,n)+B(m,n)+AB(m,n))<<" ";
+    file<<endl;
+  }
+}
+
+{
+  ofstream file(SolutionDir+"2_ModesMatrix/ImH"+iter+".dat");
+  file.precision(16);
+  for(int m=0; m<nev; m++){
+    for(int n=0; n<nev; n++)
+      file<<imag(K(m,n)+B(m,n)+AB(m,n))<<" ";
+    file<<endl;
+  }
+}

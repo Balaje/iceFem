@@ -1,7 +1,6 @@
 %% Program to work on generating the analytic extension plot.
 
 clear
-clc
 close all
 global ff
 
@@ -43,12 +42,12 @@ ffpp=[ff,' -nw -ne ', file];
 iter=1;
 for m=1:size(omega,1)
     for n=1:size(omega,2)
-        cmd=[ffpp,' -Tr ',num2str(real(T(m,n))),' -Ti ',num2str(imag(T(m,n))),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
-            ,num2str(th),' -N ',num2str(4), ' -iter ', num2str(iter),' -isUni ',num2str(1)];
-        [aa,bb]=system(cmd);
-        if(aa)
-            error('Cannot run program. Check path of FF++ or install it');
-        end
+%         cmd=[ffpp,' -Tr ',num2str(real(T(m,n))),' -Ti ',num2str(imag(T(m,n))),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
+%             ,num2str(th),' -N ',num2str(4), ' -iter ', num2str(iter),' -isUni ',num2str(1)];
+%         [aa,bb]=system(cmd);
+%         if(aa)
+%             error('Cannot run program. Check path of FF++ or install it');
+%         end
         
         fprintf('Finish (m,n)= (%d,%d)\n',m,n);
         RC = load([file1, '2_RefCoeff/refCoeff',num2str(iter),'.dat']);
@@ -71,7 +70,7 @@ disp(flag1);
 
 %% Interpolate the mode contributions
 filePath = [file1,'2_ModesMatrix'];
-flag2 = interpolateFreqComplex(omega,omegaNew,nev,filePath,1);
+flag2 = interpolateFreqComplex(omega,omegaNew,nev,filePath);
 
 disp(flag2);
 
@@ -92,7 +91,7 @@ for m=1:size(omegaNew,1)
 end
 
 %% Plot the reflection coeffcients on the complex plane
-fig1=figure(1,'visible','off');
+fig1=figure(1);
 set(fig1,'Position',[360,72,798,626]);
 subplot(3,1,1);
 pltphase(omega,rc);
@@ -120,7 +119,7 @@ guesses = [0.02,0.03,0.04,0.05,0.06,0.08,0.1];
 roots = zeros(length(guesses),1);
 for m=1:length(guesses)
     guess=guesses(m);
-    roots(m) = findResonanceCplx(L,H,th,guess,file,file1);
+    roots(m) = findResonanceCplx(L,H,th,guess,file,'1_Forced/2_ModesMatrix/');
 end
 
 %% Mark the root on the complex plane

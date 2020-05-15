@@ -2,10 +2,7 @@
 function omega0 = findResonanceCplx(L,H,th,guess,file,SolDir)
 global ff
 
-envvar = [pwd,'/include'];
-setenv('FF_INCLUDEPATH',envvar);
-ffpp=[ff,' -nw -ne iceSplineNoSolve.edp'];
-
+ffpp=[ff,' -nw -ne iceSpline.edp'];
 omega0 = guess; %Initial Guesses.
 
 dw = 1e-2;
@@ -15,7 +12,7 @@ while (abs(dw)>tol && ~isinf(abs(dw)))
     T1 = 2*pi/(omega0);
     cmd=[ffpp,' -Tr ',num2str(real(T1)),' -Ti ',num2str(imag(T1)),...
         ' -H ',num2str(H), ' -L ',num2str(L),' -h ',num2str(th),' -N ',...
-        num2str(3),' -isUniIce ',num2str(1),' -isUniCav ',num2str(1)];
+        num2str(4),' -isUniIce ',num2str(1),' -isUniCav ',num2str(1)];
     [aa,bb1]=system(cmd);
     if(aa)
         disp(bb1)
@@ -29,7 +26,7 @@ while (abs(dw)>tol && ~isinf(abs(dw)))
     T2 = 2*pi/(omega0+dw);
     cmd=[ffpp,' -Tr ',num2str(real(T2)),' -Ti ',num2str(imag(T2)),...
         ' -H ',num2str(H), ' -L ',num2str(L),' -h ',num2str(th),' -N ',...
-        num2str(3),' -isUniIce ',num2str(1),' -isUniCav ',num2str(1)];
+        num2str(4),' -isUniIce ',num2str(1),' -isUniCav ',num2str(1)];
     [aa,bb2]=system(cmd);
     if(aa)
         disp(bb2)

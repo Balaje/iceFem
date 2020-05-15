@@ -44,12 +44,12 @@ for m=1:Nev^2
     
 %     figure(1);
 %     subplot(1,2,1);
-%     plot(omega,abs(H(m,:)),'+');
+%     plot(omega,abs(H(m,:)),'+-');
 %     hold on
 %     subplot(1,2,2);
-%     plot(omegaNew,abs(HNew(m,:)),'+');    
+%     plot(omegaNew,abs(HNew(m,:)),'+-');    
 %     hold on
-%     pause(0.01);
+%     pause();
 end
 
 detH=zeros(length(omegaNew),1);
@@ -62,10 +62,10 @@ end
 
 %% Dump all the Interpolated matrices into a folder.
 % [[Careful with the directory path]]
-% dlmwrite([filePath,'Interpolated_H/ReH.dat']...
-%     ,real(HNew),'delimiter',' ');
-% dlmwrite([filePath,'Interpolated_H/ImH.dat']...
-%     ,imag(HNew),'delimiter',' ');
+dlmwrite([filePath,'Interpolated_H/ReH.dat']...
+    ,real(HNew),'delimiter',' ');
+dlmwrite([filePath,'Interpolated_H/ImH.dat']...
+    ,imag(HNew),'delimiter',' ');
 % dlmwrite([filePath,'Interpolated_F/ReF.dat']...
 %     ,real(FNew),'delimiter',' ');
 % dlmwrite([filePath,'Interpolated_F/ImF.dat']...
