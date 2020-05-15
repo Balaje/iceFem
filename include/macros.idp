@@ -81,7 +81,6 @@ macro solveDispersion()
 
 real ix1, iy1, ix2, iy2, ix3, iy3;
 real icetopleft=(1-densRat)*tth, icebottomleft=-(densRat)*tth, icebottomright;
-
 isUniformIce=getARGV("-isUniIce",1);
 macro setMeshIce(brx, midx, midy)
 {
@@ -244,6 +243,16 @@ macro getLaplaceMatEB(m,rad){
   RHS[]=lh(0,Wh);
 }//Macro to compute the STIFFNESS,MASS matrices and the RHS vector for the EB modes.
 
+macro getLaplaceMatFunc(eta){
+  Wh<complex> psih;
+  varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih));
+  varf lh(unused,psih) = int1d(ThCavity,4,qforder=10)(-fh*psih) + int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*eta*psih);
+  varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
+  STIMA=ah(Wh,Wh);
+  BMASSMA=bMh(Wh,Wh);
+  RHS[]=lh(0,Wh);
+}//Same as before, but for a general 1D function eta
+
 macro getLaplaceMatDBC(a,b){
   Wh<complex> psih;
   varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=fh);
@@ -252,8 +261,19 @@ macro getLaplaceMatDBC(a,b){
   STIMA=ah(Wh,Wh);
   BMASSMA=bMh(Wh,Wh);
   RHS[]=lh(0,Wh);
-}//Same as above but for DBC
+}//Same as above but for DBC.
 
+
+macro getLaplaceMatEBdbc(m,rad){
+  Wh<complex> psih;
+  func etaj = rad*((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+  varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=0);
+  varf lh(unused,psih) = int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*etaj*psih);
+  varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
+  STIMA=ah(Wh,Wh);
+  BMASSMA=bMh(Wh,Wh);
+  RHS[]=lh(0,Wh);
+}//Same as above but for DBC.
 
 macro buildReducedSystem(VX,VY,phi0,phij,c0,cc,isForcedFront)
 {
