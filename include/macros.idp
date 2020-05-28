@@ -9,6 +9,8 @@ include "nonLocal.idp"
 include "refCoeff.idp"
 include "getProperties.idp"
 
+load "Element_P3"
+
 //List of useful set of macros.
 macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
 macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
@@ -67,12 +69,112 @@ macro setProblem()
   densRat = rhoi/rhow;
 }//This is a macro for getting the parameters to set the problem
 
+macro iceBEDMAP2(nborders, isBuild)
+{
+  ifstream file("./Meshes/BEDMAP2/iceDat.dat");
+  ifstream file1("./Meshes/BEDMAP2/iceCavInt_Breaks.dat");
+  ifstream file2("./Meshes/BEDMAP2/iceCavInt_Coeffs.dat");
+  ifstream file3("./Meshes/BEDMAP2/iceTop_Breaks.dat");
+  ifstream file4("./Meshes/BEDMAp2/iceTop_Coeffs.dat");
+  ifstream file5("./Meshes/BEDMAP2/cavBed_Breaks.dat");
+  ifstream file6("./Meshes/BEDMAP2/cavBed_Coeffs.dat");
+
+  real iceBegin, iceEnd, cavBegin, cavEnd, cavTop;
+  int npieces, npieces1;
+  file>>iceBegin>>iceEnd>>npieces>>cavBegin>>cavEnd>>npieces1>>cavTop;
+
+  real[int,int] coefsBot(npieces,4), coefsTop(npieces,4), coefsCav(npieces1,4);
+  real[int] breaksBot(npieces+1), breaksTop(npieces+1), breaksCav(npieces1+1);
+  for(int m=0; m<npieces; m++) {
+    file2>>coefsBot(m,0)>>coefsBot(m,1)>>coefsBot(m,2)>>coefsBot(m,3);
+    file4>>coefsTop(m,0)>>coefsTop(m,1)>>coefsTop(m,2)>>coefsTop(m,3);
+  }
+  for(int m=0; m<npieces+1; m++) {
+    file1>>breaksBot[m];
+    file3>>breaksTop[m];
+  }
+  for(int m=0; m<npieces1; m++)
+    file6>>coefsCav(m,0)>>coefsCav(m,1)>>coefsCav(m,2)>>coefsCav(m,3);
+  for(int m=0; m<npieces1+1; m++)
+    file5>>breaksCav[m];
+
+  real L=abs(iceBegin-iceEnd);
+  real H=abs(splineRecon(coefsCav,breaksCav,cavBegin,npieces1));
+  real th=abs(splineRecon(coefsTop,breaksTop,iceBegin,npieces)-splineRecon(coefsBot,breaksBot,iceEnd,npieces));
+  real E, nu;
+  real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
+  real d = rhoi/rhow*th;
+  real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
+  complex t = Tr+1i*Ti;
+  real EI = E*th^3/(12*(1-nu^2));
+  Lc = (EI/(rhow*ag))^(1./4.);
+  tc = sqrt(rhow*Lc^6/(EI*H));
+  omega = 2*pi/t;
+  LL = L/Lc;
+  HH = H/Lc;
+  dd = d/Lc;
+  tth = th/Lc;
+  tt = t/tc;
+  complex ndOmega = 2*pi/tt;
+  complex alpha = HH*ndOmega^2;
+  Ap = ag/(1i*omega)*Ad;
+  real mu1 = elasCons[0], lambda = elasCons[1];
+  muhat = mu1/Lc^2;
+  lambdahat = lambda/Lc^2;
+  gammahat = rhow/Lc;
+  deltahat = rhow*ag/Lc;
+  densRat = rhoi/rhow;
+
+  if(isBuild)
+    {
+      border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+      border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+      border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+      border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+
+      ThIce=buildmesh(C01(5000)+C02(100)+C03(5000)+C04(100));
+      plot(ThIce,wait=1);
+      cout<<"Built Ice-Mesh\n";
+
+      real yy1=splineRecon(coefsCav,breaksCav,cavEnd,npieces1), yy2=splineRecon(coefsBot,breaksBot,iceEnd,npieces);
+      real yy3=splineRecon(coefsBot,breaksBot,iceBegin,npieces), yy4=splineRecon(coefsCav,breaksCav,iceBegin,npieces1);
+      if(nborders==4)
+        {
+          border S01(t=cavBegin,cavEnd){x=t; y=splineRecon(coefsCav,breaksCav,t,npieces1); label=1;};
+          border S02(t=yy1,yy2){x=(t-yy1)/(yy2-yy1)*(iceEnd-cavEnd)+cavEnd; y=t; label=2;};
+          border S03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=3;};
+          border S04(t=yy3,yy4){x=(t-yy3)/(yy4-yy3)*(cavBegin-iceBegin)+iceBegin; y=t; label=4;};
+          ThCavity=buildmesh(S01(5000)+S02(30)+S03(5000)+S04(600));
+        }
+      else
+        {
+          border S01(t=cavBegin,cavEnd){x=t; y=splineRecon(coefsCav,breaksCav,t,npieces1); label=1;};
+          border S02(t=splineRecon(coefsCav,breaksCav,cavEnd,npieces1),cavTop){x=cavEnd; y=t; label=2;};
+          border S03(t=cavEnd,iceBegin){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=3;};
+          border S04(t=splineRecon(coefsCav,breaksCav,cavBegin,npieces1),0){x=0; y=t; label=4;};
+          border S05(t=0,iceBegin){x=t; y=0; label=5;};
+          border S06(t=0,splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=6;};
+          ThCavity=buildmesh(S01(5000)+S02(200)+S03(5000)+S04(-600)+S05(-500)+S06(-100));
+        }
+      cout<<"Built Cavity-Mesh"<<endl;
+    }
+  else
+    {
+      ThCavity=readmesh("Meshes/cavMeshBEDMAP.msh");
+      ThIce=readmesh("Meshes/iceMeshBEDMAP.msh");
+    }
+  ThIce=movemesh(ThIce,[x*1./Lc,y*1./Lc]);
+  ThCavity=movemesh(ThCavity,[x*1./Lc,y*1./Lc]);
+  savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
+  savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
+}//This is a macro to obtain the ice-cavity profiles from BEDMAP2
+
 macro solveDispersion()
 {
   k.resize(NModes+1);
   kd.resize(NModes+1);
   complex ndOmega = 2*pi/tt;
-  complex alpha = HH*ndOmega^2;  
+  complex alpha = HH*ndOmega^2;
   k = dispersionfreesurface(alpha, NModes, HH);
   k[0] = -k[0];
   kd = dispersionfreesurface(alpha, NModes, HH-dd);
@@ -137,7 +239,7 @@ macro setMeshCav(midx, midy, endy)
 }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
 macro solveEigen()
-{  
+{
   Xh [u,v],[uu,vv];
   varf a([u,v],[uu,vv]) = int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
   varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv));
@@ -231,6 +333,20 @@ macro getLaplaceMat(a,b){
   BMASSMA=bMh(Wh,Wh);
   RHS[]=lh(0,Wh);
 }//Macro to compute the STIFFNESS,MASS matrices and the RHS vector for the LE modes.
+
+matrix<complex> BMASSMA1;
+macro getLaplaceMatBEDMAP2(a,b){
+  complex ndOmega = 2*pi/tt;
+  complex alpha = HH*ndOmega^2;
+  Wh<complex> psih;
+  varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih));
+  varf lh(unused,psih) = int1d(ThCavity,4,qforder=10)(-fh*psih) + int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
+  varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
+  varf bFS(phih,psih) = int1d(ThCavity,5,qforder=10)(alpha*phih*psih);
+  STIMA=ah(Wh,Wh);
+  BMASSMA=bFS(Wh,Wh);
+  RHS[]=lh(0,Wh);
+}//Macro to compute the STIFFNESS, MASS matrices and the RHS vector for the BEDMAP2 problem.
 
 macro getLaplaceMatEB(m,rad){
   Wh<complex> psih;
@@ -362,5 +478,5 @@ macro writeToMATLAB(uh,Th,solfilename,meshfilename)
   file<<"2 1 1 "<<uh.n<<" 2 \n";
   for(int m=0; m<uh[].n; m++)
     file<<uh[][m]<<endl;
-    
+
 }//Macro to write the mesh and solution data for MATLAB visualization.

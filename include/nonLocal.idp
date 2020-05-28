@@ -6,8 +6,7 @@ func matrix<complex> getQphi(mesh &ThCavity, int NModes, complex[int] k, complex
   int nbv = ThCavity.nv;
   // Get all the matrices
   complex [int,int] D(nbv,NModes+1);
-  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);
-
+  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);  
   //-----------------------------------------------------------------------
   /*
     This block is to find out the Q matrix so that the Neumann condition can be
@@ -30,7 +29,9 @@ func matrix<complex> getQphi(mesh &ThCavity, int NModes, complex[int] k, complex
   complex [int,int] TT = (MMtinv*A);
   complex [int,int] T = TT*MMinv;
   complex [int,int] tP = T*pp;
-  complex [int,int] Qp = D*tP;
+  matrix<complex> DD=D, ttP=tP;;
+  //complex [int,int] Qp = D*tP;
+  matrix<complex> Qp=DD*ttP;
   matrix <complex> Q = Qp;
   /*
     Obtain the 1d Mass Matrix on the boundary
