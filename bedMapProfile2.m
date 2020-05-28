@@ -92,9 +92,10 @@ if(isMesh)
 end
 
 %% Run the FreeFem++ code
+Tr=200;
 fprintf('Running Program ....\n');
 ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(isMesh)...
-    ,' -Tr ',num2str(400),' -Ti ',num2str(0)];
+    ,' -Tr ',num2str(Tr),' -Ti ',num2str(0)];
 [aa,bb]=system(ffpp);
 if(aa)
     error('Cannot run mesher. Check output\n');
@@ -116,9 +117,17 @@ POT=importfiledata('potentialCav0.bb');
 
 figure(1);
 subplot(2,1,1);
-DISP=[pts(1,:)+(UX+1i*IUX); pts(2,:)+(UY+1i*IUY)];
+DISP=[pts(1,:)/20+(UX+1i*IUX); pts(2,:)+(UY+1i*IUY)];
 pdeplot(real(DISP),seg,tri);
 grid on
+xlabel('$0.05\times x/L_c$')
+ylabel('$z/L_c$')
+title(['Incident Wave Period $T=',num2str(Tr),'$\,s'])
 subplot(2,1,2);
-pdeplot(pts1,seg1,tri1,'XYData',POT,'ZData',POT,'Colormap','jet');
+pdeplot([pts1(1,:)/20; pts1(2,:)],seg1,tri1,'XYData',POT,'Colormap','jet');
+xlabel('$0.05\times x/L_c$')
+ylabel('$z/L_c$')
+hold on
+pdeplot([pts(1,:)/20; pts(2,:)],seg,tri);
+xlabel('$0.05\times x/L_c$')
 grid on

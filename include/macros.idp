@@ -127,19 +127,18 @@ macro iceBEDMAP2(nborders, isBuild)
 
   if(isBuild)
     {
-      border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
-      border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-      border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
-      border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
-
-      ThIce=buildmesh(C01(5000)+C02(100)+C03(5000)+C04(100));
-      plot(ThIce,wait=1);
-      cout<<"Built Ice-Mesh\n";
-
-      real yy1=splineRecon(coefsCav,breaksCav,cavEnd,npieces1), yy2=splineRecon(coefsBot,breaksBot,iceEnd,npieces);
-      real yy3=splineRecon(coefsBot,breaksBot,iceBegin,npieces), yy4=splineRecon(coefsCav,breaksCav,iceBegin,npieces1);
       if(nborders==4)
         {
+          border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+          border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+          border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+          border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+          ThIce=buildmesh(C01(5000)+C02(100)+C03(5000)+C04(100));
+          plot(ThIce,wait=1);
+          cout<<"Built Ice-Mesh\n";
+
+          real yy1=splineRecon(coefsCav,breaksCav,cavEnd,npieces1), yy2=splineRecon(coefsBot,breaksBot,iceEnd,npieces);
+          real yy3=splineRecon(coefsBot,breaksBot,iceBegin,npieces), yy4=splineRecon(coefsCav,breaksCav,iceBegin,npieces1);          
           border S01(t=cavBegin,cavEnd){x=t; y=splineRecon(coefsCav,breaksCav,t,npieces1); label=1;};
           border S02(t=yy1,yy2){x=(t-yy1)/(yy2-yy1)*(iceEnd-cavEnd)+cavEnd; y=t; label=2;};
           border S03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=3;};
@@ -148,6 +147,15 @@ macro iceBEDMAP2(nborders, isBuild)
         }
       else
         {
+          border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+          border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
+          border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+          border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+          border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+          ThIce=buildmesh(C01(3000)+C01x(2000)+C02(100)+C03(5000)+C04(100));
+          plot(ThIce,wait=1);
+          cout<<"Built Ice-Mesh\n";
+
           border S01(t=cavBegin,cavEnd){x=t; y=splineRecon(coefsCav,breaksCav,t,npieces1); label=1;};
           border S02(t=splineRecon(coefsCav,breaksCav,cavEnd,npieces1),cavTop){x=cavEnd; y=t; label=2;};
           border S03(t=cavEnd,iceBegin){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=3;};
