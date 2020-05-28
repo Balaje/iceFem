@@ -1,8 +1,10 @@
+%% This is a program to generate the cavity and shelf profile using the BEDMAP2 dataset. 
+% 1) The cavity is assumed to be restricted to the length of the ice.
+
 clc
 clear
 close all
 global ff
-system('mkdir $PWD/Meshes/BEDMAP2');
 
 %% Generate the map of Antarctica and the ice--shelves
 antmap
@@ -11,29 +13,42 @@ patchm(lat,long, [0.5,0.5,0.5]);
 bedmap2 patchshelves
 [hice,hbed,hwater]=bedmap2_profile();
 
-%%
+%% Extract the profile.
 iceCoord=hice.Vertices;
 bedCoord=hbed.Vertices;
 
 [rowIce,~]=find(iceCoord(:,2)~=0);
+[freeSurf,~]=find(iceCoord(:,2)==0);
 icePts=[iceCoord(rowIce,1), iceCoord(rowIce,2)];
 bedCoord1 = bedCoord(find(bedCoord(1:end-2,1)>=min(icePts(1:end-2,1))),:);
 bedCoord1 = bedCoord1(find(bedCoord1(1:end-2,1)<=max(icePts(1:end-2,1))),:);
 [rowCav,~]=find(bedCoord1(:,2)~=0);
-bedPts=[bedCoord1(rowCav,1)*1000, bedCoord1(rowCav,2)]; % Change to km
 
-%% Write the data onto a file.
+
+%% Perform a coordinate transformation and write the data onto a file.
 ice=icePts;
-ice=[ice(:,1)*1000, ice(:,2)]; % Change to km
-iceCavInt=ice(find(ice(:,2)<0),:);
-iceTop=ice(find(ice(:,2)>0),:);
+if(iceCoord(end,1)==iceCoord(end,2))
+    frontloc=iceCoord(freeSurf(end/2),1);
+    a=1;
+else
+    frontloc=iceCoord(freeSurf(end),1);
+    a=2;
+end
+xf=frontloc;
+% Extract the points after transformation
+ice1=[(3-2*a)*(ice(:,1)-xf)*1000, ice(:,2)]; % Change to km
+ice1=[ice1(:,1)-min(ice1(:,1)),ice1(:,2)];
+bedPts=[(3-2*a)*(bedCoord1(rowCav,1)-xf)*1000, bedCoord1(rowCav,2)]; % Change to km
+bedPts=[bedPts(:,1)-min(bedPts(:,1)), bedPts(:,2)];
+iceCavInt=ice1(find(ice1(:,2)<0),:);
+iceTop=ice1(find(ice1(:,2)>0),:);
 
 %% Plot the data to verify
 plot(iceCavInt(:,1)/1000,iceCavInt(:,2),'m.','LineWidth',2);
 hold on
 plot(iceTop(:,1)/1000,iceTop(:,2),'m.','LineWidth',2);
 plot(bedPts(:,1)/1000,bedPts(:,2),'m.','LineWidth',2);
-pause();
+pause(1);
 
 %%
 ppIceCavInt=spline(iceCavInt(:,1),iceCavInt(:,2));
@@ -76,8 +91,8 @@ fig=figure(10);
 subplot(2,2,[1,2]);
 %set(fig,'Position',[284    23   952   634]);
 set(fig,'Position',[0 0 2880 1800]);
-ptsScaled=[pts(1,:)/10; pts(2,:)];
-pts1Scaled=[pts1(1,:)/10; pts1(2,:)];
+ptsScaled=[pts(1,:)/1; pts(2,:)];
+pts1Scaled=[pts1(1,:)/1; pts1(2,:)];
 pp1=pdeplot(ptsScaled,seg,tri); hold on
 pp2=pdeplot(pts1Scaled,seg1,tri1);
 set(pp2,'Color','b')
