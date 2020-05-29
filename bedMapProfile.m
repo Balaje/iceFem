@@ -74,13 +74,25 @@ arrIce=[min(iceCavInt(:,1)); % Bottom left Ice
 dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
 
 %% Run the meshing code and plot the results
-fprintf('Running Mesher ....\n');
-file='iceShelfBEDMAP2.edp';
-ffpp=[ff,' -nw -ne ', file];
+% fprintf('Running Mesher ....\n');
+% file='iceShelfBEDMAP2.edp';
+% ffpp=[ff,' -nw -ne ', file];
+% [aa,bb]=system(ffpp);
+% if(aa)
+%    error('Cannot run mesher. Check output\n'); 
+% end
+
+Tr=200;
+fprintf('Running Program ....\n');
+ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(isMesh)...
+    ,' -Tr ',num2str(Tr),' -Ti ',num2str(0),' -isOpen ',num2str(0)];
 [aa,bb]=system(ffpp);
 if(aa)
-   error('Cannot run mesher. Check output\n'); 
+    error('Cannot run mesher. Check output\n');
 end
+fprintf('FreeFem++ message: \n');
+disp(bb);
+
 
 %% Load the mesh 
 [pts,seg,tri]=importfilemesh('Meshes/iceMeshBEDMAP.msh');
