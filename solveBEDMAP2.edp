@@ -7,11 +7,7 @@ nev=20;
 NModes=5;
 
 int isSolve= getARGV("-isMesh",0);
-int nborders= getARGV("-isOpen",1);
-
-nborders=5;
-if(nborders==0) 
-  nborders=4;
+int nborders= getARGV("-nborders",4);
 
 //Load the meshes.
 iceBEDMAP2(nborders,isSolve);

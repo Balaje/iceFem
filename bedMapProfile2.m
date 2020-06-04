@@ -95,7 +95,7 @@ end
 Tr=2000;
 fprintf('Running Program ....\n');
 ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(isMesh)...
-    ,' -Tr ',num2str(Tr),' -Ti ',num2str(0),' -isOpen ',num2str(1)];
+    ,' -Tr ',num2str(Tr),' -Ti ',num2str(0),' -nborders ',num2str(6)];
 [aa,bb]=system(ffpp);
 if(aa)
     error('Cannot run mesher. Check output\n');
