@@ -188,7 +188,7 @@ The following Figures show the solution for the wave-forcing of the Brunt-Ice Sh
 
 |![BruntSol1](./Images/vibration_brunt1.png)| ![BruntSol](./Images/brunt_sol1.png) | ![BruntSol](./Images/brunt_sol0.png) |
 | ------------------------------------ | --- | --- |
-|R=(0.1019503214671236,0.9961634316870296)| R = (0.3447918251722392,-0.9404886412629517) | R = (0.759311160623101,-0.6549410544078146) |
+|R=(0.1019503214671236,0.9961634316870296) | R = (0.3447918251722392,-0.9404886412629517) | R = (0.759311160623101,-0.6549410544078146) |
 |abs(R)=1.001366791279664|abs(R) = 1.001698700733028 | abs(R) = 1.002746839135193 |
 
 The reflection coefficients are shown below. Note that the reflection coefficient is not exactly equal to 1. Either the current code is *buggy* or a detailed convergence study might be required. Refer to the manual for more details **(Not Updated, Stay Tuned)**.

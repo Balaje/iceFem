@@ -145,8 +145,8 @@ cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
 
 //--------------- Writing down all the data to a folder -----------------
 savemesh(ThIce,SolutionDir+"2_Deformation/iceMesh.msh");
-//mesh newThIce = movemesh(ThIce,[x+retax, y+retay]);
-//savemesh(newThIce,SolutionDir+"2_Deformation/movedIce"+iter+".msh");
+mesh newThIce = movemesh(ThIce,[x+retax, y+retay]);
+savemesh(newThIce,SolutionDir+"2_Deformation/movedIce"+iter+".msh");
 savemesh(ThCavity,SolutionDir+"2_Deformation/cavityMesh.msh");
 
 //------ The reflection coefficient to a file.

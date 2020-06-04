@@ -83,8 +83,9 @@ dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
 % end
 
 Tr=200;
+file='solveBEDMAP2.edp';
 fprintf('Running Program ....\n');
-ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(isMesh)...
+ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(1)...
     ,' -Tr ',num2str(Tr),' -Ti ',num2str(0),' -isOpen ',num2str(0)];
 [aa,bb]=system(ffpp);
 if(aa)

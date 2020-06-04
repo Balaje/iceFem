@@ -92,7 +92,7 @@ if(isMesh)
 end
 
 %% Run the FreeFem++ code
-Tr=200;
+Tr=2000;
 fprintf('Running Program ....\n');
 ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(isMesh)...
     ,' -Tr ',num2str(Tr),' -Ti ',num2str(0),' -isOpen ',num2str(1)];

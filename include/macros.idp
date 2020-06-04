@@ -391,13 +391,13 @@ macro getLaplaceMatDBC(a,b){
 macro getLaplaceMatEBdbc(m,rad){
   Wh<complex> psih;
   func etaj = rad*((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
-  varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=0);
+  varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=fh);
   varf lh(unused,psih) = int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*etaj*psih);
   varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
   STIMA=ah(Wh,Wh);
   BMASSMA=bMh(Wh,Wh);
   RHS[]=lh(0,Wh);
-}//Same as above but for DBC.
+}//Same as above but for EB DBC.
 
 macro buildReducedSystem(VX,VY,phi0,phij,c0,cc,isForcedFront)
 {
