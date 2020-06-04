@@ -108,7 +108,7 @@ IUX=importfiledata('xDispI0.bb');
 IUY=importfiledata('yDispI0.bb');
 POT=importfiledata('potentialCav0.bb');
 
-figure(1);
+figure(4);
 subplot(2,1,1);
 DISP=[pts(1,:)/20+(UX+1i*IUX); pts(2,:)+(UY+1i*IUY)];
 pdeplot(real(DISP),seg,tri);
