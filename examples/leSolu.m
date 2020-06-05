@@ -4,6 +4,14 @@ close all
 clear
 global ff
 
+my_path=which('leSolu.m');
+my_path=my_path(1:end-13);
+
+if ~strcmp(pwd,my_path)
+ hld_path=pwd;
+ cd(my_path)
+end
+
 %% Get the Parameters of the ice.
 [~,~,~,~,E,nu,rhow,rhoi,g,~] = getProperties();
 H = 800;
@@ -126,6 +134,13 @@ yticklabels([-H,-(H+d)/2,-d]);
 grid on
 xticks([0,LL/4,LL/2,3*LL/4,LL]);
 xticklabels([0,L/4000,L/2000,3*L/4000,L/1000]);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if exist('hld_path','var')
+ cd(hld_path)
+ clear hld_path
+end
 
 
 %% Save figure file (Uncomment to write the figure)

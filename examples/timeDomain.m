@@ -5,6 +5,14 @@ clear
 close all
 global ff
 
+my_path=which('timeDomain.m');
+my_path=my_path(1:end-13);
+
+if ~strcmp(pwd,my_path)
+ hld_path=pwd;
+ cd(my_path)
+end
+
 %% Get the properties of the shelf.
 [~,~,~,~,E,nu,rhow,rhoi,g,~] = getProperties();
 H = 800;
@@ -124,3 +132,10 @@ for m=1:length(TAX)
 end
 
 close(v);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if exist('hld_path','var')
+ cd(hld_path)
+ clear hld_path
+end
