@@ -186,7 +186,7 @@ FreeFem++ -nw -ne solveBEDMAP2.edp -isMesh 0 -Tr 200 -Ti 0 -nborders 4
 ```
 where the argument
  - `-isMesh` tells the FreeFem++ code to generate the mesh from the cubic spline data. Could be set to `0` if the mesh is available in the folder.
- - The argument `-nborders` tells the FreeFem++ code to restrict the border to within the shelf region (4 boundaries for the cavity region). Any other value would generate the solution including the open-ocean region (See Example 2). 
+ - The argument `-nborders` tells the FreeFem++ code to restrict the border to within the shelf region (4 boundaries for the cavity region). Any other value would generate the solution including the open-ocean region (See Example 2).
 
  The figure below shows the deformation of the ice-shelf and the velocity potential (zoomed in for better visualization) together with a sample output window.
 
@@ -213,8 +213,8 @@ The following Figures show the solution for the wave-forcing of the Brunt-Ice Sh
 
 | ![Brunt](./Images/brunt_sol0.png) | ![Brunt 1](./Images/brunt_sol1.png)
 |--| -- |
-| R = (0.8220502489967969,-0.5735989034071053) | R=(-0.5429927446321565,-0.8405980481250369) |
-| abs(R) = 1.002388304932539 | abs(R)= 1.000722838369738|
+| R = (-0.7479217684724616,0.6642844248253422) | R=(-0.5429927446321565,-0.8405980481250369) |
+| abs(R) = 1.00033032985135 | abs(R)= 1.000722838369738|
 
 The reflection coefficients are shown below. Note that the reflection coefficient is not exactly equal to 1. Either the current code is *buggy* or a detailed convergence study might be required. Refer to the manual for more details **(Not Updated, Stay Tuned)**.
 
