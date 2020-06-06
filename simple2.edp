@@ -27,8 +27,15 @@ Wh pp;
 for(int m=0; m<nev; m++)
   {
     func fh=0;
+
+    //Applying a Robin--Boundary condition.
+    //getLaplaceMat(VX[m],VY[m]);    
+    //LHS=STIMA+(1e-2)*BMASSMA;
+    
+    //Uncomment the two lines for DBC
     getLaplaceMatDBC(VX[m],VY[m]);
-    LHS=STIMA;    
+    LHS=STIMA;
+    
     set(LHS,solver=sparsesolver);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
@@ -37,6 +44,7 @@ for(int m=0; m<nev; m++)
   }
 
 //Build the reduced system. (Can call the module. But testing)
+/*
 for(int m=0; m<nev; m++)
 {
   F[m] = -(1i*omega*gammahat)*(int1d(ThIce,1)(0*(VX[m]*N.x+VY[m]*N.y)));
@@ -48,7 +56,12 @@ for(int m=0; m<nev; m++)
       AB(n,m) = (1i*omega*gammahat)*int1d(ThIce,1)(phij[m]*(VX[n]*N.x+VY[n]*N.y));
     }
 }
-
+*/
+Wh<complex> phi0;
+complex[int]  c0(NModes+1);
+complex[int,int] cc(NModes+1,nev);
+phi0=0.; cc=0.; c0=0.;
+buildReducedSystem(VX,VY,phi0,phij,c0,cc,0);
 
 //Get the H matrix
 matrix<complex> Kmat, Bmat, ABmat;
