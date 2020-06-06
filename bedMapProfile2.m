@@ -7,7 +7,7 @@ global ff
 
 file='solveBEDMAP2.edp';
 
-isMesh = false; % To run the mesher.
+isMesh = true; % To run the mesher.
 
 %% Load the map of the antarctica.
 if(isMesh)
@@ -92,7 +92,7 @@ if(isMesh)
 end
 
 %% Run the FreeFem++ code
-Tr=200;
+Tr=400;
 fprintf('Running Program ....\n');
 ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(isMesh)...
     ,' -Tr ',num2str(Tr),' -Ti ',num2str(0),' -nborders ',num2str(6)];
