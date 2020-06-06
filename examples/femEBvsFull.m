@@ -5,6 +5,14 @@ clear
 clc
 global ff
 
+my_path=which('femEBVsFull.m');
+my_path=my_path(1:end-13);
+
+if ~strcmp(pwd,my_path)
+ hld_path=pwd;
+ cd(my_path)
+end
+
 %% Get the Parameters of the ice.
 [~,~,~,~,E,nu,rhow,rhoi,g,~] = getProperties();
 H = 800;
@@ -114,6 +122,13 @@ yticklabels([-H,-(H+d)/2,-d]);
 
 pos2=get(sp2,'Position');
 set(sp1,'Position',[pos2(1),pos1(2),pos2(3),pos2(4)]);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if exist('hld_path','var')
+ cd(hld_path)
+ clear hld_path
+end
 
 %% Save figure file (Uncomment to save)
 % saveas(gcf,['femEBCompareT',num2str(T),'.fig'],'fig');
