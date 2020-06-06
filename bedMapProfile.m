@@ -1,4 +1,4 @@
-%% This is a program to generate the cavity and shelf profile using the BEDMAP2 dataset. 
+%% This is a program to generate the cavity and shelf profile using the BEDMAP2 dataset.
 % 1) The cavity is assumed to be restricted to the length of the ice.
 
 clc
@@ -6,73 +6,111 @@ clear
 close all
 global ff
 
-%% Generate the map of Antarctica and the ice--shelves
-antmap
-load coast
-patchm(lat,long, [0.5,0.5,0.5]);
-bedmap2 patchshelves
-[hice,hbed,hwater]=bedmap2_profile();
+%% Get the profiles.
+isMesh = true; % To run the mesher.
 
-%% Extract the profile.
-iceCoord=hice.Vertices;
-bedCoord=hbed.Vertices;
-
-[rowIce,~]=find(iceCoord(:,2)~=0);
-[freeSurf,~]=find(iceCoord(:,2)==0);
-icePts=[iceCoord(rowIce,1), iceCoord(rowIce,2)];
-bedCoord1 = bedCoord(find(bedCoord(1:end-2,1)>=min(icePts(1:end-2,1))),:);
-bedCoord1 = bedCoord1(find(bedCoord1(1:end-2,1)<=max(icePts(1:end-2,1))),:);
-[rowCav,~]=find(bedCoord1(:,2)~=0);
-
-
-%% Perform a coordinate transformation and write the data onto a file.
-ice=icePts;
-if(iceCoord(end,1)==iceCoord(end,2))
-    frontloc=iceCoord(freeSurf(end/2),1);
-    a=1;
-else
-    frontloc=iceCoord(freeSurf(end),1);
-    a=2;
+if(isMesh)
+    antmap
+    load coast
+    patchm(lat,long, [0.5,0.5,0.5]);
+    bedmap2 patchshelves
+    [hice,hbed,hwater]=bedmap2_profile();
+    
+    %% Extract the points and construct the spline
+    iceCoord=hice.Vertices;
+    bedCoord=hbed.Vertices;
+    iceCoord=[iceCoord(:,1)*1000, iceCoord(:,2)];
+    bedCoord=[bedCoord(:,1)*1000, bedCoord(:,2)];
+    
+    % Find the top surface of the ice.
+    idx1=find(gradient(iceCoord(:,1))>0);
+    iceTop=iceCoord(idx1,:);
+    iceTop=iceTop(find(abs(iceTop(:,2))>0),:);
+    % Find the bottom surface of the ice.
+    idx2=find(gradient(iceCoord(:,1))<0);
+    iceCavInt=iceCoord(idx2,:);
+    iceCavInt=iceCavInt(find(abs(iceCavInt(:,2))>0),:);
+    
+    
+    %% Extract the ocean-bed and find the grounding line.
+    ppIceCavInt=spline(iceCavInt(:,1),iceCavInt(:,2));
+    ppBedFull=spline(bedCoord(1:end-2,1),bedCoord(1:end-2,2));
+    x0=min(iceCoord(:,1)); xf=max(iceCoord(:,1));
+    x=linspace(x0,xf,2000);
+    % Compute the cavity interfaces.
+    fBed=fnval(ppBedFull,x);
+    fCav=fnval(ppIceCavInt,x);
+    idx=find(abs(fBed-fCav)>50);
+    bedPts=[x(idx)', fBed(idx)'];
+    
+    %% Perform coordinate transformation (if applicable)
+    subplot(2,1,1);
+    plot(iceTop(:,1),iceTop(:,2),'r.-');
+    hold on
+    plot(iceCavInt(:,1),iceCavInt(:,2),'g.-');
+    plot(bedPts(:,1),bedPts(:,2),'m.-');
+    
+    if(~ismember([1,1],ismember(iceCoord,[0,0]),'rows'))
+        xf=max(abs(iceCavInt(:,1)));
+        iceCavInt(:,1)=xf-iceCavInt(:,1);
+        iceTop(:,1)=xf-iceTop(:,1);
+        bedPts(:,1)=xf-bedPts(:,1);
+        
+        % Find only the cavity part underneath the ice-shelf. i.e. x>0
+        bedPts=bedPts(find(bedPts(:,1)>0),:);
+        ppBed=spline(bedPts(:,1),bedPts(:,2));
+        bedPts=[bedPts(:,1), bedPts(:,2);
+                0, fnval(ppBed,0);];
+    else
+        xf=min(abs(iceCavInt(:,1)));
+        iceCavInt(:,1)=iceCavInt(:,1)-xf;
+        iceTop(:,1)=iceTop(:,1)-xf;
+        bedPts(:,1)=bedPts(:,1)-xf;
+        
+        % Find only the cavity part underneath the ice-shelf. i.e. x>0
+        bedPts=bedPts(find(bedPts(:,1)>0),:);
+        ppBed=spline(bedPts(:,1),bedPts(:,2));
+        bedPts=[0, fnval(ppBed,0);
+            bedPts(:,1), bedPts(:,2)];
+    end
+    
+    % Sort by ascending x
+    %     iceCavInt=sort(iceCavInt,1);
+    %     bedPts=sort(bedPts,1);
+    %     iceTop=sort(iceTop,1);
+    %
+    subplot(2,1,2);
+    plot(iceTop(:,1),iceTop(:,2),'r.-');
+    hold on
+    plot(iceCavInt(:,1),iceCavInt(:,2),'g.-');
+    plot(bedPts(:,1),bedPts(:,2),'m.-');
+    
+    pause();
+    
+    %% Construct the spline and write the data to a file.
+    ppIceCavInt=spline(iceCavInt(:,1),iceCavInt(:,2));
+    ppCav=spline(bedPts(:,1),bedPts(:,2));
+    ppIceTop=spline(iceTop(:,1),iceTop(:,2));
+    
+    % Write the coefficients to a file.
+    dlmwrite('./Meshes/BEDMAP2/iceCavInt_Coeffs.dat',ppIceCavInt.coefs,'precision',16,'delimiter','\t');
+    dlmwrite('./Meshes/BEDMAP2/iceCavInt_Breaks.dat',ppIceCavInt.breaks','precision',16,'delimiter','\t');
+    dlmwrite('./Meshes/BEDMAP2/iceTop_Coeffs.dat',ppIceTop.coefs,'precision',16,'delimiter','\t');
+    dlmwrite('./Meshes/BEDMAP2/iceTop_Breaks.dat',ppIceTop.breaks','precision',16,'delimiter','\t');
+    dlmwrite('./Meshes/BEDMAP2/cavBed_Coeffs.dat',ppCav.coefs,'precision',16,'delimiter','\t');
+    dlmwrite('./Meshes/BEDMAP2/cavBed_Breaks.dat',ppCav.breaks','precision',16,'delimiter','\t');
+    
+    arrIce=[min(iceCavInt(:,1)); % Bottom left Ice
+        max(iceCavInt(:,1)); % Bottom right Ice
+        ppIceCavInt.pieces; % Number of pieces
+        min(bedPts(:,1)); % Bottom left Cavity
+        max(bedPts(:,1)); % Bottom right Cavity
+        ppCav.pieces;
+        fnval(ppIceCavInt,max(bedPts(:,1)))];
+    
+    dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
+    
 end
-xf=frontloc;
-% Extract the points after transformation
-ice1=[(3-2*a)*(ice(:,1)-xf)*1000, ice(:,2)]; % Change to km
-ice1=[ice1(:,1)-min(ice1(:,1)),ice1(:,2)];
-bedPts=[(3-2*a)*(bedCoord1(rowCav,1)-xf)*1000, bedCoord1(rowCav,2)]; % Change to km
-bedPts=[bedPts(:,1)-min(bedPts(:,1)), bedPts(:,2)];
-iceCavInt=ice1(find(ice1(:,2)<0),:);
-iceTop=ice1(find(ice1(:,2)>0),:);
-
-%% Plot the data to verify
-plot(iceCavInt(:,1)/1000,iceCavInt(:,2),'m.','LineWidth',2);
-hold on
-plot(iceTop(:,1)/1000,iceTop(:,2),'m.','LineWidth',2);
-plot(bedPts(:,1)/1000,bedPts(:,2),'m.','LineWidth',2);
-pause(1);
-
-%%
-ppIceCavInt=spline(iceCavInt(:,1),iceCavInt(:,2));
-ppIceTop=spline(iceTop(:,1),iceTop(:,2));
-ppCav=spline(bedPts(:,1),bedPts(:,2));
-
-% Write the cubic spline descriptions
-dlmwrite('./Meshes/BEDMAP2/iceCavInt_Coeffs.dat',ppIceCavInt.coefs,'precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/iceCavInt_Breaks.dat',ppIceCavInt.breaks','precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/iceTop_Coeffs.dat',ppIceTop.coefs,'precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/iceTop_Breaks.dat',ppIceTop.breaks','precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/cavBed_Coeffs.dat',ppCav.coefs,'precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/cavBed_Breaks.dat',ppCav.breaks','precision',16,'delimiter','\t');
-
-% Write the ice-data onto a file
-arrIce=[min(iceCavInt(:,1)); % Bottom left Ice
-    max(iceCavInt(:,1)); % Bottom right Ice
-    ppIceCavInt.pieces; % Number of pieces
-    min(bedPts(:,1)); % Bottom left Cavity
-    max(bedPts(:,1)); % Bottom right Cavity
-    ppCav.pieces;
-    fnval(ppIceCavInt,max(bedPts(:,1)))];
-
-dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
 
 %% Run the meshing code and plot the results
 % fprintf('Running Mesher ....\n');
@@ -80,15 +118,15 @@ dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
 % ffpp=[ff,' -nw -ne ', file];
 % [aa,bb]=system(ffpp);
 % if(aa)
-%    error('Cannot run mesher. Check output\n'); 
+%    error('Cannot run mesher. Check output\n');
 % end
 
 Tr=200;
 file='solveBEDMAP2.edp';
 fprintf('Running Program ....\n');
-ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(1)...
+ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(isMesh)...
     ,' -Tr ',num2str(Tr),' -Ti ',num2str(0),' -nborders ',num2str(4)];
-[aa,bb]=system(ffpp);
+[aa,bb]=system(ffpp,'-echo');
 if(aa)
     error('Cannot run mesher. Check output\n');
 end
@@ -96,7 +134,7 @@ fprintf('FreeFem++ message: \n');
 disp(bb);
 
 
-%% Load the mesh 
+%% Load the mesh
 fprintf('FEM Problem solved. Importing Meshes ....\n');
 [pts,seg,tri]=importfilemesh('Meshes/iceMeshBEDMAP.msh');
 [pts1,seg1,tri1]=importfilemesh('Meshes/cavMeshBEDMAP.msh');

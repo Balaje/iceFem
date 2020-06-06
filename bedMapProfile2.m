@@ -7,7 +7,7 @@ global ff
 
 file='solveBEDMAP2.edp';
 
-isMesh = true; % To run the mesher.
+isMesh = false; % To run the mesher.
 
 %% Load the map of the antarctica.
 if(isMesh)
@@ -45,18 +45,18 @@ if(isMesh)
     bedPts=[x(idx)', fBed(idx)'];
     
     %% Perform coordinate transformation (if applicable)
-    if(~ismember([1,1],ismember(iceCoord,[0,0]),'rows'))
-        xf=max(abs(iceCoord(:,1)));
-        iceCavInt(:,1)=xf-iceCavInt(:,1);
-        iceTop(:,1)=xf-iceTop(:,1);
-        bedPts(:,1)=xf-bedPts(:,1);
-    end
-    
     subplot(2,1,1);
     plot(iceTop(:,1),iceTop(:,2),'r.-');
     hold on
     plot(iceCavInt(:,1),iceCavInt(:,2),'g.-');
     plot(bedPts(:,1),bedPts(:,2),'m.-');
+    
+    if(~ismember([1,1],ismember(iceCoord,[0,0]),'rows'))
+        xf=max(abs(iceCoord(:,1)));
+        iceCavInt(:,1)=xf-iceCavInt(:,1);
+        iceTop(:,1)=xf-iceTop(:,1);
+        bedPts(:,1)=xf-bedPts(:,1);
+    end        
     
     subplot(2,1,2);
     plot(iceTop(:,1),iceTop(:,2),'r.-');
@@ -92,11 +92,11 @@ if(isMesh)
 end
 
 %% Run the FreeFem++ code
-Tr=2000;
+Tr=200;
 fprintf('Running Program ....\n');
 ffpp=[ff,' -nw -ne ',file,' -isMesh ',num2str(isMesh)...
     ,' -Tr ',num2str(Tr),' -Ti ',num2str(0),' -nborders ',num2str(6)];
-[aa,bb]=system(ffpp);
+[aa,bb]=system(ffpp,'-echo');
 if(aa)
     error('Cannot run mesher. Check output\n');
 end
@@ -117,7 +117,7 @@ POT=importfiledata('potentialCav0.bb');
 
 figure(1);
 subplot(2,1,1);
-DISP=[pts(1,:)/20+(UX+1i*IUX); pts(2,:)+(UY+1i*IUY)];
+DISP=[pts(1,:)/20+(UX+1i*IUX); pts(2,:)/20+(UY+1i*IUY)];
 pdeplot(real(DISP),seg,tri);
 grid on
 xlabel('$0.05\times x/L_c$')
