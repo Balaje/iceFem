@@ -38,7 +38,7 @@ func int getMat(mesh &ThCavity, complex[int] k, complex[int] kd, real HH, real d
           MM(m,n) = innerproduct(k[n], kd[m], HH, dd)/(cos(kd[m]*(HH-dd))*cos(k[n]*(HH)));
           MMt(n,m) = MM(m,n);
         }
-    }
+    }  
   g(0) = -Ap*A(0,0);
 
   // Find the matrix D.
@@ -57,7 +57,7 @@ func int getMat(mesh &ThCavity, complex[int] k, complex[int] kd, real HH, real d
           interfacenodes(counter) = m;
           counter += 1;
         }
-    }
+    }  
   counter = 0;
   // D is the DOF of the eigenfunctions at the interface.
   for(int m=0; m<interfacepoints.n; m++)
