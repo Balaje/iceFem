@@ -1,13 +1,13 @@
 //Simple example to demonstrate the ice-shelf toolbox;
 
 verbosity=0.;
+real cpu=clock();
 bool debug=true;
 include "macros.idp"
 string SolutionDir="1_Forced/";
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=20;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
@@ -17,20 +17,19 @@ solveDispersion;
 real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
 setMeshIce(botRight, midPX, midPY);
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
-setMeshCav(midx, midy, endy); 
-
+setMeshCav(midx, midy, endy);
 
 //  1) Solve the in-vacuo eigenvalue problem.
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
 solveEigen;
 
-
 //  2) Get the Non-local boundary condition
 matrix<complex> MQ;
 complex[int] ctilde(NModes+1);
 MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
 ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
+
 Wh<complex> chi1;
 for(int m=0; m<NModes+1; m++)
   chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
@@ -56,6 +55,7 @@ for(int m=0; m<nev; m++)
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;    
   }
+
 
 //Build the reduced system and solve it.
 complex[int] c0(NModes+1);
@@ -94,3 +94,4 @@ Vh ux=real(etax), uy=real(etay);
 writeToMATLAB(ux,ThIce,"xDisp"+iter+".bb","meshIce"+iter+".msh")
 writeToMATLAB(uy,ThIce,"yDisp"+iter+".bb","meshIce"+iter+".msh");
 writeToMATLAB(rphi,ThCavity,"potentialCav"+iter+".bb","meshCav"+iter+".msh");
+cout<<clock()-cpu<<" s"<<endl;

@@ -49,7 +49,7 @@ func int getMat(mesh &ThCavity, complex[int] k, complex[int] kd, real HH, real d
   int counter = 0;
   for(int m=0; m<nbv; m++)
     {
-      if(ThCavity(m).label == 4)
+      if(ThCavity(m).x == 0)
         {
           interfacepoints.resize(interfacepoints.n + 1);
           interfacenodes.resize(interfacenodes.n + 1);
