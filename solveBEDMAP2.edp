@@ -6,7 +6,7 @@ include "macros.idp"
 mpiRequest rq;
 
 nev=20;
-NModes=5;
+NModes=3;
 real cpu=clock();
 int isSolve= getARGV("-isMesh",0);
 int nborders= getARGV("-nborders",4);
@@ -35,7 +35,6 @@ if(mpirank==0){
    plot(ThCavity,wait=1);
  }
 
-
 mpiBarrier;
 
 broadcast(processor(0),ThIce);
@@ -52,9 +51,10 @@ if(mpirank==0)
 
 matrix<complex> MQ;
 complex[int] ctilde(NModes+1);
-MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
-if(mpirank==0)
+if(mpirank==0){
   cout<<"Obtained MQ (Proc "<<mpirank<<")"<<endl;
+  MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
+ }
 if(mpirank==1){
   ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
   cout<<"Obtained ctilde (Proc "<<mpirank<<")"<<endl;
@@ -66,7 +66,6 @@ Wh<complex> chi1;
 for(int m=0; m<NModes+1; m++)
   chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
-mpiWaitAll;
 mpiBarrier;
 
 //Solve EigenValue problem
@@ -79,82 +78,80 @@ if(mpirank==0)
 //Solve for the Diffraction potential
 Wh<complex> phi0;
 
-func fh=chi1;
-getLaplaceMatBEDMAP2(0,0);
-LHS=STIMA+(MQ)+(-BMASSMA);
-set(LHS,solver=sparsesolver);
-phih[]=LHS^-1*RHS[];
-phi0=phih;
-plot(phi0,wait=0,fill=1,value=1,dim=3);
 if(mpirank==0){
+  func fh=chi1;
+  getLaplaceMatBEDMAP2(0,0);
+  LHS=STIMA+(MQ)+(-BMASSMA);
+  set(LHS,solver=sparsesolver);
+  phih[]=LHS^-1*RHS[];
+  phi0=phih;
+  plot(phi0,wait=0,fill=1,value=1,dim=3);
   cout<<"Solved Diffraction Potential "<<endl<<endl;
  }
 broadcast(processor(0),phi0[]);
 
 //Things are done differently in the parallel version...
 //1) Solve for the Radiation Potential and build the F[] vector in the reduced system
+matrix IpMatrix=interpolate(Wh,Xh);
 int partition = nev/mpisize;
 Wh<complex>[int] phij(nev);
 F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
 AB.resize(nev,nev);
-complex[int] B1(nev), B2(nev);
+complex[int] FProc(nev);
+complex[int,int] BProc(nev,nev), KProc(nev,nev);
 for(int m=mpirank*partition; m< mpirank*partition+partition; m++)
   {
+    real cpu1=clock();
     func fh=0;
     getLaplaceMatBEDMAP2(VX[m],VY[m]);
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=sparsesolver);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
-    F[m]=-(1i*omega*gammahat)*int1d(ThIce,1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
+    FProc[m]=-(1i*omega*gammahat)*int1d(ThIce,1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
     for(int n=0; n<nev; n++)
       {
-        B(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n]+VY[m]*VY[n]);
-        K(n,m) = int1d(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
+        BProc(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n]+VY[m]*VY[n]);
+        KProc(n,m) = int1d(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
       }
 
-
-    if(mpirank!=0)
-      {
-        processor(0)<<phih[]<<F[m]<<B(m,:)<<K(:,m);
-      }
-    else if(mpirank==0)
-      {
-        for(int n=1; n<=mpisize-1; n++){
-          processor(n)>>phih[]>>F[m+n*partition]>>B1>>B2;
-          phij[m+n*partition][]=phih[];
-          B(m+n*partition,:)=B1;
-          K(:,m+n*partition)=B2;
-        }
-      }
     cout<<"Solved Radiation Potential ... "<<m+1<<"\t Proc: "<<mpirank<<endl;
   }
+mpiReduce(BProc, B, processor(0), mpiSUM);
+mpiReduce(KProc, K, processor(0), mpiSUM);
+mpiReduce(FProc, F, processor(0), mpiSUM);
 
 mpiBarrier;
 
 //Build the reduced system and solve it.
+complex[int] xi(nev);
 if(mpirank==0){
   cout<<"Built the system... Solving ... "<<endl;
-
-  complex[int] xi(nev);
   solveReducedSystem;
+ }
+broadcast(processor(0),xi);
 
-  //Compute the solution.
-  Vh <complex> etax, etay;
-  Wh<complex> phi;
-  phi = phi0;
-  for(int m=0; m<nev; m++)
-    {
-      phi = phi + xi[m]*phij[m];
-      etax = etax + xi[m]*VX[m];
-      etay = etay + xi[m]*VY[m];
-    }
+//Compute the solution.
+Vh <complex> etax, etay, etaxProc, etayProc;
+Wh<complex> phi, phiProc;
+for(int m=mpirank*partition; m<mpirank*partition+partition; m++)
+  {
+    phiProc = phiProc + xi[m]*phij[m];
+    etaxProc = etaxProc + xi[m]*VX[m];
+    etayProc = etayProc + xi[m]*VY[m];
+  }
 
-  mpiBarrier;
+mpiReduce(phiProc[],phi[],processor(0),mpiSUM);
+mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
+mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 
+mpiBarrier;
+
+if(mpirank==0){
   //Compute the reflection coefficient.
+  phi=phi0+phi;
   complex[int] phiVec(phi.n), c(NModes+1);
   phiVec = phi[]; //Get the vector form of the finite element function.
   complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
@@ -171,11 +168,13 @@ if(mpirank==0){
   //iter could be used to index the solution.
   Vh ux=real(etax), uy=real(etay);
   Vh iux=imag(etax), iuy=imag(etay);
-  writeToMATLAB(ux,ThIce,"xDisp"+iter+".bb","meshIce"+iter+".msh");
-  writeToMATLAB(uy,ThIce,"yDisp"+iter+".bb","meshIce"+iter+".msh");
-  writeToMATLAB(iux,ThIce,"xDispI"+iter+".bb","meshIce"+iter+".msh");
-  writeToMATLAB(iuy,ThIce,"yDispI"+iter+".bb","meshIce"+iter+".msh");
-  writeToMATLAB(rphi,ThCavity,"potentialCav"+iter+".bb","meshCav"+iter+".msh");
-  writeToMATLAB(iphi,ThCavity,"potentialCavI"+iter+".bb","meshCav"+iter+".msh");
+  /*
+    writeToMATLAB(ux,ThIce,"xDisp"+iter+".bb","meshIce"+iter+".msh");
+    writeToMATLAB(uy,ThIce,"yDisp"+iter+".bb","meshIce"+iter+".msh");
+    writeToMATLAB(iux,ThIce,"xDispI"+iter+".bb","meshIce"+iter+".msh");
+    writeToMATLAB(iuy,ThIce,"yDispI"+iter+".bb","meshIce"+iter+".msh");
+    writeToMATLAB(rphi,ThCavity,"potentialCav"+iter+".bb","meshCav"+iter+".msh");
+    writeToMATLAB(iphi,ThCavity,"potentialCavI"+iter+".bb","meshCav"+iter+".msh");
+  */
   cout<<"Time = "<<clock()-cpu<<endl;
  }
