@@ -1,5 +1,4 @@
 //Simple example to demonstrate the ice-shelf toolbox;
-//Invoking Domain decomposition technique.
 
 verbosity=0.;
 real cpu;
@@ -9,13 +8,11 @@ bool debug=true;
 string SolutionDir="1_Forced/";
 
 load "iovtk"
-macro dimension 2//EOM"
 include "macros.idp"
-include "ffddm.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-//nev=32;
+nev=32;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
@@ -27,7 +24,6 @@ setMeshIce(botRight, midPX, midPY);
 
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
 setMeshCav(midx, midy, endy);
-
 
 if(mpirank==0){
   cout<<"Refine Ice--Mesh"<<endl;
@@ -41,8 +37,6 @@ if(mpirank==0){
  }
 broadcast(processor(0),ThIce);
 broadcast(processor(1),ThCavity);
-
-
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
@@ -72,7 +66,7 @@ Wh<complex> phi0;
 func fh=chi1;//Store in fh, the right-hand side function on the ocean-cavity interface.
 getLaplaceMat(0,0);
 LHS=STIMA+(MQ);
-set(LHS,solver=UMFPACK,eps=1e-20);
+set(LHS,solver=sparsesolver);
 phih[]=LHS^-1*RHS[];
 phi0=phih;//Store in phi0;
 
@@ -87,23 +81,6 @@ if(mpirank==0)
     file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
   }
 
-
-if(mpirank==0)
-  {
-    complex[int] phiVec(phi0.n), c(NModes+1);
-    phiVec=phi0[];
-    complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c);
-    //Write the reflection coefficient to a file.
-    ofstream file("1_SIMPLE5/2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
-    file.precision(16);
-    file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-  }
-
-//Perform domain decomposition.
-ffddmbuildDmesh(M, ThIce, mpiCommWorld);
-ffddmbuildDmesh(M1, ThCavity, mpiCommWorld);
-
-
 //  4) Solve for radiation potential.
 int partition = nev/mpisize;
 Wh<complex>[int] phij(nev);
@@ -111,51 +88,36 @@ F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
 AB.resize(nev,nev);
-complex[int] FProc(nev), RefmProc(nev), Refm(nev);
-complex[int,int] BProc(nev,nev), KProc(nev,nev);
-
-
+complex[int] FProc(partition), RefmProc(partition), Refm(nev);
+complex[int,int] BProc(nev,partition), KProc(nev,partition);
 for(int m=mpirank*partition; m<mpirank*partition+partition; m++)
   {
     func fh=0;
     getLaplaceMat(VX[m],VY[m]);
     LHS=STIMA+(MQ);
-    set(LHS,solver=UMFPACK,eps=1e-20);
+    set(LHS,solver=sparsesolver);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
-    //cout<<"Solved Radiation potential "<<m+1<<"\t@Proc: "<<mpirank<<endl;
-    if(mpirank!=0)
-      processor(0)<<phih[];
-    else if(mpirank==0)
-      {
-        for(int n=1; n<=mpisize-1; n++)
-          processor(n)>>phij[m+n*partition][];
-      }
-  }
+    FProc[m-mpirank*partition]=-(1i*omega*gammahat)*int1d(ThIce,1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
 
-for(int m=0; m<nev; m++)
-  broadcast(processor(0),phij[m][]);
-
-for(int m=0; m<nev; m++)
-  { 
-    FProc[m]=-(1i*omega*gammahat)*int1d(MaTh[mpirank],1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
     for(int n=0; n<nev; n++)
       {
-        BProc(n,m) = (rhoi*ev[m]-rhoi*omega^2)*int2d(MaTh[mpirank])(VX[m]*VX[n]+VY[m]*VY[n]);
-        KProc(n,m) = int1d(MaTh[mpirank],1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
+        BProc(n,m-mpirank*partition) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n]+VY[m]*VY[n]);
+        KProc(n,m-mpirank*partition) = int1d(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
       }
 
     //Write the radation reflection coefficients to a file.
     complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
     pk1=0.;
     phiVecm = phij[m][];
-    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+    RefmProc[m-mpirank*partition] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
   }
-mpiReduce(BProc, B, processor(0), mpiSUM);
-mpiReduce(KProc, K, processor(0), mpiSUM);
-mpiReduce(FProc, F, processor(0), mpiSUM);
-mpiReduce(RefmProc, Refm, processor(0), mpiSUM);
-
+int[int] idx(partition);
+idx=mpirank*partition:mpirank*partition+partition;
+mpiGather(BProc, B, processor(0));
+mpiGather(KProc, K, processor(0));
+mpiGather(FProc, F, processor(0));
+mpiGather(RefmProc, Refm, processor(0));
 
 if(mpirank==0) //Write the matrices to a file.
   {
@@ -184,13 +146,8 @@ if(mpirank==0) //Write the matrices to a file.
 //Solve the reduced system;
 complex[int] xi(nev);
 if(mpirank==0){
-  matrix<complex> Kmat, Bmat, ABmat;
-  Kmat=K;
-  Bmat=B;
-  ABmat=AB;
-  HHmat=Kmat+Bmat+ABmat;
-  set(HHmat,solver=UMFPACK,eps=1e-20);
-  xi=HHmat^-1*F;
+  solveReducedSystem;
+
   //Write solution vector to file.
   ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
   file1.precision(16);

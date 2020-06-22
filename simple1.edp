@@ -53,9 +53,9 @@ for(int m=0; m<nev; m++)
     LHS=STIMA+(MQ);
     set(LHS,solver=sparsesolver);
     phih[]=LHS^-1*RHS[];
-    phij[m]=phih;    
+    phij[m]=phih;
+    cout<<phij[m][].max<<endl;
   }
-
 
 //Build the reduced system and solve it.
 complex[int] c0(NModes+1);
