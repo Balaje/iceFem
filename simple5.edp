@@ -5,77 +5,82 @@ real cpu;
 if(mpirank==0)
   cpu=clock();
 bool debug=true;
-include "macros.idp"
 string SolutionDir="1_Forced/";
+
+load "iovtk"
+include "macros.idp"
+include "ffddm.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
+nev=32;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
 solveDispersion;
 
-mpiBarrier;
-
 //Build the meshes.
 real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
 setMeshIce(botRight, midPX, midPY);
-//cout<<"Built ice mesh"<<endl;
 
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
 setMeshCav(midx, midy, endy);
-//cout<<"Built cavity mesh"<<endl;
 
 if(mpirank==0){
   cout<<"Refine Ice--Mesh"<<endl;
-  ThIce=adaptmesh(ThIce,0.01,IsMetric=1,nbvx=2e6);
+  ThIce=adaptmesh(ThIce,0.02,IsMetric=1,nbvx=2e6);
   cout<<"Ice : Number of Vertices = "<<ThIce.nv<<endl;
  }
  else if(mpirank==1){
    cout<<"Refine Cavity--Mesh"<<endl;
-   ThCavity=adaptmesh(ThCavity,0.01,IsMetric=1,nbvx=2e6);
+   ThCavity=adaptmesh(ThCavity,0.02,IsMetric=1,nbvx=2e6);
    cout<<"Cavity : Number of Vertices = "<<ThCavity.nv<<endl;
  }
 broadcast(processor(0),ThIce);
 broadcast(processor(1),ThCavity);
 
-
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
 solveEigen;
-
-mpiBarrier;
+if(mpirank==0){
+  //cout<<"Solved EigenValue Problem ... "<<endl;
+  ofstream file("1_SIMPLE5/2_Modes/eval.dat");
+  for(int m=0; m<nev; m++)
+    file<<ev[m]<<endl;
+ }
 
 //  2) Get the Non-local boundary condition
 matrix<complex> MQ;
 complex[int] ctilde(NModes+1);
-if(mpirank==0){
-  MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
- }
- else if(mpirank==1){
-   ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
+Wh<complex> chi1;
+MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
+if(mpirank==1){
+  ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
+  for(int m=0; m<NModes+1; m++)
+    chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
  }
 broadcast(processor(0),MQ);
-broadcast(processor(1),ctilde);
-
-Wh<complex> chi1;
-for(int m=0; m<NModes+1; m++)
-  chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
-
-mpiBarrier;
+broadcast(processor(1),chi1[]);
 
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
-if(mpirank==0){
-  func fh=chi1;//Store in fh, the right-hand side function on the ocean-cavity interface.
-  getLaplaceMat(0,0);
-  LHS=STIMA+(MQ);
-  set(LHS,solver=sparsesolver);
-  phih[]=LHS^-1*RHS[];
-  phi0=phih;//Store in phi0;
- }
-broadcast(processor(0),phi0[]);
+func fh=chi1;//Store in fh, the right-hand side function on the ocean-cavity interface.
+getLaplaceMat(0,0);
+LHS=STIMA+(MQ);
+set(LHS,solver=sparsesolver);
+phih[]=LHS^-1*RHS[];
+phi0=phih;//Store in phi0;
 
+if(mpirank==0)
+  {
+    complex[int] phiVec(phi0.n), c(NModes+1);
+    phiVec=phi0[];
+    complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c);
+    //Write the reflection coefficient to a file.
+    ofstream file("1_SIMPLE5/2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
+    file.precision(16);
+    file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
+  }
 
 //  4) Solve for radiation potential.
 int partition = nev/mpisize;
@@ -83,8 +88,9 @@ Wh<complex>[int] phij(nev);
 F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
-complex[int] FProc(nev);
-complex[int,int] BProc(nev,nev), KProc(nev,nev);
+AB.resize(nev,nev);
+complex[int] FProc(partition), RefmProc(partition), Refm(nev);
+complex[int,int] BProc(nev,partition), KProc(nev,partition);
 for(int m=mpirank*partition; m<mpirank*partition+partition; m++)
   {
     func fh=0;
@@ -93,23 +99,64 @@ for(int m=mpirank*partition; m<mpirank*partition+partition; m++)
     set(LHS,solver=sparsesolver);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
-    FProc[m]=-(1i*omega*gammahat)*int1d(ThIce,1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
+    FProc[m-mpirank*partition]=-(1i*omega*gammahat)*int1d(ThIce,1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
+
     for(int n=0; n<nev; n++)
       {
-        BProc(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n]+VY[m]*VY[n]);
-        KProc(n,m) = int1d(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
+        BProc(n,m-mpirank*partition) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n]+VY[m]*VY[n]);
+        KProc(n,m-mpirank*partition) = int1d(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
+      }
+
+    //Write the radation reflection coefficients to a file.
+    complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
+    pk1=0.;
+    phiVecm = phij[m][];
+    RefmProc[m-mpirank*partition] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+  }
+int[int] idx(partition);
+idx=mpirank*partition:mpirank*partition+partition;
+mpiGather(BProc, B, processor(0));
+mpiGather(KProc, K, processor(0));
+mpiGather(FProc, F, processor(0));
+mpiGather(RefmProc, Refm, processor(0));
+
+if(mpirank==0)
+  cout<<F<<endl;
+
+if(mpirank==0) //Write the matrices to a file.
+  {
+    ofstream file1("1_SIMPLE5/2_ModesMatrix/ReH"+iter+".dat");
+    ofstream file2("1_SIMPLE5/2_ModesMatrix/ImH"+iter+".dat");
+    ofstream file3("1_SIMPLE5/2_ModesMatrix/ReF"+iter+".dat");
+    ofstream file4("1_SIMPLE5/2_ModesMatrix/ImF"+iter+".dat");
+    ofstream file5("1_SIMPLE5/2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");
+    file1.precision(16);
+    file2.precision(16);
+    file3.precision(16);
+    file4.precision(16);
+    for(int m=0; m<nev; m++)
+      {
+        file3<<real(F[m])<<endl;
+        file4<<imag(F[m])<<endl;
+        file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
+        for(int n=0; n<nev; n++)
+          {
+            file1<<real(B(m,n)+K(m,n))<<endl;
+            file2<<imag(B(m,n)+K(m,n))<<endl;
+          }
       }
   }
-mpiReduce(BProc, B, processor(0), mpiSUM);
-mpiReduce(KProc, K, processor(0), mpiSUM);
-mpiReduce(FProc, F, processor(0), mpiSUM);
-
-mpiBarrier;
 
 //Solve the reduced system;
 complex[int] xi(nev);
 if(mpirank==0){
-  solveReducedSystem;
+  solveReducedSystem;  
+
+  //Write solution vector to file.
+  ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
+  file1.precision(16);
+  for(int m=0; m<nev; m++)
+    file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
  }
 broadcast(processor(0),xi);
 
@@ -135,20 +182,15 @@ if(mpirank==0){
   complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
   cout.precision(16);
   cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
-
   mesh ThNewIce=movemesh(ThIce,[x+real(etax),y+real(etay)]);
-  plot(ThNewIce,wait=1,ps="deformedMesh.eps");
   Wh rphi=real(phi);
-  plot(rphi,wait=1,fill=1,value=1,ps="velocity.eps");
 
   //Write data to MATLAB
   //iter could be used to index the solution.
   Vh ux=real(etax), uy=real(etay);
-  /*
-    writeToMATLAB(ux,ThIce,"xDisp"+iter+".bb","meshIce"+iter+".msh");
-    writeToMATLAB(uy,ThIce,"yDisp"+iter+".bb","meshIce"+iter+".msh");
-    writeToMATLAB(rphi,ThCavity,"potentialCav"+iter+".bb","meshCav"+iter+".msh");
-  */
+  savevtk("1_SIMPLE5/ThIce.vtk",ThIce);
+  savevtk("1_SIMPLE5/ThCavity.vtk",ThCavity);
+  savevtk("1_SIMPLE5/ThNewIce.vtk",ThNewIce);
+  int[int] Order=[1];
+  savevtk("1_SIMPLE5/rphi.vtk",ThCavity,rphi,dataname="rphi",order=Order);
  }
-if(mpirank==0)
-  cout<<clock()-cpu<<" s"<<endl;

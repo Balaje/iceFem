@@ -57,7 +57,7 @@ macro setProblem()
   HH = H/Lc;
   dd = d/Lc;
   tth = th/Lc;
-  tt = t/tc;
+  tt = t/tc;  
   complex ndOmega = 2*pi/tt;
   complex alpha = HH*ndOmega^2;
   Ap = ag/(1i*omega)*Ad;
@@ -114,7 +114,7 @@ macro iceBEDMAP2(nborders, isBuild)
   HH = H/Lc;
   dd = d/Lc;
   tth = th/Lc;
-  tt = t/tc;
+  tt = t/tc;  
   complex ndOmega = 2*pi/tt;
   complex alpha = HH*ndOmega^2;
   Ap = ag/(1i*omega)*Ad;
@@ -160,8 +160,6 @@ macro iceBEDMAP2(nborders, isBuild)
             ThCavity=buildmesh(S01(2000)+S02(100)+S03(2000)+S04(100));
             cout<<"Built Cavity-Mesh"<<endl;
           }          
-
-          mpiBarrier;
           
           broadcast(processor(0),ThIce);
           broadcast(processor(1),ThCavity);
@@ -186,9 +184,7 @@ macro iceBEDMAP2(nborders, isBuild)
             border S06(t=0,splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=6;};
             ThCavity=buildmesh(S01(5000)+S02(200)+S03(5000)+S04(600)+S05(-500)+S06(-100));
             cout<<"Built Cavity-Mesh"<<endl;
-          }
-          mpiWaitAll;
-          mpiBarrier;
+          }          
 
           broadcast(processor(0),ThIce);
           broadcast(processor(1),ThCavity);
@@ -269,9 +265,9 @@ macro setMeshCav(midx, midy, endy)
     }
   border C01(t=0,LL){x = t; y = splineCurve(t,x1,uy1,x2,y2,x3,y3); label=1;};
   border C02(t=y3,iy3) {x=LL; y=t; label=2;};
-  border C03(t=LL,0) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3); label=3;};
+  border C03(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3); label=3;};
   border C04(t=icebottomleft,uy1) {x=0; y=t; label=4;};
-  ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(LL/tth*N2)+C04(N2));
+  ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(-LL/tth*N2)+C04(N2));
 }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
 macro solveEigen()
@@ -490,7 +486,7 @@ macro solveReducedSystem(){
   Bmat=B;
   ABmat=AB;
   HHmat=Kmat+Bmat+ABmat;
-  set(HHmat,solver=UMFPACK);
+  set(HHmat,solver=sparsesolver,eps=1e-20);
   xi=HHmat^-1*F;
 }//Macro to solve the reduced system
 
