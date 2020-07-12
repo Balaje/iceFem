@@ -2,13 +2,18 @@ verbosity=0;
 
 load "lapack"
 include "macros.idp"
-load "iovtk"
 
-mpiRequest rq;
+load "medit"
+include "macro_ddm.idp"
+include "ffddm_paramters.idp"
+macro minimalMesh()square(2,2)//EOM
+include "ffddm_partitioning.idp"
+
+load "iovtk"
 
 nev=64;
 NModes=5;
-real cpu=clock();
+real cpu=mpiWtime();
 int isSolve= getARGV("-isMesh",0);
 int nborders= getARGV("-nborders",4);
 
@@ -35,8 +40,6 @@ if(mpirank==0){
    cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
    plot(ThCavity,wait=1);
  }
-
-mpiBarrier;
 
 broadcast(processor(0),ThIce);
 broadcast(processor(1),ThCavity);
@@ -66,8 +69,6 @@ broadcast(processor(1),ctilde);
 Wh<complex> chi1;
 for(int m=0; m<NModes+1; m++)
   chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
-
-mpiBarrier;
 
 //Solve EigenValue problem
 Xh[int][VX,VY](nev);
@@ -108,9 +109,11 @@ if(mpirank==0)
 
   }
 
-//Things are done differently in the parallel version...
-//1) Solve for the Radiation Potential and build the F[] vector in the reduced system
-int partition = nev/mpisize;
+//Perform domain decomposition
+ffddmbuildDmesh(M,ThIce,mpiCommWorld);
+ffddmbuildDmesh(M1,ThCavity,mpiCommWorld);
+
+int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
 F.resize(nev);
 B.resize(nev,nev);
@@ -118,7 +121,7 @@ K.resize(nev,nev);
 AB.resize(nev,nev);
 complex[int] FProc(nev), RefmProc(nev), Refm(nev);
 complex[int,int] BProc(nev,nev), KProc(nev,nev);
-for(int m=mpirank*partition; m< mpirank*partition+partition; m++)
+for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
     func fh=0;
     getLaplaceMatBEDMAP2(VX[m],VY[m]);
@@ -126,21 +129,38 @@ for(int m=mpirank*partition; m< mpirank*partition+partition; m++)
     set(LHS,solver=sparsesolver);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
+
+    real cpu=mpiWtime();
+    if(mpirank!=0)
+      processor(0)<<phih[];
+    else if(mpirank==0)
+      {
+	for(int n=1; n<mpisize-1; n++)
+	  processor(n)>>phij[m+n*parti][];	
+      }
+    if(mpirank==2)
+      cout<<"Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;    
+  }
+
+for(int m=0; m<nev; m++)
+  broadcast(processor(0),phij[m][]);
+
+real cpu1=mpiWtime();
+for(int m=0; m<nev; m++)
+  {
     FProc[m]=-(1i*omega*gammahat)*int1d(ThIce,1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
     for(int n=0; n<nev; n++)
       {
         BProc(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n]+VY[m]*VY[n]);
         KProc(n,m) = int1d(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
       }
-
     //Write the radiation reflection coefficients to a file.
     complex [int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
     pk1=0.;
     phiVecm = phij[m][]; //Get the vector form of the finite element function.
     RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1); //From "refCoeff.idp"
-
-    cout<<"Solved Radiation Potential ... "<<m+1<<"\t Proc: "<<mpirank<<endl;
   }
+cout<<"No of Vertices : "<<MaTh[mpirank].nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 mpiReduce(BProc, B, processor(0), mpiSUM);
 mpiReduce(KProc, K, processor(0), mpiSUM);
 mpiReduce(FProc, F, processor(0), mpiSUM);
@@ -174,8 +194,13 @@ if(mpirank==0) //Write the matrices to a file.
 complex[int] xi(nev);
 if(mpirank==0){
   cout<<"Built the system... Solving ... "<<endl;
-  solveReducedSystem;
-
+  matrix<complex> Kmat, Bmat, ABmat;
+  Kmat=K;
+  Bmat=B;
+  ABmat=AB;
+  HHmat=Kmat+Bmat+ABmat;
+  set(HHmat,solver=UMFPACK,eps=1e-20);
+  xi=HHmat^-1*F;
   //Write solution vector to file.
   ofstream file1("BEDMAP2/2_ModesMatrix/lambdaj"+iter+".dat");
   file1.precision(16);
@@ -188,7 +213,7 @@ broadcast(processor(0),xi);
 //Compute the solution.
 Vh <complex> etax, etay, etaxProc, etayProc;
 Wh<complex> phi, phiProc;
-for(int m=mpirank*partition; m<mpirank*partition+partition; m++)
+for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
     phiProc = phiProc + xi[m]*phij[m];
     etaxProc = etaxProc + xi[m]*VX[m];
@@ -210,9 +235,6 @@ if(mpirank==0){
   cout.precision(16);
   cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
   ofstream file("BEDMAP2/2_RefCoeff/RefCoeff"+iter+".dat");
-  file.precision(16);
-  file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-
 
   mesh ThNewIce=movemesh(ThIce,[x+real(etax),y+real(etay)]);
   plot(ThNewIce,wait=1);
@@ -224,16 +246,12 @@ if(mpirank==0){
   //iter could be used to index the solution.
   Vh ux=real(etax), uy=real(etay);
   Vh iux=imag(etax), iuy=imag(etay);
-  /*
-    writeToMATLAB(ux,ThIce,"xDisp"+iter+".bb","meshIce"+iter+".msh");
-    writeToMATLAB(uy,ThIce,"yDisp"+iter+".bb","meshIce"+iter+".msh");
-    writeToMATLAB(iux,ThIce,"xDispI"+iter+".bb","meshIce"+iter+".msh");
-    writeToMATLAB(iuy,ThIce,"yDispI"+iter+".bb","meshIce"+iter+".msh");
-    writeToMATLAB(rphi,ThCavity,"potentialCav"+iter+".bb","meshCav"+iter+".msh");
-    writeToMATLAB(iphi,ThCavity,"potentialCavI"+iter+".bb","meshCav"+iter+".msh");
-  */
-  savevtk("ThIce.vtk",ThIce);
-  savevtk("ThCavity.vtk",ThCavity);
-  savevtk("ThNewIce.vtk",ThNewIce);
-  cout<<"Time = "<<clock()-cpu<<endl;
+
+  savevtk("1_BEDMAP2/ThIce.vtk",ThIce);
+  savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
+  savevtk("1_BEDMAP2/ThNewIce.vtk",ThNewIce);
+  int[int] Order=[1];
+  savevtk("1_SIMPLE5/rphi.vtk",ThCavity,rphi,dataname="rphi",order=Order);  
  }
+
+cout<<"\nProcessor: "<<mpirank<<" Total time = "<<mpiWtime()-cpu<<"\t s"<<endl;
