@@ -14,6 +14,7 @@ load "medit"
 include "macro_ddm.idp"
 include "ffddm_parameters.idp"
 macro minimalMesh()square(2,2)//EOM
+include "ffddm_parameters.idp"
 include "ffddm_partitioning.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
@@ -39,10 +40,10 @@ if(mpirank==0)
   cout<<"Ice : Number of Vertices = "<<ThIce.nv<<endl;
 
 if(mpirank==0)
-   cout<<"Refine Cavity--Mesh"<<endl;
+  cout<<"Refine Cavity--Mesh"<<endl;
 ThCavity=adaptmesh(ThCavity,0.001,IsMetric=1,nbvx=2e6);
 if(mpirank==0)
-   cout<<"Cavity : Number of Vertices = "<<ThCavity.nv<<endl;
+  cout<<"Cavity : Number of Vertices = "<<ThCavity.nv<<endl;
 
 
 
@@ -121,7 +122,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
-    //cout<<"Solved Radiation potential "<<m+1<<"\t@Proc: "<<mpirank<<endl;
+
     real cpu=mpiWtime();
     if(mpirank!=0)
       processor(0)<<phih[];
@@ -134,12 +135,12 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
       cout<<"Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;
   }
 
-for(int m=0; m<nev; m++)
-  broadcast(processor(0),phij[m][]);
+//for(int m=0; m<nev; m++)  
 
 real cpu1=mpiWtime();
 for(int m=0; m<nev; m++)
-  { 
+  {
+    broadcast(processor(0),phij[m][]);
     FProc[m]=-(1i*omega*gammahat)*int1d(MaTh[mpirank],1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
     for(int n=0; n<nev; n++)
       {
@@ -153,7 +154,7 @@ for(int m=0; m<nev; m++)
     phiVecm = phij[m][];
     RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
   }
-cout<<"No of Vertices : "<<MaTh[mpirank].nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
+cout<<"No of vertices: "<<MaTh[mpirank].nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 mpiReduce(BProc, B, processor(0), mpiSUM);
 mpiReduce(KProc, K, processor(0), mpiSUM);
 mpiReduce(FProc, F, processor(0), mpiSUM);
@@ -234,7 +235,5 @@ if(mpirank==0){
   savevtk("1_SIMPLE5/ThCavity.vtk",ThCavity);
   savevtk("1_SIMPLE5/ThNewIce.vtk",ThNewIce);
   int[int] Order=[1];
-  savevtk("1_SIMPLE5/rphi.vtk",ThCavity,rphi,dataname="rphi",order=Order);
+  savevtk("1_SIMPLE5/rphi.vtk",ThCavity,rphi,dataname="rphi",order=Order); 
  }
-
-//cout<<"\nProcessor: "<<mpirank<<" Total time = "<<mpiWtime()-cpu<<"\t s"<<endl;
