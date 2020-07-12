@@ -12,7 +12,6 @@ macro dimension 2//EOM"
 include "macros.idp"
 load "medit"
 include "macro_ddm.idp"
-include "ffddm_parameters.idp"
 macro minimalMesh()square(2,2)//EOM
 include "ffddm_parameters.idp"
 include "ffddm_partitioning.idp"
@@ -33,18 +32,18 @@ real midx=LL/2., midy=-0.5*HH, endy=-HH;
 setMeshCav(midx, midy, endy);
 
 
-if(mpirank==0)
+if(mpirank==0){ 
   cout<<"Refine Ice--Mesh"<<endl; 
-ThIce=adaptmesh(ThIce,0.001,IsMetric=1,nbvx=2e6);
-if(mpirank==0)
+  ThIce=adaptmesh(ThIce,0.01,IsMetric=1,nbvx=2e6);
   cout<<"Ice : Number of Vertices = "<<ThIce.nv<<endl;
-
-if(mpirank==0)
+ }
+ else if(mpirank==1){
   cout<<"Refine Cavity--Mesh"<<endl;
-ThCavity=adaptmesh(ThCavity,0.001,IsMetric=1,nbvx=2e6);
-if(mpirank==0)
+  ThCavity=adaptmesh(ThCavity,0.01,IsMetric=1,nbvx=2e6);
   cout<<"Cavity : Number of Vertices = "<<ThCavity.nv<<endl;
-
+ }
+broadcast(processor(0),ThIce);
+broadcast(processor(1),ThCavity);
 
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
