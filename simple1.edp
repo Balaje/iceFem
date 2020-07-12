@@ -19,6 +19,14 @@ setMeshIce(botRight, midPX, midPY);
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
 setMeshCav(midx, midy, endy);
 
+cout<<"Refine Ice--Mesh"<<endl;
+ThIce=adaptmesh(ThIce,0.02,IsMetric=1,nbvx=2e6);
+cout<<"Ice : Number of Vertices = "<<ThIce.nv<<endl;
+
+cout<<"Refine Cavity--Mesh"<<endl;
+ThCavity=adaptmesh(ThCavity,0.02,IsMetric=1,nbvx=2e6);
+cout<<"Cavity : Number of Vertices = "<<ThCavity.nv<<endl;
+
 //  1) Solve the in-vacuo eigenvalue problem.
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
@@ -54,7 +62,6 @@ for(int m=0; m<nev; m++)
     set(LHS,solver=sparsesolver);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
-    cout<<phij[m][].max<<endl;
   }
 
 //Build the reduced system and solve it.

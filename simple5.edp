@@ -2,20 +2,20 @@
 //Invoking Domain decomposition technique.
 
 verbosity=0.;
-real cpu;
-if(mpirank==0)
-  cpu=clock();
+real cpu=mpiWtime();
 bool debug=true;
 string SolutionDir="1_Forced/";
 
 load "iovtk"
 macro dimension 2//EOM"
 include "macros.idp"
-include "ffddm.idp"
+load "medit"
+include "ffddm_parameters.idp"
+include "ffddm_partitioning.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-//nev=32;
+nev=40;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
@@ -31,12 +31,12 @@ setMeshCav(midx, midy, endy);
 
 if(mpirank==0){
   cout<<"Refine Ice--Mesh"<<endl;
-  ThIce=adaptmesh(ThIce,0.02,IsMetric=1,nbvx=2e6);
+  ThIce=adaptmesh(ThIce,0.001,IsMetric=1,nbvx=2e6);
   cout<<"Ice : Number of Vertices = "<<ThIce.nv<<endl;
  }
  else if(mpirank==1){
    cout<<"Refine Cavity--Mesh"<<endl;
-   ThCavity=adaptmesh(ThCavity,0.02,IsMetric=1,nbvx=2e6);
+   ThCavity=adaptmesh(ThCavity,0.001,IsMetric=1,nbvx=2e6);
    cout<<"Cavity : Number of Vertices = "<<ThCavity.nv<<endl;
  }
 broadcast(processor(0),ThIce);
@@ -103,7 +103,6 @@ if(mpirank==0)
 ffddmbuildDmesh(M, ThIce, mpiCommWorld);
 ffddmbuildDmesh(M1, ThCavity, mpiCommWorld);
 
-
 //  4) Solve for radiation potential.
 int partition = nev/mpisize;
 Wh<complex>[int] phij(nev);
@@ -123,7 +122,12 @@ for(int m=mpirank*partition; m<mpirank*partition+partition; m++)
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
+
+
     //cout<<"Solved Radiation potential "<<m+1<<"\t@Proc: "<<mpirank<<endl;
+
+    //Send the solution to processor 0.
+    real cpu=mpiWtime();
     if(mpirank!=0)
       processor(0)<<phih[];
     else if(mpirank==0)
@@ -131,13 +135,16 @@ for(int m=mpirank*partition; m<mpirank*partition+partition; m++)
         for(int n=1; n<=mpisize-1; n++)
           processor(n)>>phij[m+n*partition][];
       }
+    if(mpirank==2)
+      cout<<"Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;
   }
 
-for(int m=0; m<nev; m++)
-  broadcast(processor(0),phij[m][]);
+//for(int m=0; m<nev; m++)  
 
+real cpu1=mpiWtime();
 for(int m=0; m<nev; m++)
-  { 
+  {
+    broadcast(processor(0),phij[m][]);
     FProc[m]=-(1i*omega*gammahat)*int1d(MaTh[mpirank],1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
     for(int n=0; n<nev; n++)
       {
@@ -151,6 +158,7 @@ for(int m=0; m<nev; m++)
     phiVecm = phij[m][];
     RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
   }
+cout<<"No of vertices: "<<MaTh[mpirank].nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 mpiReduce(BProc, B, processor(0), mpiSUM);
 mpiReduce(KProc, K, processor(0), mpiSUM);
 mpiReduce(FProc, F, processor(0), mpiSUM);
@@ -232,6 +240,8 @@ if(mpirank==0){
   savevtk("1_SIMPLE5/ThNewIce.vtk",ThNewIce);
   int[int] Order=[1];
   savevtk("1_SIMPLE5/rphi.vtk",ThCavity,rphi,dataname="rphi",order=Order);
-
-  cout<<clock()-cpu<<"\t s"<<endl;
+ 
  }
+
+//mpiBarrier;
+//cout<<"Total Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;

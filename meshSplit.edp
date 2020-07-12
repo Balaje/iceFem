@@ -1,0 +1,35 @@
+//Exclusive program to split the mesh using parmetis
+macro dimension 2//
+verbosity=0;
+include "macros.idp"
+include "ffddm.idp"
+load "iovtk"
+
+setProblem;
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
+setMeshIce(botRight, midPX, midPY);
+real midx=LL/2., midy=-0.5*HH, endy=-HH;
+setMeshCav(midx, midy, endy);
+
+if(mpirank==0){
+  cout<<"Refine Ice--Mesh"<<endl;
+  ThIce=adaptmesh(ThIce,0.01,IsMetric=1,nbvx=2e6);
+  cout<<"Ice : Number of Vertices = "<<ThIce.nv<<endl;
+ }
+ else if(mpirank==1){
+   cout<<"Refine Cavity--Mesh"<<endl;
+   ThCavity=adaptmesh(ThCavity,0.01,IsMetric=1,nbvx=2e6);
+   cout<<"Cavity : Number of Vertices = "<<ThCavity.nv<<endl;
+ }
+broadcast(processor(0),ThIce);
+broadcast(processor(1),ThCavity);
+//Split the mesh
+ffddmbuildDmesh(M,ThIce,mpiCommWorld)
+ffddmbuildDmesh(M1,ThCavity,mpiCommWorld)
+//Save mesh - This will be used by the code. 
+savemesh(MaTh[mpirank],"MESHES_SPLIT/ICE/meshIce"+mpirank+".msh");
+savemesh(M1aTh[mpirank],"MESHES_SPLIT/CAVITY/meshCav"+mpirank+".msh");
+//Save the VTK files separately.
+savevtk("MESHES_SPLIT/ICE/VTK/meshIce"+mpirank+".vtk",MaTh[mpirank]);
+savevtk("MESHES_SPLIT/CAVITY/VTK/meshCav"+mpirank+".vtk",M1aTh[mpirank]);
+

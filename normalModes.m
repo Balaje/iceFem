@@ -19,15 +19,15 @@ d = (rhoi/rhow)*th;
 file = 'simple2.edp';
 ffpp=[ff,' -nw -ne ', file];
 
-for m=1:length(omega)
-    cmd=[ffpp,' -iter ',num2str(m),' -Tr ',num2str(real(T(m))),' -Ti ',num2str(imag(T(m))),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
-        ,num2str(th),' -N ',num2str(5), ' -isUniIce ',num2str(1), ' -isUniCav ',num2str(1)];
-    [aa,bb1]=system(cmd);
-    if(aa)
-        error('Cannot run program. Check path of FF++ or install it');
-    end
-    fprintf('Finish m = %d\n',m);
-end
+% for m=1:length(omega)
+%     cmd=[ffpp,' -iter ',num2str(m),' -Tr ',num2str(real(T(m))),' -Ti ',num2str(imag(T(m))),' -H ',num2str(H), ' -L ',num2str(L),' -h '...
+%         ,num2str(th),' -N ',num2str(5), ' -isUniIce ',num2str(1), ' -isUniCav ',num2str(1)];
+%     [aa,bb1]=system(cmd);
+%     if(aa)
+%         error('Cannot run program. Check path of FF++ or install it');
+%     end
+%     fprintf('Finish m = %d\n',m);
+% end
 
 %% Compute the determinant of H
 filePath='1_EigenModes/2_ModesMatrix/';
