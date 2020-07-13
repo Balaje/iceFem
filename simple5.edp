@@ -18,7 +18,7 @@ include "ffddm_partitioning.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=60;
+nev=40;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
@@ -115,12 +115,15 @@ complex[int,int] BProc(nev,nev), KProc(nev,nev);
 
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
+    real cpu1=mpiWtime();
     func fh=0;
     getLaplaceMat(VX[m],VY[m]);
     LHS=STIMA+(MQ);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
+    if(mpirank==2)
+      cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s ";
 
     real cpu=mpiWtime();
     if(mpirank!=0)
@@ -131,15 +134,20 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
           processor(n)>>phij[m+n*parti][];
       }
     if(mpirank==2)
-      cout<<"Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;
+      cout<<"T: "<<mpiWtime()-cpu<<"s"<<endl;
   }
 
-//for(int m=0; m<nev; m++)  
+
+real cpuBc=mpiWtime();
+for(int m=0; m<nev; m++)
+  broadcast(processor(0),phij[m][]);
+
+if(mpirank==0)
+  cout<<"B: "<<mpiWtime()-cpuBc<<endl; 
 
 real cpu1=mpiWtime();
 for(int m=0; m<nev; m++)
   {
-    broadcast(processor(0),phij[m][]);
     FProc[m]=-(1i*omega*gammahat)*int1d(MaTh[mpirank],1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
     for(int n=0; n<nev; n++)
       {
