@@ -5,7 +5,7 @@ verbosity=0.;
 real cpu=mpiWtime();
 bool debug=true;
 string SolutionDir="1_Forced/";
-  
+
 load "iovtk"
 macro dimension 2//EOM"
 
@@ -18,33 +18,15 @@ include "ffddm_partitioning.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=40;
+nev=8;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
 solveDispersion;
 
 //Build the meshes.
-real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
-setMeshIce(botRight, midPX, midPY);
-
-real midx=LL/2., midy=-0.5*HH, endy=-HH;
-setMeshCav(midx, midy, endy);
-
-
-if(mpirank==0){ 
-  cout<<"Refine Ice--Mesh"<<endl; 
-  ThIce=adaptmesh(ThIce,0.01,IsMetric=1,nbvx=2e6);
-  cout<<"Ice : Number of Vertices = "<<ThIce.nv<<endl;
- }
- else if(mpirank==1){
-  cout<<"Refine Cavity--Mesh"<<endl;
-  ThCavity=adaptmesh(ThCavity,0.01,IsMetric=1,nbvx=2e6);
-  cout<<"Cavity : Number of Vertices = "<<ThCavity.nv<<endl;
- }
-broadcast(processor(0),ThIce);
-broadcast(processor(1),ThCavity);
-
+ThIce=readmesh("./MESHES_SPLIT/FullIce.msh");
+ThCavity=readmesh("./MESHES_SPLIT/FullCavity.msh");
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
@@ -97,11 +79,6 @@ if(mpirank==0)
     file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
   }
 
-//Perform domain decomposition.
-ffddmbuildDmesh(M, ThIce, mpiCommWorld)
-ffddmbuildDmesh(M1, ThCavity, mpiCommWorld)
-
-
 //Solve for radiation potential.
 int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
@@ -143,16 +120,33 @@ for(int m=0; m<nev; m++)
   broadcast(processor(0),phij[m][]);
 
 if(mpirank==0)
-  cout<<"B: "<<mpiWtime()-cpuBc<<endl; 
+  cout<<"B: "<<mpiWtime()-cpuBc<<endl;
 
+int[int] I(1), J(1);
+real[int] C(1);
+//Construct the interpolate matrix
+matrix M1xM;
+{
+  ifstream file1("./MESHES_SPLIT/M1xM"+mpirank+".dat");
+  file1>>M1xM;
+}
+cout<<M1xM.n<<endl;
+mesh MaTh, M1aTh;
+MaTh=readmesh("./MESHES_SPLIT/IceMaTh"+mpirank+".msh");
+M1aTh=readmesh("./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
+
+fespace MMh(MaTh,P1);
+MMh<complex> interPphih;
 real cpu1=mpiWtime();
 for(int m=0; m<nev; m++)
-  {
-    FProc[m]=-(1i*omega*gammahat)*int1d(MaTh[mpirank],1,qforder=10)(phi0*(VX[m]*N.x+VY[m]*N.y));
+  {    
+    interPphih[]=M1xM*phi0[];
+    FProc[m]=-(1i*omega*gammahat)*int1d(MaTh,1,qforder=10)(interPphih*(VX[m]*N.x+VY[m]*N.y));
     for(int n=0; n<nev; n++)
       {
-        BProc(n,m) = (rhoi*ev[m]-rhoi*omega^2)*int2d(MaTh[mpirank])(VX[m]*VX[n]+VY[m]*VY[n]);
-        KProc(n,m) = int1d(MaTh[mpirank],1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
+        BProc(n,m) = (rhoi*ev[m]-rhoi*omega^2)*int2d(MaTh)(VX[m]*VX[n]+VY[m]*VY[n]);
+        interPphih[]=M1xM*phij[m][];
+        KProc(n,m) = int1d(MaTh,1,qforder=10)((-VY[m]*deltahat + interPphih*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
       }
 
     //Write the radation reflection coefficients to a file.
@@ -161,7 +155,7 @@ for(int m=0; m<nev; m++)
     phiVecm = phij[m][];
     RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
   }
-cout<<"No of vertices: "<<MaTh[mpirank].nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
+cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 mpiReduce(BProc, B, processor(0), mpiSUM);
 mpiReduce(KProc, K, processor(0), mpiSUM);
 mpiReduce(FProc, F, processor(0), mpiSUM);
@@ -242,5 +236,5 @@ if(mpirank==0){
   savevtk("1_SIMPLE5/ThCavity.vtk",ThCavity);
   savevtk("1_SIMPLE5/ThNewIce.vtk",ThNewIce);
   int[int] Order=[1];
-  savevtk("1_SIMPLE5/rphi.vtk",ThCavity,rphi,dataname="rphi",order=Order); 
+  savevtk("1_SIMPLE5/rphi.vtk",ThCavity,rphi,dataname="rphi",order=Order);
  }

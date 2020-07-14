@@ -108,7 +108,6 @@ if(mpirank==0)
     file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
 
   }
-
 //Perform domain decomposition
 ffddmbuildDmesh(M,ThIce,mpiCommWorld);
 ffddmbuildDmesh(M1,ThCavity,mpiCommWorld);
