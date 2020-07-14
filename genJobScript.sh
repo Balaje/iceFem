@@ -9,7 +9,15 @@ echo "module load freefem" >> job.sh
 echo "cd \$PBS_O_WORKDIR" >> job.sh
 echo "export FF_INCLUDEPATH=\"\$PBS_O_WORKDIR/include\"" >> job.sh
 var=$(echo "$1*$2" | bc -l)
-echo "mpirun -np $var FreeFem++-mpi -nw -v 0 $3 -L $4 -H $5 -h $6 -Tr $7 -Ti $8 -iter $9" >> job.sh
+if [[ "$3"=="--default" ]]; then
+    echo "mpirun -np $var FreeFem++-mpi -nw -v 0 simple5.edp -L 20000 -H 800 -h 200 -Tr 200 -Ti 0 -iter 0" >> job.sh
+else
+    if [[ "$3"=="solveBEDMAP2.edp" ]]; then
+        echo "mpirun -np $var FreeFem++-mpi -nw -v 0 $3 -isMesh $4 -nborders $5 -Tr 6 -Ti $7 -iter $8" >> job.sh
+    else
+        echo "mpirun -np $var FreeFem++-mpi -nw -v 0 $3 -L $4 -H $5 -h $6 -Tr $7 -Ti $8 -iter $9" >> job.sh
+    fi        
+fi   
 echo "exit 0" >> job.sh
 
 cat job.sh
