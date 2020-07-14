@@ -11,7 +11,8 @@ include "ffddm_partitioning.idp"
 
 
 //Assuming that the meshes already exist in the folder.
-if(getARGV("-isBEDMAP2",false)){
+bool isBedMap=getARGV("-isBEDMAP2",false);
+if(isBedMap){
   iceBEDMAP2(nborders,0);
  }
  else{
