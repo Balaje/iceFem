@@ -11,14 +11,17 @@ include "ffddm_partitioning.idp"
 
 
 //Assuming that the meshes already exist in the folder.
-//iceBEDMAP2(nborders,0);
-
-//Build the meshes.
-setProblem;
-real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
-setMeshIce(botRight, midPX, midPY);
-real midx=LL/2., midy=-0.5*HH, endy=-HH;
-setMeshCav(midx, midy, endy);
+if(getARGV("-isBEDMAP2",false)){
+  iceBEDMAP2(nborders,0);
+ }
+ else{
+   //Build the meshes.
+   setProblem;
+   real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
+   setMeshIce(botRight, midPX, midPY);
+   real midx=LL/2., midy=-0.5*HH, endy=-HH;
+   setMeshCav(midx, midy, endy);
+ }
 
 if(mpirank==0){
   cout<<"Imported Ice Mesh (proc 0)..."<<endl;
