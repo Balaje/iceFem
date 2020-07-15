@@ -17,7 +17,7 @@ if(isBedMap){
   iceBEDMAP2(nborders,0);
  }
  else{
-   //Build the meshes.
+   //Build the meshes.   
    setProblem;
    real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
    setMeshIce(botRight, midPX, midPY);
@@ -59,9 +59,14 @@ savemesh(M1aTh[mpirank],"./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 cout<<"Number of verts = "<<mpirank<<"\t"<<MaTh[mpirank].nv<<endl;
 real cpu2=mpiWtime();
 fespace MMh(MaTh[mpirank],P1);
-matrix M1xM=interpolate(MMh,Wh);
+matrix M1xM=interpolate(MMh,Wh,inside=true);
+matrix M2xM=interpolate(MMh,Vh);
 cout<<"Time to interpolate = "<<mpiWtime()-cpu2<<endl;
 {
   ofstream file1("./MESHES_SPLIT/M1xM"+mpirank+".dat");
-  file1<<M1xM;
+  file1<<M1xM;  
+}
+{
+  ofstream file2("./MESHES_SPLIT/M2xM"+mpirank+".dat");
+  file2<<M2xM;
 }
