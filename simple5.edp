@@ -101,7 +101,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     phij[m]=phih;
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s ";
-
+    
     real cpu=mpiWtime();
     if(mpirank!=0)
       processor(0)<<phih[];

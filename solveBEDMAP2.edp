@@ -16,7 +16,7 @@ include "ffddm_partitioning.idp"
 
 load "iovtk"
 
-nev=64;
+nev=60;
 NModes=5;
 real cpu=mpiWtime();
 int isSolve= getARGV("-isMesh",0);
@@ -37,18 +37,9 @@ if(mpirank==0)
 
 matrix<complex> MQ;
 complex[int] ctilde(NModes+1);
-if(mpirank==0){
-  MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
-  cout<<"Obtained MQ (Proc "<<mpirank<<")"<<endl;
- }
-if(mpirank==1){
-  ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
-  cout<<"Obtained ctilde (Proc "<<mpirank<<")"<<endl;
- }
-broadcast(processor(0),MQ);
-broadcast(processor(1),ctilde);
-
 Wh<complex> chi1;
+MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
+ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
 for(int m=0; m<NModes+1; m++)
   chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
@@ -65,17 +56,16 @@ if(mpirank==0){
 
 //Solve for the Diffraction potential
 Wh<complex> phi0;
-if(mpirank==0){
-  func fh=chi1;
-  getLaplaceMatBEDMAP2(0,0);
-  LHS=STIMA+(MQ)+(-BMASSMA);
-  set(LHS,solver=sparsesolver);
-  phih[]=LHS^-1*RHS[];
-  phi0=phih;
-  plot(phi0,wait=0,fill=1,value=1,dim=3);
+func fh=chi1;
+getLaplaceMatBEDMAP2(0,0);
+LHS=STIMA+(MQ);
+set(LHS,solver=UMFPACK,eps=1e-20);
+phih[]=LHS^-1*RHS[];
+phi0=phih;
+plot(phi0,wait=0,fill=1,value=1,dim=3);
+if(mpirank==0)
   cout<<"Solved Diffraction Potential "<<endl<<endl;
- }
-broadcast(processor(0),phi0[]);
+
 
 if(mpirank==0)
   {
@@ -99,22 +89,26 @@ complex[int] FProc(nev), RefmProc(nev), Refm(nev);
 complex[int,int] BProc(nev,nev), KProc(nev,nev);
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
+    real cpu1=mpiWtime();
     func fh=0;
     getLaplaceMatBEDMAP2(VX[m],VY[m]);
-    LHS=STIMA+(MQ)+(-BMASSMA);
-    set(LHS,solver=sparsesolver);
+    LHS=STIMA+(MQ);
+    set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
+    if(mpirank==0)
+      cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s ";
 
     real cpu=mpiWtime();
     if(mpirank!=0)
       processor(0)<<phih[];
     else if(mpirank==0)
-      for(int n=1; n<=mpisize-1; n++)
-        processor(n)>>phij[m+n*parti][];
-
-    if(mpirank==2)
-      cout<<"Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;
+      {
+	for(int n=1; n<=mpisize-1; n++)
+	  processor(n)>>phij[m+n*parti][];
+      }
+    if(mpirank==0)
+      cout<<"T: "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;
   }
 
 real cpuB=mpiWtime();
@@ -123,22 +117,24 @@ for(int m=0; m<nev; m++)
 if(mpirank==0)
   cout<<"B: "<<mpiWtime()-cpuB<<endl;
 
+
 //Read the interpolate matrix;
 matrix M1xM, M2xM;
 {
-  ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
+  ifstream file1("./MESHES_SPLIT/M1xM"+mpirank+".dat");
   file1>>M1xM;
-  ifstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
+  ifstream file2("./MESHES_SPLIT/M2xM"+mpirank+".dat");
   file2>>M2xM;
 }
 
 mesh MaTh, M1aTh;
-MaTh=readmesh("MESHES_SPLIT/IceMaTh"+mpirank+".msh");
-M1aTh=readmesh("MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
+MaTh=readmesh("./MESHES_SPLIT/IceMaTh"+mpirank+".msh");
+M1aTh=readmesh("./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
-cout<<"No of Vertices : "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
+if(mpirank==0)
+  cout<<"V : "<<MaTh.nv<<" T "<<mpirank<<" = "<<mpiWtime()-cpu1<<" s"<<endl;
 
 //---
 //Write the radation reflection coefficients to a file.
@@ -232,11 +228,12 @@ if(mpirank==0){
   Vh ux=real(etax), uy=real(etay);
   Vh iux=imag(etax), iuy=imag(etay);
 
-  savevtk("1_BEDMAP2/ThIce.vtk",ThIce);
-  savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
-  savevtk("1_BEDMAP2/ThNewIce.vtk",ThNewIce);
+  savevtk("1_BEDMAP2/ThIce"+iter+".vtk",ThIce);
+  savevtk("1_BEDMAP2/ThCavity"+iter+".vtk",ThCavity);
+  savevtk("1_BEDMAP2/ThNewIce"+iter+".vtk",ThNewIce);
   int[int] Order=[1];
-  savevtk("1_SIMPLE5/rphi.vtk",ThCavity,rphi,dataname="rphi",order=Order);
+  savevtk("1_BEDMAP2/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);
  }
 
-cout<<"\nProcessor: "<<mpirank<<" Total time = "<<mpiWtime()-cpu<<"\t s"<<endl;
+if(mpirank==0)
+  cout<<"\nProcessor: "<<mpirank<<" Total time = "<<mpiWtime()-cpu<<"\t s"<<endl;
