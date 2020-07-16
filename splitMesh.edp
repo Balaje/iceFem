@@ -14,7 +14,8 @@ include "ffddm_partitioning.idp"
 bool isBedMap=getARGV("-isBEDMAP2",0);
 if(isBedMap){
   int nborders=getARGV("-nborders",4);
-  iceBEDMAP2(nborders,0);
+  int isMesh=getARGV("-isMesh",1);
+  iceBEDMAP2(nborders,isMesh);
  }
  else{
    //Build the meshes.   
