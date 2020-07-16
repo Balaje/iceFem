@@ -131,6 +131,7 @@ macro iceBEDMAP2(nborders, isBuild)
         {
           if(mpirank==0){
             if(abs(cavEnd-iceEnd)<1e-5){
+              cout<<"This"<<endl;
               cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
               border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
               border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
