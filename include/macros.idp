@@ -270,6 +270,8 @@ macro setMeshCav(midx, midy, endy)
   ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(-LL/tth*N2)+C04(N2));
 }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
+
+real[int,int] rawVX(nev,nev);
 macro solveEigen()
 {
   Xh [u,v],[uu,vv];  
@@ -511,3 +513,78 @@ macro writeToMATLAB(uh,Th,solfilename,meshfilename)
     file<<uh[][m]<<endl;
 
 }//Macro to write the mesh and solution data for MATLAB visualization.
+
+//Macro to build the reduced system (optimized)
+macro buildReducedSystemOptim(){  
+  real[int,int] VXaTh(MaTh.nv,nev), VYaTh(MaTh.nv,nev), VY1aTh(MaTh.nv,nev);
+  complex[int] phi0aTh(MaTh.nv);
+  complex[int,int] phiMaTh(MaTh.nv,nev);
+
+  fespace MMh(MaTh,P1); 
+  MMh AA,BB;
+  varf ip(AA,BB)=int2d(MaTh)(AA*BB);
+  varf ipx(AA,BB)=int1d(MaTh,1,qforder=10)(AA*BB*N.x);
+  varf ipy(AA,BB)=int1d(MaTh,1,qforder=10)(AA*BB*N.y);
+
+  matrix massMa=ip(MMh,MMh);
+  matrix massMax=ipx(MMh,MMh);
+  matrix massMay=ipy(MMh,MMh);
+    
+  phi0aTh=M1xM*phi0[];
+  phi0aTh=phi0aTh*(-1i*omega*gammahat);
+  for(int m=0; m<nev; m++)
+    {
+      Vh vxx=VX[m],vyy=VY[m];      
+      VXaTh(:,m)=M2xM*vxx[];      
+      VYaTh(:,m)=M2xM*vyy[];     
+      VY1aTh(:,m)=deltahat*VYaTh(:,m);
+      phiMaTh(:,m)=M1xM*phij[m][];
+      phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
+    }
+  
+  real[int,int] Tx(MaTh.nv,nev), Ty(MaTh.nv,nev),Txx(MaTh.nv,nev), Tyy(MaTh.nv,nev);
+  complex[int,int] BProcX(nev,nev), BProcY(nev,nev), KProcX(nev,nev), KProcY(nev,nev);
+  real tmpre, tmpim;
+  complex[int] FProcX(nev), FProcY(nev);
+  for(int m=0; m<nev; m++)
+    {
+      Tx(:,m)=massMa*VXaTh(:,m);
+      Ty(:,m)=massMa*VYaTh(:,m);
+      Txx(:,m)=massMax*VXaTh(:,m);
+      Tyy(:,m)=massMay*VYaTh(:,m);
+
+      tmpre=phi0aTh.re'*Txx(:,m);
+      tmpim=phi0aTh.im'*Txx(:,m);
+      FProcX(m)=tmpre+1i*tmpim;
+      tmpre=phi0aTh.re'*Tyy(:,m);
+      tmpim=phi0aTh.im'*Tyy(:,m);
+      FProcY(m)=tmpre+1i*tmpim;
+
+      for(int n=0; n<nev; n++)
+        {
+          BProcX(n,m)=VXaTh(:,n)'*Tx(:,m);          
+          BProcY(n,m)=VYaTh(:,n)'*Ty(:,m);          
+
+          tmpre=VY1aTh(:,n)'*Txx(:,m);
+          tmpre=-1*tmpre;
+          tmpre+=phiMaTh(:,n).re'*Txx(:,m);
+          tmpim=phiMaTh(:,n).im'*Txx(:,m);
+          KProcX(m,n)=tmpre+1i*tmpim;
+
+          tmpre=VY1aTh(:,n)'*Tyy(:,m);
+          tmpre=-1*tmpre;
+          tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
+          tmpim=phiMaTh(:,n).im'*Tyy(:,m);
+          KProcY(m,n)=tmpre+1i*tmpim;
+        }
+
+      BProcX(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcX(:,m);
+      BProcY(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcY(:,m);
+    }  
+  FProc=FProcX+FProcY;
+  BProc=BProcX+BProcY;  
+  KProc=KProcX+KProcY;
+  mpiReduce(BProc,B,processor(0),mpiSUM);
+  mpiReduce(FProc,F,processor(0),mpiSUM);
+  mpiReduce(KProc,K,processor(0),mpiSUM);
+}//EOM"

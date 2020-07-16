@@ -18,7 +18,7 @@ include "ffddm_partitioning.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=40;
+nev=64;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
@@ -99,7 +99,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
-    if(mpirank==2)
+    if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s ";
 
     real cpu=mpiWtime();
@@ -110,7 +110,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
         for(int n=1; n<=mpisize-1; n++)
           processor(n)>>phij[m+n*parti][];
       }
-    if(mpirank==2)
+    if(mpirank==0)
       cout<<"T: "<<mpiWtime()-cpu<<"s"<<endl;
   }
 
@@ -122,45 +122,33 @@ for(int m=0; m<nev; m++)
 if(mpirank==0)
   cout<<"B: "<<mpiWtime()-cpuBc<<endl;
 
-int[int] I(1), J(1);
-real[int] C(1);
 //Construct the interpolate matrix
-matrix M1xM;
+matrix M1xM,M2xM;
 {
   ifstream file1("./MESHES_SPLIT/M1xM"+mpirank+".dat");
   file1>>M1xM;
+  ifstream file2("./MESHES_SPLIT/M2xM"+mpirank+".dat");
+  file2>>M2xM;
 }
-cout<<M1xM.n<<endl;
 mesh MaTh, M1aTh;
 MaTh=readmesh("./MESHES_SPLIT/IceMaTh"+mpirank+".msh");
 M1aTh=readmesh("./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 
-fespace MMh(MaTh,P1);
-MMh<complex> interPphih;
 real cpu1=mpiWtime();
-for(int m=0; m<nev; m++)
-  {    
-    interPphih[]=M1xM*phi0[];
-    FProc[m]=-(1i*omega*gammahat)*int1d(MaTh,1,qforder=10)(interPphih*(VX[m]*N.x+VY[m]*N.y));
-    for(int n=0; n<nev; n++)
-      {
-        BProc(n,m) = (rhoi*ev[m]-rhoi*omega^2)*int2d(MaTh)(VX[m]*VX[n]+VY[m]*VY[n]);
-        interPphih[]=M1xM*phij[m][];
-        KProc(n,m) = int1d(MaTh,1,qforder=10)((-VY[m]*deltahat + interPphih*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
-      }
+buildReducedSystemOptim;
 
-    //Write the radation reflection coefficients to a file.
-    complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
-    pk1=0.;
-    phiVecm = phij[m][];
-    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-  }
+//---
+//Write the radation reflection coefficients to a file.
+if(mpirank==0){
+  for(int m=0; m<nev; m++)
+    {
+      complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
+      pk1=0.;
+      phiVecm = phij[m][];
+      RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+    }
+ }
 cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
-mpiReduce(BProc, B, processor(0), mpiSUM);
-mpiReduce(KProc, K, processor(0), mpiSUM);
-mpiReduce(FProc, F, processor(0), mpiSUM);
-mpiReduce(RefmProc, Refm, processor(0), mpiSUM);
-
 
 if(mpirank==0) //Write the matrices to a file.
   {
