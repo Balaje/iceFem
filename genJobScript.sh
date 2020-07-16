@@ -1,6 +1,6 @@
 echo "#!/bin/bash" > job.sh
 echo "" >> job.sh
-echo "#PBS -l select=$1:ncpus=$2:mem=16GB" >> job.sh
+echo "#PBS -l select=$1:ncpus=$2:mpiprocs=$2:mem=8GB" >> job.sh
 echo "#PBS -l walltime=1:00:00" >> job.sh
 echo "#PBS -k oe" >> job.sh
 echo "" >> job.sh

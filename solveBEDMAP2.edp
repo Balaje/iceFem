@@ -24,8 +24,8 @@ int nborders= getARGV("-nborders",4);
 
 //Load the meshes.
 iceBEDMAP2(nborders,isSolve);
-ThIce=readmesh("./MESHES_SPLIT/FullIce.msh");
-ThCavity=readmesh("./MESHES_SPLIT/FullCavity.msh");
+ThIce=readmesh("MESHES_SPLIT/FullIce.msh");
+ThCavity=readmesh("MESHES_SPLIT/FullCavity.msh");
 
 if(nborders!=4)
   dd=0.;
@@ -126,15 +126,15 @@ if(mpirank==0)
 //Read the interpolate matrix;
 matrix M1xM, M2xM;
 {
-  ifstream file1("./MESHES_SPLIT/M1xM"+mpirank+".dat");
+  ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
   file1>>M1xM;
-  ifstream file2("./MESHES_SPLIT/M2xM"+mpirank+".dat");
+  ifstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
   file2>>M2xM;
 }
 
 mesh MaTh, M1aTh;
-MaTh=readmesh("./MESHES_SPLIT/IceMaTh"+mpirank+".msh");
-M1aTh=readmesh("./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
+MaTh=readmesh("MESHES_SPLIT/IceMaTh"+mpirank+".msh");
+M1aTh=readmesh("MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
