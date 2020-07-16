@@ -118,7 +118,6 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
 real cpuBc=mpiWtime();
 for(int m=0; m<nev; m++)
   broadcast(processor(0),phij[m][]);
-
 if(mpirank==0)
   cout<<"B: "<<mpiWtime()-cpuBc<<endl;
 
@@ -136,19 +135,18 @@ M1aTh=readmesh("./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
+cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
 //---
 //Write the radation reflection coefficients to a file.
-if(mpirank==0){
-  for(int m=0; m<nev; m++)
-    {
-      complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
-      pk1=0.;
-      phiVecm = phij[m][];
-      RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-    }
- }
-cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
+for(int m=0; m<nev; m++)
+  {
+    complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
+    pk1=0.;
+    phiVecm = phij[m][];
+    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+  }
+mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 if(mpirank==0) //Write the matrices to a file.
   {
