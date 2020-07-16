@@ -18,7 +18,7 @@ include "ffddm_partitioning.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=8;
+nev=40;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
