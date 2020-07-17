@@ -18,9 +18,11 @@ load "iovtk"
 
 nev=60;
 NModes=5;
+string SolutionDir="1_BEDMAP2/";
 real cpu=mpiWtime();
 int isSolve= getARGV("-isMesh",0);
 int nborders= getARGV("-nborders",4);
+iter=getARGV("-iter",0);
 
 //Load the meshes.
 iceBEDMAP2(nborders,isSolve);
@@ -47,11 +49,12 @@ for(int m=0; m<NModes+1; m++)
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
-if(mpirank==0){  
+if(mpirank==0){
+  writeEigen; 
   cout<<"Solved EigenValue Problem ... "<<endl;
   ofstream file("1_BEDMAP2/2_Modes/eval.dat");
   for(int m=0; m<nev; m++)
-    file<<ev[m]<<endl;
+    file<<ev[m]<<endl;  
  }
 
 //Solve for the Diffraction potential
@@ -216,6 +219,8 @@ if(mpirank==0){
   cout.precision(16);
   cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
   ofstream file("1_BEDMAP2/2_RefCoeff/RefCoeff"+iter+".dat");
+  file.precision(16);
+  file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
 
   mesh ThNewIce=movemesh(ThIce,[x+real(etax),y+real(etay)]);
   plot(ThNewIce,wait=1);
@@ -228,8 +233,8 @@ if(mpirank==0){
   Vh ux=real(etax), uy=real(etay);
   Vh iux=imag(etax), iuy=imag(etay);
 
-  savevtk("1_BEDMAP2/ThIce"+iter+".vtk",ThIce);
-  savevtk("1_BEDMAP2/ThCavity"+iter+".vtk",ThCavity);
+  savevtk("1_BEDMAP2/ThIce.vtk",ThIce);
+  savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
   savevtk("1_BEDMAP2/ThNewIce"+iter+".vtk",ThNewIce);
   int[int] Order=[1];
   savevtk("1_BEDMAP2/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);
