@@ -13,7 +13,7 @@ include "ffddm_partitioning.idp"
 //Assuming that the meshes already exist in the folder.
 bool isBedMap=getARGV("-isBEDMAP2",0);
 if(isBedMap){
-  int nborders=getARGV("-nborders",4);
+  int nborders=getARGV("-nborders",4);  
   int isMesh=getARGV("-isMesh",1);
   iceBEDMAP2(nborders,isMesh);
  }

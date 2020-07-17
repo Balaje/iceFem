@@ -174,17 +174,25 @@ if(mpirank==0) //Write the matrices to a file.
 
 //Solve the reduced system;
 complex[int] xi(nev);
-if(mpirank==0){
+if(mpirank==0){ 
   matrix<complex> Kmat, Bmat, ABmat;
   Kmat=K;
   Bmat=B;
   ABmat=AB;
   HHmat=Kmat+Bmat+ABmat;
   set(HHmat,solver=UMFPACK,eps=1e-20);
-  xi=HHmat^-1*F;
+  xi=HHmat^-1*F;  
+  /*
+  complex[int,int] H(nev,nev), Hinv(nev,nev);
+  H=K+B;
+  H=H+AB;
+  Hinv=H^-1;
+  matrix<complex> HHmat=Hinv;;
+  xi=HHmat*F;  
+  */
   //Write solution vector to file.
   ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
-  file1.precision(16);
+  file1.precision(8);
   for(int m=0; m<nev; m++)
     file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
  }
