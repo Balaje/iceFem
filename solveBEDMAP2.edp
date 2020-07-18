@@ -46,7 +46,6 @@ for(int m=0; m<NModes+1; m++)
   chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
 //Solve EigenValue problem
-string SolutionDir="1_BEDMAP2/"
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
@@ -111,7 +110,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
-mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM)
+mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
 mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs
