@@ -1,7 +1,7 @@
 /*
-WARNING: 
-Should be run after splitting the meshes
-ff-mpirun -np 4 splitMesh.edp -hsize 0.02 -isBEDMAP 1
+  WARNING:
+  Should be run after splitting the meshes
+  ff-mpirun -np 4 splitMesh.edp -hsize 0.02 -isBEDMAP 1
 */
 
 verbosity=0;
@@ -12,11 +12,11 @@ load "medit"
 include "macro_ddm.idp"
 include "ffddm_parameters.idp"
 macro minimalMesh()square(2,2)//EOM
-include "ffddm_partitioning.idp"
+  include "ffddm_partitioning.idp"
 
-load "iovtk"
+  load "iovtk"
 
-nev=60;
+  nev=60;
 NModes=5;
 real cpu=mpiWtime();
 int isSolve= getARGV("-isMesh",0);
@@ -47,7 +47,7 @@ for(int m=0; m<NModes+1; m++)
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
-if(mpirank==0){  
+if(mpirank==0){
   cout<<"Solved EigenValue Problem ... "<<endl;
   ofstream file("1_BEDMAP2/2_Modes/eval.dat");
   for(int m=0; m<nev; m++)
@@ -87,6 +87,9 @@ K.resize(nev,nev);
 AB.resize(nev,nev);
 complex[int] FProc(nev), RefmProc(nev), Refm(nev);
 complex[int,int] BProc(nev,nev), KProc(nev,nev);
+complex[int,int] PHIJ(nev,Wh.ndof),PHIJProc(nev,Wh.ndof);
+complex[int] phiVecm(Wh.ndof), cc(NModes+1), pk1(NModes+1);
+
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
     real cpu1=mpiWtime();
@@ -96,27 +99,21 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
+    PHIJProc(m,:)=phij[m][];
+    //Compute the radiation reflection coefficients
+    pk1=0.;
+    phiVecm = phij[m][];
+    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
     if(mpirank==0)
-      cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s ";
-
-    real cpu=mpiWtime();
-    if(mpirank!=0)
-      processor(0)<<phih[];
-    else if(mpirank==0)
-      {
-	for(int n=1; n<=mpisize-1; n++)
-	  processor(n)>>phij[m+n*parti][];
-      }
-    if(mpirank==0)
-      cout<<"T: "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;
+      cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
+mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM)
+mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
-real cpuB=mpiWtime();
-for(int m=0; m<nev; m++)
-  broadcast(processor(0),phij[m][]);
-if(mpirank==0)
-  cout<<"B: "<<mpiWtime()-cpuB<<endl;
-
+//Unpack and set to phij locally in all procs
+for(int m=0; m<nev; m++){
+  phij[m][]=PHIJ(m,:);
+ }
 
 //Read the interpolate matrix;
 matrix M1xM, M2xM;
@@ -138,13 +135,6 @@ if(mpirank==0)
 
 //---
 //Write the radation reflection coefficients to a file.
-for(int m=0; m<nev; m++)
-  {
-    complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
-    pk1=0.;
-    phiVecm = phij[m][];
-    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-  }
 
 if(mpirank==0) //Write the matrices to a file.
   {
@@ -174,21 +164,15 @@ if(mpirank==0) //Write the matrices to a file.
 complex[int] xi(nev);
 if(mpirank==0){
   cout<<"Built the system... Solving ... "<<endl;
-  /*
+
   matrix<complex> Kmat, Bmat, ABmat;
   Kmat=K;
   Bmat=B;
   ABmat=AB;
   HHmat=Kmat+Bmat+ABmat;
-  set(HHmat,solver=UMFPACK,eps=1e-20);
-  xi=HHmat^-1*F;  
-  */
-  complex[int,int] H(nev,nev), Hinv(nev,nev);
-  H=K+B;
-  H=H+AB;
-  Hinv=H^-1;
-  matrix<complex> HHmat=Hinv;
-  xi=HHmat*F;
+  set(HHmat,solver=LU,eps=1e-20);
+  xi=HHmat^-1*F;
+  
   //Write solution vector to file.
   ofstream file1("1_BEDMAP2/2_ModesMatrix/lambdaj"+iter+".dat");
   file1.precision(16);
