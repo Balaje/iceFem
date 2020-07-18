@@ -88,7 +88,8 @@ K.resize(nev,nev);
 AB.resize(nev,nev);
 complex[int] FProc(nev), RefmProc(nev), Refm(nev);
 complex[int,int] BProc(nev,nev), KProc(nev,nev);
-
+complex[int,int] PHIJ(nev,Wh.ndof),PHIJProc(nev,Wh.ndof);
+complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
 
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
@@ -99,27 +100,22 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
-    if(mpirank==0)
-      cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s ";
+    PHIJProc(m,:)=phij[m][];
+    //Compute the radiation reflection coefficients
+    pk1=0.;
+    phiVecm = phij[m][];
+    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
     
-    real cpu=mpiWtime();
-    if(mpirank!=0)
-      processor(0)<<phih[];
-    else if(mpirank==0)
-      {
-        for(int n=1; n<=mpisize-1; n++)
-          processor(n)>>phij[m+n*parti][];
-      }
     if(mpirank==0)
-      cout<<"T: "<<mpiWtime()-cpu<<"s"<<endl;
+      cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
+mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
+mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
-
-real cpuBc=mpiWtime();
-for(int m=0; m<nev; m++)
-  broadcast(processor(0),phij[m][]);
-if(mpirank==0)
-  cout<<"B: "<<mpiWtime()-cpuBc<<endl;
+//Unpack and set to phij locally in all procs
+for(int m=0; m<nev; m++){
+  phij[m][]=PHIJ(m,:);
+ }
 
 //Construct the interpolate matrix
 matrix M1xM,M2xM;
@@ -137,16 +133,6 @@ real cpu1=mpiWtime();
 buildReducedSystemOptim;
 cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
-//---
-//Write the radation reflection coefficients to a file.
-for(int m=0; m<nev; m++)
-  {
-    complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
-    pk1=0.;
-    phiVecm = phij[m][];
-    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-  }
-mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 if(mpirank==0) //Write the matrices to a file.
   {
@@ -174,21 +160,21 @@ if(mpirank==0) //Write the matrices to a file.
 
 //Solve the reduced system;
 complex[int] xi(nev);
-if(mpirank==0){ 
+if(mpirank==0){
   matrix<complex> Kmat, Bmat, ABmat;
   Kmat=K;
   Bmat=B;
   ABmat=AB;
   HHmat=Kmat+Bmat+ABmat;
   set(HHmat,solver=UMFPACK,eps=1e-20);
-  xi=HHmat^-1*F;  
+  xi=HHmat^-1*F;
   /*
-  complex[int,int] H(nev,nev), Hinv(nev,nev);
-  H=K+B;
-  H=H+AB;
-  Hinv=H^-1;
-  matrix<complex> HHmat=Hinv;;
-  xi=HHmat*F;  
+    complex[int,int] H(nev,nev), Hinv(nev,nev);
+    H=K+B;
+    H=H+AB;
+    Hinv=H^-1;
+    matrix<complex> HHmat=Hinv;;
+    xi=HHmat*F;
   */
   //Write solution vector to file.
   ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
