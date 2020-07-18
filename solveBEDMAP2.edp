@@ -18,9 +18,11 @@ macro minimalMesh()square(2,2)//EOM
 
   nev=60;
 NModes=5;
+string SolutionDir="1_BEDMAP2/";
 real cpu=mpiWtime();
 int isSolve= getARGV("-isMesh",0);
 int nborders= getARGV("-nborders",4);
+iter=getARGV("-iter",0);
 
 //Load the meshes.
 iceBEDMAP2(nborders,isSolve);
@@ -48,10 +50,11 @@ Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
 if(mpirank==0){
+  writeEigen; 
   cout<<"Solved EigenValue Problem ... "<<endl;
   ofstream file("1_BEDMAP2/2_Modes/eval.dat");
   for(int m=0; m<nev; m++)
-    file<<ev[m]<<endl;
+    file<<ev[m]<<endl;  
  }
 
 //Solve for the Diffraction potential
@@ -107,7 +110,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
-mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM)
+mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
 mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs
@@ -132,9 +135,6 @@ real cpu1=mpiWtime();
 buildReducedSystemOptim;
 if(mpirank==0)
   cout<<"V : "<<MaTh.nv<<" T "<<mpirank<<" = "<<mpiWtime()-cpu1<<" s"<<endl;
-
-//---
-//Write the radation reflection coefficients to a file.
 
 if(mpirank==0) //Write the matrices to a file.
   {
@@ -164,7 +164,6 @@ if(mpirank==0) //Write the matrices to a file.
 complex[int] xi(nev);
 if(mpirank==0){
   cout<<"Built the system... Solving ... "<<endl;
-
   matrix<complex> Kmat, Bmat, ABmat;
   Kmat=K;
   Bmat=B;
@@ -207,6 +206,8 @@ if(mpirank==0){
   cout.precision(16);
   cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
   ofstream file("1_BEDMAP2/2_RefCoeff/RefCoeff"+iter+".dat");
+  file.precision(16);
+  file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
 
   mesh ThNewIce=movemesh(ThIce,[x+real(etax),y+real(etay)]);
   plot(ThNewIce,wait=1);
@@ -219,8 +220,8 @@ if(mpirank==0){
   Vh ux=real(etax), uy=real(etay);
   Vh iux=imag(etax), iuy=imag(etay);
 
-  savevtk("1_BEDMAP2/ThIce"+iter+".vtk",ThIce);
-  savevtk("1_BEDMAP2/ThCavity"+iter+".vtk",ThCavity);
+  savevtk("1_BEDMAP2/ThIce.vtk",ThIce);
+  savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
   savevtk("1_BEDMAP2/ThNewIce"+iter+".vtk",ThNewIce);
   int[int] Order=[1];
   savevtk("1_BEDMAP2/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);
