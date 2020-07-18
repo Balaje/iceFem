@@ -89,6 +89,7 @@ AB.resize(nev,nev);
 complex[int] FProc(nev), RefmProc(nev), Refm(nev);
 complex[int,int] BProc(nev,nev), KProc(nev,nev);
 complex[int,int] PHIJ(nev,Wh.ndof),PHIJProc(nev,Wh.ndof);
+complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
 
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
@@ -100,10 +101,17 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
     PHIJProc(m,:)=phij[m][];
+    //Compute the radiation reflection coefficients
+    pk1=0.;
+    phiVecm = phij[m][];
+    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+    
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
+mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
+
 //Unpack and set to phij locally in all procs
 for(int m=0; m<nev; m++){
   phij[m][]=PHIJ(m,:);
@@ -125,16 +133,6 @@ real cpu1=mpiWtime();
 buildReducedSystemOptim;
 cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
-//---
-//Write the radation reflection coefficients to a file.
-for(int m=0; m<nev; m++)
-  {
-    complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
-    pk1=0.;
-    phiVecm = phij[m][];
-    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-  }
-mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 if(mpirank==0) //Write the matrices to a file.
   {
