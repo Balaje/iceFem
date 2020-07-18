@@ -172,7 +172,7 @@ if(mpirank==0){
   HHmat=Kmat+Bmat+ABmat;
   set(HHmat,solver=LU,eps=1e-20);
   xi=HHmat^-1*F;
-  
+
   //Write solution vector to file.
   ofstream file1("1_BEDMAP2/2_ModesMatrix/lambdaj"+iter+".dat");
   file1.precision(16);
