@@ -99,6 +99,13 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
+
+    //COmpute the reflection coefficients.
+    complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
+    pk1=0.;
+    phiVecm = phij[m][];
+    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+    
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s ";
 
@@ -113,6 +120,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     if(mpirank==0)
       cout<<"T: "<<mpirank<<" = "<<mpiWtime()-cpu<<"\t s"<<endl;
   }
+mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 real cpuB=mpiWtime();
 for(int m=0; m<nev; m++)
@@ -140,14 +148,6 @@ if(mpirank==0)
   cout<<"V : "<<MaTh.nv<<" T "<<mpirank<<" = "<<mpiWtime()-cpu1<<" s"<<endl;
 
 //---
-//Write the radation reflection coefficients to a file.
-for(int m=0; m<nev; m++)
-  {
-    complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
-    pk1=0.;
-    phiVecm = phij[m][];
-    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-  }
 
 if(mpirank==0) //Write the matrices to a file.
   {
@@ -177,21 +177,15 @@ if(mpirank==0) //Write the matrices to a file.
 complex[int] xi(nev);
 if(mpirank==0){
   cout<<"Built the system... Solving ... "<<endl;
-  /*
+  
   matrix<complex> Kmat, Bmat, ABmat;
   Kmat=K;
   Bmat=B;
   ABmat=AB;
   HHmat=Kmat+Bmat+ABmat;
-  set(HHmat,solver=UMFPACK,eps=1e-20);
+  set(HHmat,solver=LU,eps=1e-20);
   xi=HHmat^-1*F;  
-  */
-  complex[int,int] H(nev,nev), Hinv(nev,nev);
-  H=K+B;
-  H=H+AB;
-  Hinv=H^-1;
-  matrix<complex> HHmat=Hinv;
-  xi=HHmat*F;
+  
   //Write solution vector to file.
   ofstream file1("1_BEDMAP2/2_ModesMatrix/lambdaj"+iter+".dat");
   file1.precision(16);
