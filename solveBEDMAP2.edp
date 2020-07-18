@@ -46,6 +46,7 @@ for(int m=0; m<NModes+1; m++)
   chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
 //Solve EigenValue problem
+string SolutionDir="1_BEDMAP2/"
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
