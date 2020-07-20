@@ -13,12 +13,12 @@ include "ffddm_partitioning.idp"
 //Assuming that the meshes already exist in the folder.
 bool isBedMap=getARGV("-isBEDMAP2",0);
 if(isBedMap){
-  int nborders=getARGV("-nborders",4);  
+  int nborders=getARGV("-nborders",4);
   int isMesh=getARGV("-isMesh",1);
   iceBEDMAP2(nborders,isMesh);
  }
  else{
-   //Build the meshes.   
+   //Build the meshes.
    setProblem;
    real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
    setMeshIce(botRight, midPX, midPY);
@@ -54,6 +54,14 @@ savemesh(ThCavity,"./MESHES_SPLIT/FullCavity.msh");
 //Perform domain decomposition and write to file.
 ffddmbuildDmesh(M,ThIce,mpiCommWorld);
 ffddmbuildDmesh(M1,ThCavity,mpiCommWorld);
+
+
+//Build the finite element spaces locally
+macro def(u) u//EOM
+  macro init(u) u//EOM
+
+  ffddmbuildDfespace(Fe,M,real,def,init,P1);
+
 savemesh(MaTh[mpirank],"./MESHES_SPLIT/IceMaTh"+mpirank+".msh");
 savemesh(M1aTh[mpirank],"./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 //Construct the interpolation matrices
@@ -61,13 +69,14 @@ cout<<"Number of verts = "<<mpirank<<"\t"<<MaTh[mpirank].nv<<endl;
 real cpu2=mpiWtime();
 fespace MMh(MaTh[mpirank],P1);
 matrix M1xM=interpolate(MMh,Wh,inside=true);
-matrix M2xM=interpolate(MMh,Vh);
+matrix M2xM=FeRih[mpirank];
+
 cout<<"Time to interpolate = "<<mpiWtime()-cpu2<<endl;
 {
   ofstream file1("./MESHES_SPLIT/M1xM"+mpirank+".dat");
-  file1<<M1xM;  
+  file1<<M1xM;
 }
-{
-  ofstream file2("./MESHES_SPLIT/M2xM"+mpirank+".dat");
-  file2<<M2xM;
-}
+  {
+    ofstream file2("./MESHES_SPLIT/M2xM"+mpirank+".dat");
+    file2<<M2xM;
+  }

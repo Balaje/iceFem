@@ -76,8 +76,13 @@ if(isSolve)
     lambdaj = zeros(Nev,length(omegaNew(:)));
     for p=1:length(omegaNew(:))
         Hmat = reshape(HNew(:,p),[Nev,Nev]);        
-        Fmat = FNew(:,p);        
-        lambdajNew = Hmat\Fmat;        
+        Fmat = FNew(:,p);
+        H1mat = sparse(Hmat.');
+         spparms('spumoni',0);
+%         spparms('bandden',1);
+%         spparms('piv_tol',1e-6);
+%         spparms('sym_tol',1e-6);
+        lambdajNew = H1mat\Fmat;        
         lambdaj(:,p) = lambdajNew;
     end
     

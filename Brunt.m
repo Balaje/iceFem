@@ -15,12 +15,12 @@ Ap=(g./(1i*omega))*Ad;
 
 
 % Set the new-frequency space;
-npts=500;
+npts=3000;
 a1=a; b1=b;
 omegaNew=linspace(a1,b1,npts+1);
 Tnew=2*pi./omegaNew;
 ApNew=(g./(1i*omegaNew))*Ad;
-file1='3_BEDMAP2/';
+file1='4_BEDMAP2/';
 rc=zeros(length(omega),1);
 for m=1:length(omega)
     RC=load([file1,'2_RefCoeff/RefCoeff',num2str(m-1),'.dat']);
@@ -38,7 +38,7 @@ for m=1:length(omega)
     rcDiff = load([filePath,'/RefCoeff_Dif/refC',num2str(m-1),'.dat']);
     rcRad = load([filePath,'/RefCoeff_Rad/refC',num2str(m-1),'.dat']);    
     rd(m) = rcDiff(1)+1i*rcDiff(2);
-    rr(m,:) = (1/20)*(rcRad(:,1)+1i*rcRad(:,2)).';
+    rr(m,:) = (rcRad(:,1)+1i*rcRad(:,2)).';
     
     lam = load([file1,'/2_ModesMatrix/lambdaj',num2str(m-1),'.dat']);
     lam = (lam(:,1)+1i*lam(:,2)).';
@@ -70,13 +70,11 @@ LAM=LAMRe+1i*LAMIm;
 rcNew=zeros(length(omegaNew),1);
 for m=1:length(omegaNew)
     rcNew(m)=rdNew(m);
-    for n=1:length(nev)
-        rcNew(m)=rcNew(m)+(LAM(m,n)*rrNew(m,n));
-    end
+    rcNew(m)=rcNew(m)+(LAM(m,:)*rrNew(m,:).');    
 end
 
 figure(2);
 subplot(2,1,1);
-semilogx(Tnew,real(rcNew),Tnew,imag(rcNew));
+semilogx(Tnew,real(rcNew),'b',Tnew,imag(rcNew),'r');
 subplot(2,1,2);
 semilogx(Tnew,condH);
