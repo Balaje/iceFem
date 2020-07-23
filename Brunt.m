@@ -20,7 +20,7 @@ a1=a; b1=b;
 omegaNew=linspace(a1,b1,npts+1);
 Tnew=2*pi./omegaNew;
 ApNew=(g./(1i*omegaNew))*Ad;
-file1='4_BEDMAP2/';
+file1='5_BEDMAP2/';
 rc=zeros(length(omega),1);
 for m=1:length(omega)
     RC=load([file1,'2_RefCoeff/RefCoeff',num2str(m-1),'.dat']);
