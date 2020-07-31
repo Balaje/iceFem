@@ -68,8 +68,8 @@ savemesh(M1aTh[mpirank],"./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 cout<<"Number of verts = "<<mpirank<<"\t"<<MaTh[mpirank].nv<<endl;
 real cpu2=mpiWtime();
 fespace MMh(MaTh[mpirank],P1);
-mesh ThCavEmpty=emptymesh(ThCavity);
-fespace WWh(ThCavEmpty,P1);
+mesh ThEmptyCav=emptymesh(ThCavity);
+fespace WWh(ThEmptyCav,P1);
 matrix M1xM=interpolate(MMh,WWh,inside=true);
 matrix M2xM=FeRih[mpirank];
 
