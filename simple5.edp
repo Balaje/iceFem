@@ -133,9 +133,8 @@ real cpu1=mpiWtime();
 buildReducedSystemOptim;
 cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
-
 if(mpirank==0) //Write the matrices to a file.
-  {    
+  {
     ofstream file1("1_SIMPLE5/2_ModesMatrix/ReH"+iter+".dat");
     ofstream file2("1_SIMPLE5/2_ModesMatrix/ImH"+iter+".dat");
     ofstream file3("1_SIMPLE5/2_ModesMatrix/ReF"+iter+".dat");

@@ -11,7 +11,11 @@ refTime=datenum(DT(1));
 t=(datenum(DT)-refTime)*24*60*60; %In Minutes/Hours.
 interval=t(2)-t(1);
 Fs=1/interval;
-Amp1=smoothdata(Amp,'movmean',30);
+
+Amp1=sgolayfilt(Amp,2,41);
+%[Amp11,Amp12]=envelope(Amp,30,'peak');
+%Amp12=Amp11;
+%Amp1=0.5*(Amp11+Amp12);
 [t,Amp,Amp1]=freqRange(1,length(t),t,Amp,Amp1);
 L=length(Amp);
 
@@ -68,4 +72,3 @@ yhat=10.^(polyval(b,X1));
 whiteNoise=0;
 yhat1=10.^(polyval(b,X1)+whiteNoise);
 loglog(10.^(X1),yhat1);
-
