@@ -18,7 +18,7 @@ include "ffddm_partitioning.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=64;
+nev=20;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
@@ -135,7 +135,7 @@ cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiW
 
 
 if(mpirank==0) //Write the matrices to a file.
-  {
+  {    
     ofstream file1("1_SIMPLE5/2_ModesMatrix/ReH"+iter+".dat");
     ofstream file2("1_SIMPLE5/2_ModesMatrix/ImH"+iter+".dat");
     ofstream file3("1_SIMPLE5/2_ModesMatrix/ReF"+iter+".dat");

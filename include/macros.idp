@@ -57,7 +57,7 @@ macro setProblem()
   HH = H/Lc;
   dd = d/Lc;
   tth = th/Lc;
-  tt = t/tc;  
+  tt = t/tc;
   complex ndOmega = 2*pi/tt;
   complex alpha = HH*ndOmega^2;
   Ap = ag/(1i*omega)*Ad;
@@ -82,7 +82,7 @@ macro iceBEDMAP2(nborders, isBuild)
 
   int npieces, npieces1;
   file>>iceBegin>>iceEnd>>npieces>>cavBegin>>cavEnd>>npieces1>>cavTop;
-  
+
   real[int,int] coefsBot(npieces,4), coefsTop(npieces,4), coefsCav(npieces1,4);
   real[int] breaksBot(npieces+1), breaksTop(npieces+1), breaksCav(npieces1+1);
   for(int m=0; m<npieces; m++) {
@@ -114,7 +114,7 @@ macro iceBEDMAP2(nborders, isBuild)
   HH = H/Lc;
   dd = d/Lc;
   tth = th/Lc;
-  tt = t/tc;  
+  tt = t/tc;
   complex ndOmega = 2*pi/tt;
   complex alpha = HH*ndOmega^2;
   Ap = ag/(1i*omega)*Ad;
@@ -160,8 +160,8 @@ macro iceBEDMAP2(nborders, isBuild)
             border S04(t=splineRecon(coefsBot,breaksBot,iceBegin,npieces),splineRecon(coefsCav,breaksCav,cavBegin,npieces1)){x=iceBegin; y=t; label=4;};
             ThCavity=buildmesh(S01(2000)+S02(100)+S03(2000)+S04(100));
             cout<<"Built Cavity-Mesh"<<endl;
-          }          
-          
+          }
+
           broadcast(processor(0),ThIce);
           broadcast(processor(1),ThCavity);
         }
@@ -185,7 +185,7 @@ macro iceBEDMAP2(nborders, isBuild)
             border S06(t=0,splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=6;};
             ThCavity=buildmesh(S01(5000)+S02(200)+S03(5000)+S04(600)+S05(-500)+S06(-100));
             cout<<"Built Cavity-Mesh"<<endl;
-          }          
+          }
 
           broadcast(processor(0),ThIce);
           broadcast(processor(1),ThCavity);
@@ -275,12 +275,12 @@ macro setMeshCav(midx, midy, endy)
 real[int,int] rawVX(nev,nev);
 macro solveEigen()
 {
-  Xh [u,v],[uu,vv];  
+  Xh [u,v],[uu,vv];
   varf a([u,v],[uu,vv]) = int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
   varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv));
   matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
   matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
-  int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);  
+  int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
 }//This is a macro for solving the elasticity Eigenvalue problem.
 
 
@@ -516,12 +516,12 @@ macro writeToMATLAB(uh,Th,solfilename,meshfilename)
 }//Macro to write the mesh and solution data for MATLAB visualization.
 
 //Macro to build the reduced system (optimized)
-macro buildReducedSystemOptim(){  
+macro buildReducedSystemOptim(){
   real[int,int] VXaTh(MaTh.nv,nev), VYaTh(MaTh.nv,nev), VY1aTh(MaTh.nv,nev);
   complex[int] phi0aTh(MaTh.nv);
   complex[int,int] phiMaTh(MaTh.nv,nev);
 
-  fespace MMh(MaTh,P1); 
+  fespace MMh(MaTh,P1);
   MMh AA,BB;
   varf ip(AA,BB)=int2d(MaTh)(AA*BB);
   varf ipx(AA,BB)=int1d(MaTh,1,qforder=10)(AA*BB*N.x);
@@ -538,15 +538,15 @@ macro buildReducedSystemOptim(){
   phi0aTh=phi0aTh*(-1i*omega*gammahat);
   for(int m=0; m<nev; m++)
     {
-      Vh vxx=VX[m],vyy=VY[m];      
-      VXaTh(:,m)=M2xM*vxx[];      
-      VYaTh(:,m)=M2xM*vyy[];     
+      Vh vxx=VX[m],vyy=VY[m];
+      VXaTh(:,m)=M2xM*vxx[];
+      VYaTh(:,m)=M2xM*vyy[];
       VY1aTh(:,m)=deltahat*VYaTh(:,m);
       WWh<complex> phijj=phij[m];
       phiMaTh(:,m)=M1xM*phijj[];
       phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
     }
-  
+
   real[int,int] Tx(MaTh.nv,nev), Ty(MaTh.nv,nev),Txx(MaTh.nv,nev), Tyy(MaTh.nv,nev);
   complex[int,int] BProcX(nev,nev), BProcY(nev,nev), KProcX(nev,nev), KProcY(nev,nev);
   real tmpre, tmpim;
@@ -567,8 +567,8 @@ macro buildReducedSystemOptim(){
 
       for(int n=0; n<nev; n++)
         {
-          BProcX(n,m)=VXaTh(:,n)'*Tx(:,m);          
-          BProcY(n,m)=VYaTh(:,n)'*Ty(:,m);          
+          BProcX(n,m)=VXaTh(:,n)'*Tx(:,m);
+          BProcY(n,m)=VYaTh(:,n)'*Ty(:,m);
 
           tmpre=VY1aTh(:,n)'*Txx(:,m);
           tmpre=-1*tmpre;
@@ -585,11 +585,148 @@ macro buildReducedSystemOptim(){
 
       BProcX(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcX(:,m);
       BProcY(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcY(:,m);
-    }  
+    }
   FProc=FProcX+FProcY;
-  BProc=BProcX+BProcY;  
+  BProc=BProcX+BProcY;
   KProc=KProcX+KProcY;
   mpiReduce(BProc,B,processor(0),mpiSUM);
   mpiReduce(FProc,F,processor(0),mpiSUM);
   mpiReduce(KProc,K,processor(0),mpiSUM);
+}//EOM" 
+
+macro refineMesh(){
+  if(mpirank==0){
+    cout<<"Imported Ice Mesh (proc 0)..."<<endl;
+    cout<<"Refining Ice Mesh (proc 0) ..."<<endl;
+    cout<<"Ice : Before Refinement, NBV = "<<ThIce.nv<<endl;
+    func metricFuncIce=getARGV("-hsize",0.02);
+    ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
+    cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
+    plot(ThIce,wait=1);
+  }
+  else if(mpirank==1){
+    cout<<"Imported Cavity Mesh (proc 1)..."<<endl;
+    cout<<"Refining Cavity Mesh (proc 1) ..."<<endl;
+    real LCav=abs(cavBegin-cavEnd)/Lc;
+    func metricFuncCav=getARGV("-hsize",0.02);
+    cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;
+    ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
+    cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
+    plot(ThCavity,wait=1);
+  }
+  broadcast(processor(0),ThIce);
+  broadcast(processor(1),ThCavity);
+}//EOM" To refine the mesh.
+
+
+matrix IceR1, CavR1, MatInterP, MassMa, MassMaX, MassMaY;
+mesh ThIceEmpty, ThCavEmpty;
+macro getInterpMatrices(){
+  ThIceEmpty=emptymesh(ThIce);
+  ThCavEmpty=emptymesh(ThCavity);
+  fespace VVh(ThIceEmpty,P1);
+  fespace WWh(ThCavEmpty,P1);
+  IceR1=interpolate(VVh,Vh,inside=true);
+  CavR1=interpolate(WWh,Wh,inside=true);
+  MatInterP=interpolate(VVh,WWh,inside=true);
+
+  Vh AA,BB;
+  varf ip(AA,BB)=int2d(ThIce)(AA*BB);
+  VVh CC,DD;
+  varf ip1(CC,DD)=int1d(ThIceEmpty,1,qforder=10)(CC*DD*N.x);
+  varf ip2(CC,DD)=int1d(ThIceEmpty,1,qforder=10)(CC*DD*N.y);
+  MassMa=ip(Vh,Vh);
+  MassMaX=ip1(VVh,VVh);
+  MassMaY=ip2(VVh,VVh);
 }//EOM"
+
+macro buildReducedSystemNoSplit(macroName)
+{  
+  F.resize(nev);
+  B.resize(nev,nev);
+  K.resize(nev,nev);
+  AB.resize(nev,nev);
+  complex[int] FProc(nev), RefmProc(nev), Refm(nev);
+  complex[int,int] BProc(nev,nev), KProc(nev,nev);
+  complex[int,int] KProcX(nev,nev), KProcY(nev,nev), BProcX(nev,nev), BProcY(nev,nev);;
+  complex[int,int] PHIJ(nev,Wh.ndof),PHIJProc(nev,Wh.ndof);
+  complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
+
+  real[int,int] VXArr(ThIceEmpty.nv,nev), VYArr(ThIceEmpty.nv,nev);
+  complex[int] phi0B=CavR1*phi0[], phi0BIce=MatInterP*phi0B;
+  complex[int,int] PHIJProcBIce(nev,ThIceEmpty.nv);
+
+  Vh vxx,vyy;
+  for(int m=0; m<nev; m++)
+    {
+      vxx=VX[m];
+      vyy=VY[m];
+      VXArr(:,m)=IceR1*vxx[];
+      VYArr(:,m)=IceR1*vyy[];
+    }
+
+  phi0BIce*=-(1i*omega*gammahat);
+  for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
+    {
+      func fh=0;
+      macroName(VX[m],VY[m]);
+      LHS=STIMA+(MQ);
+      set(LHS,solver=UMFPACK,eps=1e-20);
+      phih[]=LHS^-1*RHS[];
+      phij[m]=phih;
+      PHIJProc(m,:)=phij[m][];
+      complex[int] tmpArr=CavR1*PHIJProc(m,:);
+      PHIJProcBIce(m,:)=MatInterP*tmpArr;
+      PHIJProcBIce(m,:)*=(1i*omega*gammahat);
+
+      real[int] tmpMatrix1(ThIceEmpty.nv), tmpMatrix2(ThIceEmpty.nv);
+      tmpMatrix1=MassMaX*VXArr(:,m);
+      real tmpre=phi0BIce.re'*tmpMatrix1;
+      real tmpim=phi0BIce.im'*tmpMatrix1;
+      FProc[m]=tmpre+1i*tmpim;
+
+      tmpMatrix2=MassMaY*VYArr(:,m);
+      tmpre=phi0BIce.re'*tmpMatrix2;
+      tmpim=phi0BIce.im'*tmpMatrix2;
+      FProc[m]+=tmpre+1i*tmpim;
+
+      Vh vxm=VX[m], vym=VY[m];
+      for(int n=0; n<nev; n++)
+        {
+          Vh vxn=VX[n], vyn=VY[n];
+          real[int] tmp(ThIce.nv);
+
+          tmp=MassMa*vxm[];
+          BProcX(n,m)=vxn[]'*tmp;
+          tmp=MassMa*vym[];
+          BProcY(n,m)=vyn[]'*tmp;
+
+          tmpMatrix1=MassMaX*VXArr(:,n);
+          tmpre=VYArr(:,m)'*tmpMatrix1;
+          tmpre=-deltahat*tmpre;
+          tmpre+=PHIJProcBIce(m,:).re'*tmpMatrix1;
+          tmpim=PHIJProcBIce(m,:).im'*tmpMatrix1;
+          KProcX(n,m)=tmpre+1i*tmpim;
+
+          tmpMatrix2=MassMaY*VYArr(:,n);
+          tmpre=VYArr(:,m)'*tmpMatrix2;
+          tmpre=-deltahat*tmpre;
+          tmpre+=PHIJProcBIce(m,:).re'*tmpMatrix2;
+          tmpim=PHIJProcBIce(m,:).im'*tmpMatrix2;
+          KProcY(n,m)=tmpre+1i*tmpim;
+
+        }
+
+      BProcX(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcX(:,m);
+      BProcY(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcY(:,m);
+
+      pk1=0.;
+      phiVecm = phij[m][];
+      RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+    }
+  mpiReduce(FProc,F,processor(0),mpiSUM);
+  BProc=BProcX+BProcY;
+  KProc=KProcX+KProcY;
+  mpiReduce(BProc,B,processor(0),mpiSUM);  
+  mpiReduce(KProc,K,processor(0),mpiSUM);  
+}//EOM" Build reduced system without splitting. Obtains the diffraction potential and constructs the system.
