@@ -2,7 +2,6 @@
 
 clc
 clear
-close all
 
 A=readtable('ROB002011.csv');
 B=table2array(A(:,3));
@@ -12,9 +11,7 @@ refTime=datenum(DT(1));
 t=(datenum(DT)-refTime)*24*60*60; %In Minutes/Hours.
 interval=t(2)-t(1);
 Fs=1/interval;
-%Amp1=smoothdata(Amp,'rlowess');
-[Amp11,Amp12]=envelope(Amp,30,'peak');
-Amp1=0.5*(Amp11+Amp12);
+Amp1=smoothdata(Amp,'movmean',30);
 [t,Amp,Amp1]=freqRange(1,length(t),t,Amp,Amp1);
 L=length(Amp);
 
@@ -32,9 +29,10 @@ xlabel('Time in Months');
 ylabel('Difference');
 
 %% Perform band-pass filter on the difference.
+% Y=Amp1;
 figure(2);
-bandpass(Amp2,[0.0001,0.001],Fs);
-[Y,d1]=bandpass(Amp2,[0.0001,0.001],Fs);
+highpass(Amp2,0.0001,Fs);
+[Y,d1]=highpass(Amp2,0.0001,Fs);
 
 %% Perform Fourier Transform to find the amplitude of the components.
 figure(3);
@@ -53,8 +51,21 @@ xlim([t(1),t(end)]);
 hold on
 % Plot the FFT.
 subplot(2,1,2);
-plot(1000*f,P1);
+loglog(1000*f,P1);
 xlabel('Frequency (mHz)');
 ylabel('Amplitude (m)');
-xlim([1000*f(1),1000*f(end)]);
+%xlim([1000*f(1),1000*f(end)]);
 hold on
+
+%% Linear regression in log scale.
+f1=f(find(f>=0.0001));
+P2=P1(find(f>=0.0001));
+X=log10(1000*f1); Y1=log10(P2);
+b=polyfit(X',Y1,1);
+X1=log10(1000*linspace(0.0001,Fs/2,1000));
+yhat=10.^(polyval(b,X1));
+%whiteNoise=-0.25+0.5*rand(1,length(X1));
+whiteNoise=0;
+yhat1=10.^(polyval(b,X1)+whiteNoise);
+loglog(10.^(X1),yhat1);
+
