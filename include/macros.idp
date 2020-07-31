@@ -617,7 +617,7 @@ macro buildReducedSystemOptim(){
   mpiReduce(BProc,B,processor(0),mpiSUM);
   mpiReduce(FProc,F,processor(0),mpiSUM);
   mpiReduce(KProc,K,processor(0),mpiSUM);
-}//EOM" 
+}//EOM"
 
 
 matrix IceR1, CavR1, MatInterP, MassMa, MassMaX, MassMaY;
@@ -643,7 +643,7 @@ macro getInterpMatrices(){
 
 
 macro buildReducedSystemNoSplit(macroName)
-{  
+{
   F.resize(nev);
   B.resize(nev,nev);
   K.resize(nev,nev);
@@ -716,7 +716,6 @@ macro buildReducedSystemNoSplit(macroName)
           tmpre+=PHIJProcBIce(m,:).re'*tmpMatrix2;
           tmpim=PHIJProcBIce(m,:).im'*tmpMatrix2;
           KProcY(n,m)=tmpre+1i*tmpim;
-
         }
 
       BProcX(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcX(:,m);
@@ -729,50 +728,53 @@ macro buildReducedSystemNoSplit(macroName)
   mpiReduce(FProc,F,processor(0),mpiSUM);
   BProc=BProcX+BProcY;
   KProc=KProcX+KProcY;
-  mpiReduce(BProc,B,processor(0),mpiSUM);  
-  mpiReduce(KProc,K,processor(0),mpiSUM);  
-}//EOM" Build reduced system without splitting. Obtains the diffraction potential and constructs the system.
+  mpiReduce(BProc,B,processor(0),mpiSUM);
+  mpiReduce(KProc,K,processor(0),mpiSUM);
+}//EOM" Build reduced system without splitting. Obtains the radiation potential and constructs the system.
 
+/*
+//Come back to it in the future
 macro reduceBasisMatrix(A,B,C,X)
 {
-  matrix Ctemp=C;
-  matrix Atemp=A;
-  X=B*Ctemp;
-  X=Atemp'*X;
+matrix Ctemp=C;
+matrix Atemp=A;
+X=B*Ctemp;
+X=Atemp'*X;
 }//EOM
 
 macro reduceBasisMatrixComplex(A,B,C,X)
 {
-  matrix Ctemp=C;
-  matrix<complex> Ctemp1=Ctemp;
-  matrix<complex> Atemp=A, Btemp=B;
-  X=Btemp*Ctemp1;
-  X=Atemp*X;
+matrix Ctemp=C;
+matrix<complex> Ctemp1=Ctemp;
+matrix<complex> Atemp=A, Btemp=B;
+X=Btemp*Ctemp1;
+X=Atemp*X;
 }//EOM
 
 macro reduceBasisVector(Avec,B,C,X)
 {
-  matrix Ctemp=C;
-  matrix X1=B*Ctemp;
-  X=X1'*Avec;
+matrix Ctemp=C;
+matrix X1=B*Ctemp;
+X=X1'*Avec;
 }//EOM
 
 macro myMpiReduce(XProc,X){
-  real[int,int] smallVec(nev,nev);
-  smallVec=1e-2;
-  X=smallVec;
-  matrix X1=smallVec;
-  XProc+=X1;
-  mpiReduce(XProc,X,processor(0),mpiSUM);
-  X-=mpisize*X1;
+real[int,int] smallVec(nev,nev);
+smallVec=1e-2;
+X=smallVec;
+matrix X1=smallVec;
+XProc+=X1;
+mpiReduce(XProc,X,processor(0),mpiSUM);
+X-=mpisize*X1;
 }//EOM" (Variation of the mpiReduce function to handle sparse matrices). Gather By default to processor(0)
 
 macro myMpiReduceComplex(XProc,X){
-  complex[int,int] smallVec(nev,nev);
-  smallVec=1e-2;
-  X=smallVec;
-  matrix<complex> X1=smallVec;
-  XProc+=X1;
-  mpiReduce(XProc,X,processor(0),mpiSUM);
-  X-=mpisize*X1;
+complex[int,int] smallVec(nev,nev);
+smallVec=1e-2;
+X=smallVec;
+matrix<complex> X1=smallVec;
+XProc+=X1;
+mpiReduce(XProc,X,processor(0),mpiSUM);
+X-=mpisize*X1;
 }//EOM" (Variation of the mpiReduce function to handle sparse matrices). Gather By default to processor(0)
+*/
