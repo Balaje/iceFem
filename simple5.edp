@@ -6,27 +6,27 @@ real cpu=mpiWtime();
 bool debug=true;
 string SolutionDir="1_Forced/";
 
-load "iovtk"
-macro dimension 2//EOM"
-
 include "macros.idp"
-load "medit"
-include "macro_ddm.idp"
-macro minimalMesh()square(2,2)//EOM
-include "ffddm_parameters.idp"
-include "ffddm_partitioning.idp"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=20;
+nev=60;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
 solveDispersion;
 
 //Build the meshes.
-ThIce=readmesh("./MESHES_SPLIT/FullIce.msh");
-ThCavity=readmesh("./MESHES_SPLIT/FullCavity.msh");
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
+setMeshIce(botRight, midPX, midPY);
+real midx=LL/2., midy=-0.5*HH, endy=-HH;
+setMeshCav(midx, midy, endy);
+
+//Refine Mesh.
+refineMesh;
+
+//Split Mesh for domain decomposition
+//splitMeshSave;
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
@@ -55,18 +55,6 @@ LHS=STIMA+(MQ);
 set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
 phi0=phih;//Store in phi0;
-
-if(mpirank==0)
-  {
-    complex[int] phiVec(phi0.n), c(NModes+1);
-    phiVec=phi0[];
-    complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c);
-    //Write the reflection coefficient to a file.
-    ofstream file("1_SIMPLE5/2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
-    file.precision(16);
-    file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-  }
-
 
 if(mpirank==0)
   {
@@ -109,7 +97,9 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
+real cpuComm=mpiWtime();
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
+cout<<"C: "<<mpiWtime()-cpuComm<<endl;
 mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs
@@ -117,17 +107,8 @@ for(int m=0; m<nev; m++){
   phij[m][]=PHIJ(m,:);
  }
 
-//Construct the interpolate matrix
-matrix M1xM,M2xM;
-{
-  ifstream file1("./MESHES_SPLIT/M1xM"+mpirank+".dat");
-  file1>>M1xM;
-  ifstream file2("./MESHES_SPLIT/M2xM"+mpirank+".dat");
-  file2>>M2xM;
-}
-mesh MaTh, M1aTh;
-MaTh=readmesh("./MESHES_SPLIT/IceMaTh"+mpirank+".msh");
-M1aTh=readmesh("./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
+//Load the split mesh.
+splitMeshLoad;
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;

@@ -11,7 +11,7 @@ load "iovtk"
 include "macros.idp"
 load "medit"
 
-nev=20;
+nev=60;
 setProblem;
 
 solveDispersion;

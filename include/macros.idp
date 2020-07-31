@@ -1,5 +1,8 @@
 //Import everything from the include folder.
 load "lapack"
+load "medit"
+load "iovtk"
+
 include "getARGV.idp"
 
 include "dispersionFreeSurface.idp"
@@ -9,7 +12,14 @@ include "nonLocal.idp"
 include "refCoeff.idp"
 include "getProperties.idp"
 
-load "Element_P3"
+//Domain decomposition module.
+macro dimension 2//EOM"
+include "macro_ddm.idp"
+macro minimalMesh()square(2,2)//EOM
+include "ffddm_parameters.idp"
+include "ffddm_partitioning.idp"
+macro def(u) u//EOM
+macro init(u) u//EOM
 
 //List of useful set of macros.
 macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
@@ -295,9 +305,41 @@ macro refineMesh(){
   broadcast(processor(1),ThCavity);
 }//EOM" (Macro to refine mesh).
 
+macro splitMeshSave()
+{
+  if(mpirank==0)
+    system("mkdir MESHES_SPLIT");
+  ffddmbuildDmesh(M,ThIce,mpiCommWorld);
+  ffddmbuildDmesh(M1,ThCavity,mpiCommWorld);
+  ffddmbuildDfespace(Fe,M,real,def,init,P1);
+  savemesh(MaTh[mpirank],"MESHES_SPLIT/IceMaTh"+mpirank+".msh");
+  savemesh(M1aTh[mpirank],"MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
+  cout<<"Number of verts = "<<mpirank<<"\t"<<MaTh[mpirank].nv<<endl;
+  real cpuT=mpiWtime();
+  fespace MMh(MaTh[mpirank],P1);
+  mesh ThEmptyCav=emptymesh(ThCavity);
+  fespace WWh(ThEmptyCav,P1);
+  matrix M1xM=interpolate(MMh,WWh,inside=true);
+  matrix M2xM=FeRih[mpirank];
+  cout<<"Time to interpolate = "<<mpiWtime()-cpuT<<endl;
+  ofstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
+  file1<<M1xM;
+  ofstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
+  file2<<M2xM;
+}//Macro to SPLIT MESH and WRITE the meshes and matrices to MESHES_SPLIT;
 
+matrix M1xM,M2xM;
+mesh MaTh, M1aTh;
+macro splitMeshLoad()
+{
+  ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
+  file1>>M1xM;
+  ifstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
+  file2>>M2xM;
+  MaTh=readmesh("MESHES_SPLIT/IceMaTh"+mpirank+".msh");
+  M1aTh=readmesh("MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
+}//Macro to LOAD THE SPLIT MESH
 
-real[int,int] rawVX(nev,nev);
 macro solveEigen()
 {
   Xh [u,v],[uu,vv];
@@ -540,7 +582,7 @@ macro writeToMATLAB(uh,Th,solfilename,meshfilename)
 
 }//Macro to write the mesh and solution data for MATLAB visualization.
 
-//Macro to build the reduced system (optimized)
+//Macro to build the reduced system (optimized for split mesh)
 macro buildReducedSystemOptim(){
   real[int,int] VXaTh(MaTh.nv,nev), VYaTh(MaTh.nv,nev), VY1aTh(MaTh.nv,nev);
   complex[int] phi0aTh(MaTh.nv);
@@ -670,6 +712,7 @@ macro buildReducedSystemNoSplit(macroName)
   phi0BIce*=-(1i*omega*gammahat);
   for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     {
+      real cpu1=mpiWtime();
       func fh=0;
       macroName(VX[m],VY[m]);
       LHS=STIMA+(MQ);
@@ -720,6 +763,9 @@ macro buildReducedSystemNoSplit(macroName)
 
       BProcX(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcX(:,m);
       BProcY(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcY(:,m);
+
+      if(mpirank==0)
+        cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
 
       pk1=0.;
       phiVecm = phij[m][];
