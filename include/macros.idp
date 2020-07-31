@@ -619,30 +619,6 @@ macro buildReducedSystemOptim(){
   mpiReduce(KProc,K,processor(0),mpiSUM);
 }//EOM" 
 
-macro refineMesh(){
-  if(mpirank==0){
-    cout<<"Imported Ice Mesh (proc 0)..."<<endl;
-    cout<<"Refining Ice Mesh (proc 0) ..."<<endl;
-    cout<<"Ice : Before Refinement, NBV = "<<ThIce.nv<<endl;
-    func metricFuncIce=getARGV("-hsize",0.02);
-    ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
-    cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
-    plot(ThIce,wait=1);
-  }
-  else if(mpirank==1){
-    cout<<"Imported Cavity Mesh (proc 1)..."<<endl;
-    cout<<"Refining Cavity Mesh (proc 1) ..."<<endl;
-    real LCav=abs(cavBegin-cavEnd)/Lc;
-    func metricFuncCav=getARGV("-hsize",0.02);
-    cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;
-    ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
-    cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
-    plot(ThCavity,wait=1);
-  }
-  broadcast(processor(0),ThIce);
-  broadcast(processor(1),ThCavity);
-}//EOM" To refine the mesh.
-
 
 matrix IceR1, CavR1, MatInterP, MassMa, MassMaX, MassMaY;
 mesh ThIceEmpty, ThCavEmpty;
@@ -756,27 +732,6 @@ macro buildReducedSystemNoSplit(macroName)
   mpiReduce(BProc,B,processor(0),mpiSUM);  
   mpiReduce(KProc,K,processor(0),mpiSUM);  
 }//EOM" Build reduced system without splitting. Obtains the diffraction potential and constructs the system.
-
-macro genMatrices(A,B,C,D,RIce,RCav,readFile)
-{
-  if(!readFile){
-    Vh AA,BB;
-    varf ip(AA,BB)=int2d(ThIce)(AA*BB);
-    A=ip(Vh,Vh);
-    ThCavEmpty=emptymesh(ThCavity);
-    ThIceEmpty=emptymesh(ThIce);
-    fespace VVh(ThIceEmpty,P1);
-    RIce=interpolate(VVh,Vh,inside=true);
-    fespace WWh(ThCavEmpty,P1);
-    RCav=interpolate(WWh,Wh,inside=true);
-    B=interpolate(VVh,WWh,inside=true);
-    VVh CC,DD;
-    varf ip1(CC,DD)=int1d(ThIceEmpty,1,qforder=10)(CC*DD*N.x);
-    varf ip2(CC,DD)=int1d(ThIceEmpty,1,qforder=10)(CC*DD*N.y);
-    C=ip1(VVh,VVh);
-    D=ip2(VVh,VVh);
-  }
-}//EOM"
 
 macro reduceBasisMatrix(A,B,C,X)
 {
