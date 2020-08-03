@@ -26,7 +26,7 @@ setMeshCav(midx, midy, endy);
 refineMesh;
 
 //Split Mesh for domain decomposition
-//splitMeshSave;
+splitMeshSave;
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
@@ -93,13 +93,13 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     pk1=0.;
     phiVecm = phij[m][];
     RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-    
+
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
 real cpuComm=mpiWtime();
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
-cout<<"C: "<<mpiWtime()-cpuComm<<endl;
+cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
 mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs
