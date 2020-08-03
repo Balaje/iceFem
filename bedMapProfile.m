@@ -7,12 +7,11 @@ close all
 
 
 %% Zoom in on to the Sulzberger Ice Shelf and generate the profiles.
-mapzoom('Vollmer Island','mapwidth',100,'inset','se')
+mapzoom('Vollmer Island','mapwidth',80,'inset','se')
 bedmap2 gl
 bedmap2('patchcoast');
 bedmap2('patchshelves','frame','on');
 scalebar
-scarclick
 [hice,hbed,hwater]=bedmap2_profile();
 
 %% Extract the points and construct the spline

@@ -5,29 +5,28 @@
 */
 
 verbosity=0;
-macro dimension 2//EOM"
-load "lapack"
+
 include "macros.idp"
-load "medit"
-include "macro_ddm.idp"
-include "ffddm_parameters.idp"
-macro minimalMesh()square(2,2)//EOM
-  include "ffddm_partitioning.idp"
 
-  load "iovtk"
-
-  nev=60;
+nev=60;
 NModes=5;
 string SolutionDir="1_BEDMAP2/";
 real cpu=mpiWtime();
-int isSolve= getARGV("-isMesh",0);
+int isMesh= getARGV("-isMesh",0);
 int nborders= getARGV("-nborders",4);
 iter=getARGV("-iter",0);
 
 //Load the meshes.
-iceBEDMAP2(nborders,isSolve);
-ThIce=readmesh("MESHES_SPLIT/FullIce.msh");
-ThCavity=readmesh("MESHES_SPLIT/FullCavity.msh");
+iceBEDMAP2(nborders,isMesh);
+
+//refine the meshes
+refineMesh;
+
+//Split the meshes and save the matrices.
+splitMeshSave;
+
+//load the split mesh
+splitMeshLoad;
 
 if(nborders!=4)
   dd=0.;
@@ -50,18 +49,18 @@ Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
 if(mpirank==0){
-  writeEigen; 
+  writeEigen;
   cout<<"Solved EigenValue Problem ... "<<endl;
   ofstream file("1_BEDMAP2/2_Modes/eval.dat");
   for(int m=0; m<nev; m++)
-    file<<ev[m]<<endl;  
+    file<<ev[m]<<endl;
  }
 
 //Solve for the Diffraction potential
 Wh<complex> phi0;
 func fh=chi1;
 getLaplaceMatBEDMAP2(0,0);
-LHS=STIMA+(MQ);
+LHS=STIMA+(MQ)+(-BMASSMA);
 set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
@@ -98,7 +97,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     real cpu1=mpiWtime();
     func fh=0;
     getLaplaceMatBEDMAP2(VX[m],VY[m]);
-    LHS=STIMA+(MQ);
+    LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
@@ -110,26 +109,15 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
+real cpuComm=mpiWtime();
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
+cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
 mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs
 for(int m=0; m<nev; m++){
   phij[m][]=PHIJ(m,:);
  }
-
-//Read the interpolate matrix;
-matrix M1xM, M2xM;
-{
-  ifstream file1("./MESHES_SPLIT/M1xM"+mpirank+".dat");
-  file1>>M1xM;
-  ifstream file2("./MESHES_SPLIT/M2xM"+mpirank+".dat");
-  file2>>M2xM;
-}
-
-mesh MaTh, M1aTh;
-MaTh=readmesh("./MESHES_SPLIT/IceMaTh"+mpirank+".msh");
-M1aTh=readmesh("./MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
@@ -154,9 +142,11 @@ if(mpirank==0) //Write the matrices to a file.
         file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
         for(int n=0; n<nev; n++)
           {
-            file1<<real(B(m,n)+K(m,n))<<endl;
-            file2<<imag(B(m,n)+K(m,n))<<endl;
+            file1<<real(B(m,n)+K(m,n))<<"\t";
+            file2<<imag(B(m,n)+K(m,n))<<"\t";
           }
+        file1<<endl;
+        file2<<endl;
       }
   }
 
@@ -220,6 +210,7 @@ if(mpirank==0){
   Vh ux=real(etax), uy=real(etay);
   Vh iux=imag(etax), iuy=imag(etay);
 
+  // Save the displacements as VTK files
   savevtk("1_BEDMAP2/ThIce.vtk",ThIce);
   savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
   savevtk("1_BEDMAP2/ThNewIce"+iter+".vtk",ThNewIce);
@@ -228,4 +219,4 @@ if(mpirank==0){
  }
 
 if(mpirank==0)
-  cout<<"\nProcessor: "<<mpirank<<" Total time = "<<mpiWtime()-cpu<<"\t s"<<endl;
+  cout<<"\nP: "<<mpirank<<" T = "<<mpiWtime()-cpu<<"\t s"<<endl;

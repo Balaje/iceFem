@@ -141,7 +141,6 @@ macro iceBEDMAP2(nborders, isBuild)
         {
           if(mpirank==0){
             if(abs(cavEnd-iceEnd)<1e-5){
-              cout<<"This"<<endl;
               cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
               border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
               border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
@@ -178,22 +177,35 @@ macro iceBEDMAP2(nborders, isBuild)
       else
         {
           if(mpirank==0){
-            border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
-            border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
-            border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-            border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
-            border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
-            ThIce=buildmesh(C01(3000)+C01x(2000)+C02(100)+C03(5000)+C04(100));
-            cout<<"Built Ice-Mesh\n";
+            if(abs(cavEnd-iceEnd)<1e-5){
+              cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+              border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+              border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+              border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+              border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+              ThIce=buildmesh(C01(500)+C02(100)+C03(500)+C04(100));
+              cout<<"Built Ice-Mesh\n";
+            }
+            else{
+              cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+              border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+              border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
+              border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+              border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+              border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+              ThIce=buildmesh(C01(500)+C01x(100)+C02(100)+C03(500)+C04(100));
+              cout<<"Built Ice-Mesh\n";
+            }
           }
           else if(mpirank==1){
+            cout<<"Begin Cavity-Mesh. Proc "<<mpirank<<endl;
             border S01(t=cavBegin,cavEnd){x=t; y=splineRecon(coefsCav,breaksCav,t,npieces1); label=1;};
             border S02(t=splineRecon(coefsCav,breaksCav,cavEnd,npieces1),cavTop){x=cavEnd; y=t; label=2;};
             border S03(t=cavEnd,iceBegin){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=3;};
             border S04(t=0,splineRecon(coefsCav,breaksCav,cavBegin,npieces1)){x=0; y=t; label=4;};
             border S05(t=0,iceBegin){x=t; y=0; label=5;};
             border S06(t=0,splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=6;};
-            ThCavity=buildmesh(S01(5000)+S02(200)+S03(5000)+S04(600)+S05(-500)+S06(-100));
+            ThCavity=buildmesh(S01(500)+S02(200)+S03(500)+S04(600)+S05(-500)+S06(-100));
             cout<<"Built Cavity-Mesh"<<endl;
           }
 
@@ -323,7 +335,13 @@ macro splitMeshSave()
   matrix M2xM=FeRih[mpirank];
   cout<<"Time to interpolate = "<<mpiWtime()-cpuT<<endl;
   ofstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
-  file1<<M1xM;
+  if(M1xM.nnz>0)
+    file1<<M1xM;
+  else{
+    M1xM(1,1)=1e-9;
+    file1<<M1xM;
+  }
+    
   ofstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
   file2<<M2xM;
 }//Macro to SPLIT MESH and WRITE the meshes and matrices to MESHES_SPLIT;
@@ -332,7 +350,7 @@ matrix M1xM,M2xM;
 mesh MaTh, M1aTh;
 macro splitMeshLoad()
 {
-  ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
+  ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");  
   file1>>M1xM;
   ifstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
   file2>>M2xM;

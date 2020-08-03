@@ -4,11 +4,29 @@ clc
 clear
 close all
 
-
 %% Zoom in on to the Sulzberger Ice Shelf and generate the profiles.
-mapzoom('Sulzberger Ice Shelf','mapwidth',200,'inset','se')
-bedmap2('patchshelves');
+mapzoom('Vollmer Island','mapwidth',180,'inset','se');
+bedmap2 gl
+bedmap2('patchcoast');
+bedmap2('patchshelves','frame','on');
+scalebar
 [hice,hbed,hwater]=bedmap2_profile();
+
+%% Generate the figure showing the bed and ice thickness 
+[mylat,mylon]=psgrid('Vollmer Island',[180,580],0.1);
+bed=bedmap2_interp(mylat,mylon,'bed','spline');
+figure(100);
+subplot(1,2,1);
+surfps(mylat,mylon,bed)
+scalebarps
+axis tight
+hold on
+
+surface=bedmap2_interp(mylat,mylon,'surface','linear');
+surfps(mylat,mylon,surface)
+scalebarps
+axis tight
+
 
 %% Extract the points and construct the spline
 iceCoord=hice.Vertices;
