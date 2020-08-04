@@ -300,7 +300,8 @@ macro refineMesh(){
     cout<<"Ice : Before Refinement, NBV = "<<ThIce.nv<<endl;
     func metricFuncIce=getARGV("-hsize",0.02);
     ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
-    cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
+    cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;    
+    savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
     plot(ThIce,wait=1);
   }
   else if(mpirank==1){
@@ -311,6 +312,7 @@ macro refineMesh(){
     cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;
     ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
     cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
+    savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
     plot(ThCavity,wait=1);
   }
   broadcast(processor(0),ThIce);
