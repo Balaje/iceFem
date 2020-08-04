@@ -214,6 +214,7 @@ macro iceBEDMAP2(nborders, isBuild)
         }
       ThIce=movemesh(ThIce,[x*1./Lc,y*1./Lc]);
       ThCavity=movemesh(ThCavity,[x*1./Lc,y*1./Lc]);
+      refineMesh;
       savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
       savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
     }
