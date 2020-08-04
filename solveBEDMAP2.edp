@@ -25,7 +25,7 @@ macro writeSolution(var, filename){
 iceBEDMAP2(nborders,isMesh);
 
 //refine the meshes
-//refineMesh;
+refineMesh;
 
 //Split the meshes and save the matrices.
 splitMeshSave;
