@@ -16,6 +16,11 @@ int isMesh= getARGV("-isMesh",0);
 int nborders= getARGV("-nborders",4);
 iter=getARGV("-iter",0);
 
+macro writeSolution(var, filename){
+  ofstream file(filename);
+  file<<var<<endl;
+}//Tiny macro to write files
+
 //Load the meshes.
 iceBEDMAP2(nborders,isMesh);
 
@@ -215,7 +220,7 @@ if(mpirank==0){
   savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
   savevtk("1_BEDMAP2/ThNewIce"+iter+".vtk",ThNewIce);
   int[int] Order=[1];
-  savevtk("1_BEDMAP2/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);
+  savevtk("1_BEDMAP2/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);  
  }
 
 if(mpirank==0)

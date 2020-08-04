@@ -66,9 +66,14 @@ f1=f(find(f>=0.0001));
 P2=P1(find(f>=0.0001));
 X=log10(1000*f1); Y1=log10(P2);
 b=polyfit(X',Y1,1);
-X1=log10(1000*linspace(0.0001,Fs/2,1000));
+X1=log10(1000*linspace(0.0001,Fs/2,3001));
 yhat=10.^(polyval(b,X1));
 %whiteNoise=-0.25+0.5*rand(1,length(X1));
 whiteNoise=0;
 yhat1=10.^(polyval(b,X1)+whiteNoise);
 plot(10.^(X1),yhat1);
+
+%% Write the frequency and the amplitude of the signal
+FAmp=[10.^(X1)',yhat1'];
+dlmwrite('FAmp.dat',FAmp,'\t');
+

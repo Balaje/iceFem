@@ -77,7 +77,7 @@ if(isSolve)
     for p=1:length(omegaNew(:))
         Hmat = reshape(HNew(:,p),[Nev,Nev]);        
         Fmat = FNew(:,p);
-        H1mat = sparse(Hmat.');
+        H1mat = sparse(Hmat);
          spparms('spumoni',0);
 %         spparms('bandden',1);
 %         spparms('piv_tol',1e-6);

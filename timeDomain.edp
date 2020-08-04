@@ -1,0 +1,46 @@
+//Program to derive the time-domain solution.
+verbosity=0.;
+include "macros.idp"
+string solDir="1_BEDMAP2/";
+
+macro readFile(rows,cols,filename,array){
+  ifstream file(filename);
+  for(int m=0; m<rows; m++)
+    for(int n=0; n<cols; n++)
+      file>>array(m,n);
+}//Macro to read files.EOM"
+
+macro readSolFile(filename,var){
+  ifstream file(filename);
+  file>>var;
+}//EOM"
+
+//Parameters are required.
+int nborders=getARGV("-nborders",6);
+iceBEDMAP2(nborders,0);
+
+//system("mkdir "+solDir+"2_TimeDomain");
+
+nev=60;
+int nfreq=3001;
+real[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
+
+readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat", lambdaRe);
+readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat", lambdaIm);
+
+//refinemesh
+refineMesh;
+
+Vh[int] VX(nev), VY(nev);
+for(int m=0; m<nev; m++)
+  {
+    readSolFile(solDir+"2_Modes/MODEX"+m+".dat",VX[m][]);
+    readSolFile(solDir+"2_Modes/MODEY"+m+".dat",VY[m][]);
+  }
+
+real[int,int] FAmp(nfreq,2);
+readFile(nfreq, 2, "FAmp.dat", FAmp);
+
+
+//Continue to write the time domain code.
+//---
