@@ -301,6 +301,7 @@ macro refineMesh(){
     func metricFuncIce=getARGV("-hsize",0.02);
     ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
     cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
+    savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
     plot(ThIce,wait=1);
   }
   else if(mpirank==1){
@@ -311,6 +312,7 @@ macro refineMesh(){
     cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;
     ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
     cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
+    savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
     plot(ThCavity,wait=1);
   }
   broadcast(processor(0),ThIce);
@@ -341,7 +343,7 @@ macro splitMeshSave()
     M1xM(1,1)=1e-9;
     file1<<M1xM;
   }
-    
+
   ofstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
   file2<<M2xM;
 }//Macro to SPLIT MESH and WRITE the meshes and matrices to MESHES_SPLIT;
@@ -350,7 +352,7 @@ matrix M1xM,M2xM;
 mesh MaTh, M1aTh;
 macro splitMeshLoad()
 {
-  ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");  
+  ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
   file1>>M1xM;
   ifstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
   file2>>M2xM;
