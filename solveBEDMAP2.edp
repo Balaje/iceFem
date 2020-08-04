@@ -8,7 +8,7 @@ verbosity=0;
 
 include "macros.idp"
 
-nev=60;
+nev=64;
 NModes=5;
 string SolutionDir="1_BEDMAP2/";
 real cpu=mpiWtime();
