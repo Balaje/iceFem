@@ -21,17 +21,13 @@ macro writeSolution(var, filename){
   file<<var<<endl;
 }//Tiny macro to write files
 
-//Load the meshes.
+//Construct/Load the meshes.
 iceBEDMAP2(nborders,isMesh);
-
-//refine the meshes
-refineMesh;
-
-//Split the meshes and save the matrices.
-splitMeshSave;
-
-//load the split mesh
-splitMeshLoad;
+if(isMesh){
+  refineMesh; //refine the meshes and overwrite the original meshes.
+  splitMeshSave; //Split the meshes and save the matrices.
+ }
+splitMeshLoad; //load the split mesh
 
 if(nborders!=4)
   dd=0.;
@@ -220,7 +216,7 @@ if(mpirank==0){
   savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
   savevtk("1_BEDMAP2/ThNewIce"+iter+".vtk",ThNewIce);
   int[int] Order=[1];
-  savevtk("1_BEDMAP2/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);  
+  savevtk("1_BEDMAP2/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);
  }
 
 if(mpirank==0)
