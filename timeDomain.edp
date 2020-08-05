@@ -1,6 +1,8 @@
 //Program to derive the time-domain solution.
 verbosity=0.;
 include "macros.idp"
+include "MPIplot.idp"
+load "medit"
 string solDir="1_BEDMAP2/";
 
 macro readFile(rows,cols,filename,array){
@@ -19,28 +21,105 @@ macro readSolFile(filename,var){
 int nborders=getARGV("-nborders",6);
 iceBEDMAP2(nborders,0);
 
-//system("mkdir "+solDir+"2_TimeDomain");
-
-nev=60;
-int nfreq=3001;
-real[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
-
+nev=4;
+int nfreq=4;
+complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat", lambdaRe);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat", lambdaIm);
+complex[int,int] lambda=lambdaIm;
+lambda*=1i;
+lambda+=lambdaRe;
 
-//refinemesh
-refineMesh;
-
-Vh[int] VX(nev), VY(nev);
-for(int m=0; m<nev; m++)
+complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
+for(int m=0; m<nev; m++)  
   {
-    readSolFile(solDir+"2_Modes/MODEX"+m+".dat",VX[m][]);
-    readSolFile(solDir+"2_Modes/MODEY"+m+".dat",VY[m][]);
+    complex[int] tmp(Vh.ndof);
+    readSolFile(solDir+"2_Modes/MODEX"+m+".dat",tmp);
+    mx(m,:)=tmp;
+    readSolFile(solDir+"2_Modes/MODEX"+m+".dat",tmp);
+    my(m,:)=tmp;
   }
 
-real[int,int] FAmp(nfreq,2);
-readFile(nfreq, 2, "FAmp.dat", FAmp);
+complex[int,int] ux(nfreq,Vh.ndof), uy(nfreq,Vh.ndof);
+ux=lambda*mx;
+uy=lambda*my;
+complex[int,int] uxt=ux', uyt=uy';
+uxt=conj(uxt);
+uyt=conj(uyt);
+complex[int,int] FAmp(2,nfreq);
+readFile(2, nfreq,  "FAmp.dat", FAmp);
 
+//Write time domain solution
+real dt=20, T=5000;
+real[int] time=-T:dt:T;
+complex[int] domega(nfreq), omegaNew(nfreq);
+omegaNew=FAmp(0,:);
+if(mpirank==0)
+  cout<<omegaNew<<endl;
+domega=omegaNew(1:omegaNew.n);
+domega-=omegaNew(0:omegaNew.n-1);
+domega(omegaNew.n-1)=0;
+if(mpirank==0)
+  cout<<domega<<endl;
 
-//Continue to write the time domain code.
-//---
+complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
+//for(int n=0; n<time.n; n++)
+int parti=time.n/mpisize;
+for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
+  {    
+    omegaVec=(-1i)*omegaNew;    
+    omegaVec*=time(n);
+    omegaVec=exp(omegaVec);    
+    omegaVec=omegaVec.*FAmp(1,:);    
+    omegaVec=omegaVec.*domega;    
+
+    u3x=uxt*omegaVec;
+    u3y=uyt*omegaVec;    
+
+    Vh<complex> dispX=u3x, dispY=u3y;    
+    mesh ThNewIce=movemesh(ThIce,[x+real(dispX),y+real(dispY)]);
+    savevtk(solDir+"2_TimeDomain/ThNewIce"+n+".vtk",ThNewIce);
+    int[int] Order=[1];
+    savevtk(solDir+"2_TimeDomain/ThNewIce"+n+".vtk",ThNewIce,real(dispY),dataname="vx",order=Order);
+       
+  }
+/*
+//Reconstruct the solutions.
+Vh<complex>[int] UX(nfreq), UY(nfreq);
+
+//Begin time array;
+real dt=0.1, T=100;
+real[int] time=-T:dt:T;
+real[int,int] FAmp(2,nfreq);
+readFile(2, nfreq, "FAmp.dat", FAmp);
+
+if(mpirank==0)
+cout<<"Computing time domain solution ... "<<endl;
+int parti=time.n/mpisize;
+for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
+//for(int n=0; n<time.n; n++)
+{
+Vh<complex> dispX, dispY;
+real cpu1=mpiWtime();
+if(mpirank==0)
+cout<<"n = "<<n<<endl;
+for(int m=1; m<nfreq; m++)
+{
+real domega=FAmp(0,m)-FAmp(0,m-1);
+UX[m][]=mx'*lambda(m,:);
+UY[m][]=my'*lambda(m,:);
+dispX=UX[m];
+dispX=dispX*exp(-1i*FAmp(0,m)*time(n));
+dispX=dispX*domega;
+dispX=dispX*FAmp(1,m);
+
+dispY=UY[m];
+dispY=dispY*exp(-1i*FAmp(0,m)*time(n));
+dispX=dispX*domega;
+dispY=dispY*FAmp(1,m);
+}
+cout<<endl<<"P: "<<mpirank<<" T: "<<mpiWtime()-cpu1<<endl;
+
+}
+
+*/

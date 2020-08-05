@@ -74,6 +74,6 @@ yhat1=10.^(polyval(b,X1)+whiteNoise);
 plot(10.^(X1),yhat1);
 
 %% Write the frequency and the amplitude of the signal
-FAmp=[10.^(X1)',yhat1'];
-dlmwrite('FAmp.dat',FAmp,'\t');
+FAmp=[10.^(X1); yhat1];
+dlmwrite('FAmp.dat',FAmp,'delimiter','\t','precision',16);
 
