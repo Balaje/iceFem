@@ -21,8 +21,8 @@ macro readSolFile(filename,var){
 int nborders=getARGV("-nborders",6);
 iceBEDMAP2(nborders,0);
 
-nev=4;
-int nfreq=4;
+nev=64;
+int nfreq=1000;
 complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat", lambdaRe);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat", lambdaIm);
