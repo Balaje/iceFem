@@ -13,7 +13,7 @@ Ad=1;
 Ap=(g./(1i*omega))*Ad;
 
 %% Define the new frequency space.
-npts=500;
+npts=100;
 a1=a; b1=b;
 omegaNew=linspace(a1,b1,npts+1);
 Tnew=2*pi./omegaNew;
@@ -23,4 +23,4 @@ file1='1_BEDMAP2/';
 %% Interpolate the system, solve and write the solution.
 filePath = [file1,'2_ModesMatrix/'];
 nev=64;
-[omegaNew,detH,condH] = interpolateFreq(a1,b1,omega,nev,filePath,npts,1);
+[omegaNew,detH,condH] = interpolateFreq(a1,b1,omega,nev,filePath,npts-1,1);
