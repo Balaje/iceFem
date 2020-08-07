@@ -55,7 +55,7 @@ xlim([t(1),t(end)]);
 hold on
 % Plot the FFT.
 subplot(2,1,2);
-plot(1000*f,P1);
+plot(f,P1);
 xlabel('Frequency (mHz)');
 ylabel('Amplitude (m)');
 %xlim([1000*f(1),1000*f(end)]);
@@ -64,12 +64,12 @@ hold on
 %% Linear regression in log scale.
 f1=f(find(f>=0.0001));
 P2=P1(find(f>=0.0001));
-X=log10(1000*f1); Y1=log10(P2);
+X=log10(f1); Y1=log10(P2);
 b=polyfit(X',Y1,1);
-X1=log10(1000*linspace(0.0001,Fs/2,3001));
+X1=log10(linspace(0.0001,0.01,300));
 yhat=10.^(polyval(b,X1));
-%whiteNoise=-0.25+0.5*rand(1,length(X1));
-whiteNoise=0;
+whiteNoise=-1+2*rand(1,length(X1));
+%whiteNoise=0;
 yhat1=10.^(polyval(b,X1)+whiteNoise);
 plot(10.^(X1),yhat1);
 

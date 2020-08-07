@@ -13,7 +13,7 @@ Ad=1;
 Ap=(g./(1i*omega))*Ad;
 
 %% Define the new frequency space.
-npts=100;
+npts=300;
 a1=a; b1=b;
 omegaNew=linspace(a1,b1,npts+1);
 Tnew=2*pi./omegaNew;
