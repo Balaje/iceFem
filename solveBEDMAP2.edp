@@ -143,8 +143,8 @@ if(mpirank==0) //Write the matrices to a file.
         file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
         for(int n=0; n<nev; n++)
           {
-            file1<<real(B(m,n)+K(m,n))<<"\t";
-            file2<<imag(B(m,n)+K(m,n))<<"\t";
+            file1<<real(B(m,n)+K(m,n))<<endl;
+            file2<<imag(B(m,n)+K(m,n))<<endl;
           }
         file1<<endl;
         file2<<endl;

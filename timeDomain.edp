@@ -46,11 +46,11 @@ uy=lambda*my;
 complex[int,int] uxt=ux', uyt=uy';
 uxt=conj(uxt);
 uyt=conj(uyt);
-complex[int,int] FAmp(2,nfreq);
-readFile(2, nfreq,  "FAmp.dat", FAmp);
+complex[int,int] FAmp(3,nfreq);
+readFile(3, nfreq,  "FAmp.dat", FAmp);
 
 //Write time domain solution
-real dt=20, T=5000;
+real dt=5, T=1000;
 real[int] time=-T:dt:T;
 
 //Extracting the frequency and the Fourier Transform vector.
@@ -59,8 +59,11 @@ omegaNew=FAmp(0,:);
 domega=omegaNew(1:omegaNew.n);
 domega-=omegaNew(0:omegaNew.n-1);
 domega(omegaNew.n-1)=0;
-if(mpirank==0)
-  cout<<domega<<endl;
+
+//Phase
+complex[int] randn(nfreq);
+randn=FAmp(2,:);
+
 
 //Find the complex solution.
 complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
@@ -73,8 +76,9 @@ macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
 
 for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
   {    
-    omegaVec=(-1i)*omegaNew;    
-    omegaVec*=time(n);
+    omegaVec=(-1i)*omegaNew;
+    omegaVec+=(-1i)*randn;
+    omegaVec*=time(n);    
     omegaVec=exp(omegaVec);    
     omegaVec=omegaVec.*FAmp(1,:);    
     omegaVec=omegaVec.*domega;    
@@ -89,7 +93,7 @@ for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
         
     //savevtk(solDir+"2_TimeDomain/Disp/vmStress"+n+".vtk",ThIce,real(Sigmavm),dataname="vy",order=Order);
     //savevtk(solDir+"2_TimeDomain/Disp/dispX"+n+".vtk",ThIce,real(dispX),dataname="vx",order=Order);
-    savevtk(solDir+"2_TimeDomain/Disp/dispY"+n+".vtk",ThIce,real(v),dataname="vy",order=Order);
+    savevtk(solDir+"2_TimeDomain/Disp/dispY"+n+".vtk", ThIce, real(v), dataname="vy",order=Order);
     
 
     if(mpirank==0)

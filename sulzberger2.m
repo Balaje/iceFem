@@ -6,7 +6,7 @@ close all
 
 [~,~,~,~,E,nu,rhow,rhoi,g,~]=getProperties();
 a=0.0001;
-b=0.001;
+b=0.01;
 omega=linspace(a,b,51); %Solved in the HPC grid.
 T=2*pi./omega;
 Ad=1;

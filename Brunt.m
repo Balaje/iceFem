@@ -6,8 +6,8 @@ close all
 format long
 
 [~,~,~,~,E,nu,rhow,rhoi,g,~]=getProperties();
-a=2*pi/200;
-b=2*pi/400;
+a=0.0001;
+b=0.01;
 omega=linspace(a,b,51); %Solved in the HPC grid.
 T=2*pi./omega;
 Ad=1;
@@ -20,7 +20,7 @@ a1=a; b1=b;
 omegaNew=linspace(a1,b1,npts+1);
 Tnew=2*pi./omegaNew;
 ApNew=(g./(1i*omegaNew))*Ad;
-file1='5_BEDMAP2/';
+file1='1_BEDMAP2/';
 rc=zeros(length(omega),1);
 for m=1:length(omega)
     RC=load([file1,'2_RefCoeff/RefCoeff',num2str(m-1),'.dat']);
@@ -29,7 +29,7 @@ end
 
 % Interpolate the reflection coefficient.
 filePath=[file1,'2_RefCoeff'];
-nev=60;
+nev=64;
 rd=zeros(length(omega),1);
 rr=zeros(length(omega),nev);
 lambdaj=zeros(nev,length(omega));
@@ -75,6 +75,6 @@ end
 
 figure(2);
 subplot(2,1,1);
-semilogx(Tnew,real(rcNew),'b',Tnew,imag(rcNew),'r');
+semilogx(2*pi./Tnew,real(rcNew),'b',2*pi./Tnew,imag(rcNew),'r');
 subplot(2,1,2);
-semilogx(Tnew,condH);
+semilogx(2*pi./Tnew,condH);

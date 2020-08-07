@@ -68,12 +68,10 @@ X=log10(f1); Y1=log10(P2);
 b=polyfit(X',Y1,1);
 X1=log10(linspace(0.0001,0.01,300));
 yhat=10.^(polyval(b,X1));
-whiteNoise=-1+2*rand(1,length(X1));
-%whiteNoise=0;
-yhat1=10.^(polyval(b,X1)+whiteNoise);
-plot(10.^(X1),yhat1);
+plot(10.^(X1),yhat);
 
-%% Write the frequency and the amplitude of the signal
-FAmp=[10.^(X1); yhat1];
+%% Write the frequency, amplitude and a random phase of the signal
+phase=0.1*rand(1,length(X1));
+FAmp=[10.^(X1); yhat; phase];
 dlmwrite('FAmp.dat',FAmp,'delimiter','\t','precision',16);
 
