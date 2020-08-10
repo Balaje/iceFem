@@ -8,6 +8,14 @@ verbosity=0;
 
 include "macros.idp"
 
+macro extractFS(fefunc, febdymesh, filename){
+  ofstream file(filename);
+  for(int m=0; m<febdymesh.nv; m++){
+    if(febdymesh(m).y==0)
+      file<<real(fefunc(febdymesh(m).x,0))<<"+"<<imag(fefunc(febdymesh(m).x,0))<<"i"<<"\t";
+  }
+}//EOM" End of macro to extract the Free Surface of the function .
+
 nev=64;
 NModes=5;
 string SolutionDir="1_BEDMAP2/";
@@ -45,6 +53,9 @@ ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
 for(int m=0; m<NModes+1; m++)
   chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
+if(mpirank==0)
+  cout<<"Obtained the nonlocal boundary condition"<<endl;
+
 //Solve EigenValue problem
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
@@ -66,8 +77,11 @@ set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
 plot(phi0,wait=0,fill=1,value=1,dim=3);
-if(mpirank==0)
+mesh emptyCav=emptymesh(ThCavity);
+if(mpirank==0){
+  extractFS(dy(phi0), emptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
   cout<<"Solved Diffraction Potential "<<endl<<endl;
+ }
 
 
 if(mpirank==0)
@@ -101,8 +115,10 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
+    extractFS(dy(phih), emptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
     phij[m]=phih;
     PHIJProc(m,:)=phij[m][];
+
     //Compute the radiation reflection coefficients
     pk1=0.;
     phiVecm = phij[m][];
