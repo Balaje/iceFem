@@ -76,22 +76,21 @@ bpoly=polyfit(X',Y1,1);
 
 %% New frequency space.
 a=0.001; b=0.0025;
-XX=linspace(0.001,0.0025,1000);
+npts=1000;
+XX=linspace(0.001,0.0025,npts);
 X1=log10(XX);
 yhat=10.^(polyval(bpoly,X1));
 % plot(10.^(X1),yhat,'LineWidth',2);
-
-%% Write the frequency, amplitude and a random phase of the signal
+% Write the frequency, amplitude and a random phase of the signal
 phase=20*rand(1,length(X1));
 FAmp=[10.^(X1); yhat; phase];
 dlmwrite('FAmp.dat',FAmp,'delimiter','\t','precision',16);
 
 %% Interpolate the linear system.
-npts=1000;
+omega=linspace(0.0001,0.01,50); % Original frequency space in HPC
 a1=a; b1=b;
 file1='1_BEDMAP2/';
 % Interpolate the system, solve and write the solution.
 filePath = [file1,'2_ModesMatrix/'];
 nev=64;
-[omegaNew,detH,condH] = interpolateFreq(a1,b1,XX,nev,filePath,npts-1,1);
-
+[omegaNew,detH,condH] = interpolateFreq(a1,b1,omega,nev,filePath,npts-1,1);
