@@ -80,7 +80,7 @@ if(isSolve)
 %         spparms('bandden',1);
 %         spparms('piv_tol',1e-6);
 %         spparms('sym_tol',1e-6);
-        lambdajNew = Hmat\Fmat;        
+        lambdajNew = Hmat.'\Fmat;        
         lambdaj(:,p) = lambdajNew;
     end
     
