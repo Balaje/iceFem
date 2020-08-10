@@ -22,7 +22,7 @@ int nborders=getARGV("-nborders",6);
 iceBEDMAP2(nborders,0);
 
 nev=64;
-int nfreq=100;
+int nfreq=500;
 complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat", lambdaRe);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat", lambdaIm);
