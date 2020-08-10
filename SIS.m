@@ -14,12 +14,13 @@ interval=t(2)-t(1);
 Fs=1/interval;
 
 Amp1=sgolayfilt(Amp,2,41);
-%[Amp11,Amp12]=envelope(Amp,30,'peak');
-%Amp12=Amp11;
-%Amp1=0.5*(Amp11+Amp12);
+% [Amp11,Amp12]=envelope(Amp,30,'peak');
+% Amp12=Amp11;
+% Amp1=0.5*(Amp11+Amp12);
 [t,Amp,Amp1]=freqRange(1,length(t),t,Amp,Amp1);
 L=length(Amp);
 Amp2=Amp-Amp1;
+
 %% Plot the signal and the difference.
 %{
 figure(1);
@@ -38,6 +39,7 @@ ylabel('Difference');
 %Y=Amp;
 % figure(2);
 % highpass(Amp2,0.0001,Fs);
+
 [Y,d1]=highpass(Amp2,0.0001,Fs);
 
 %% Perform Fourier Transform to find the amplitude of the components.
@@ -48,6 +50,7 @@ P2=abs(YY/L);
 P1=P2(1:floor(L/2)+1);
 P1(2:end-1) = 2*P1(2:end-1);
 f=Fs*(0:1/L:(1/2));
+
 %{
 % Plot the signal again.
 subplot(2,1,1);
@@ -69,14 +72,26 @@ hold on
 f1=f(find(f>=0.0001));
 P2=P1(find(f>=0.0001));
 X=log10(f1); Y1=log10(P2);
-b=polyfit(X',Y1,1);
+bpoly=polyfit(X',Y1,1);
+
+%% New frequency space.
+a=0.001; b=0.0025;
 XX=linspace(0.001,0.0025,1000);
 X1=log10(XX);
-yhat=10.^(polyval(b,X1));
-%plot(10.^(X1),yhat,'LineWidth',2);
+yhat=10.^(polyval(bpoly,X1));
+% plot(10.^(X1),yhat,'LineWidth',2);
 
 %% Write the frequency, amplitude and a random phase of the signal
 phase=20*rand(1,length(X1));
 FAmp=[10.^(X1); yhat; phase];
 dlmwrite('FAmp.dat',FAmp,'delimiter','\t','precision',16);
+
+%% Interpolate the linear system.
+npts=1000;
+a1=a; b1=b;
+file1='1_BEDMAP2/';
+% Interpolate the system, solve and write the solution.
+filePath = [file1,'2_ModesMatrix/'];
+nev=64;
+[omegaNew,detH,condH] = interpolateFreq(a1,b1,XX,nev,filePath,npts-1,1);
 
