@@ -2,6 +2,7 @@
 
 clc
 clear
+close all
 
 A=readtable('ROB002011.csv');
 B=table2array(A(:,3));
@@ -33,7 +34,7 @@ xlabel('Time in Months');
 ylabel('Difference');
 
 %% Perform band-pass filter on the difference.
-% Y=Amp1;
+%Y=Amp;
 figure(2);
 highpass(Amp2,0.0001,Fs);
 [Y,d1]=highpass(Amp2,0.0001,Fs);
@@ -66,12 +67,13 @@ f1=f(find(f>=0.0001));
 P2=P1(find(f>=0.0001));
 X=log10(f1); Y1=log10(P2);
 b=polyfit(X',Y1,1);
-X1=log10(linspace(0.0001,0.01,300));
+XX=linspace(0.0001,0.01,100);
+X1=log10(XX);
 yhat=10.^(polyval(b,X1));
-plot(10.^(X1),yhat);
+plot(10.^(X1),yhat,'LineWidth',2);
 
 %% Write the frequency, amplitude and a random phase of the signal
-phase=0.1*rand(1,length(X1));
+phase=20*rand(1,length(X1));
 FAmp=[10.^(X1); yhat; phase];
 dlmwrite('FAmp.dat',FAmp,'delimiter','\t','precision',16);
 

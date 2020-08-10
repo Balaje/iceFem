@@ -1,5 +1,5 @@
 //Program to derive the time-domain solution.
-verbosity=0.;
+verbosity=1;
 include "macros.idp"
 include "MPIplot.idp"
 load "medit"
@@ -22,7 +22,7 @@ int nborders=getARGV("-nborders",6);
 iceBEDMAP2(nborders,0);
 
 nev=64;
-int nfreq=300;
+int nfreq=100;
 complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat", lambdaRe);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat", lambdaIm);
@@ -50,7 +50,7 @@ complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
 
 //Write time domain solution
-real dt=5, T=1000;
+real dt=40, T=20000;
 real[int] time=-T:dt:T;
 
 //Extracting the frequency and the Fourier Transform vector.
@@ -77,25 +77,23 @@ macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
 for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
   {    
     omegaVec=(-1i)*omegaNew;
-    omegaVec+=(-1i)*randn;
     omegaVec*=time(n);    
+    omegaVec+=(-1i)*randn;    
     omegaVec=exp(omegaVec);    
     omegaVec=omegaVec.*FAmp(1,:);    
-    omegaVec=omegaVec.*domega;    
+    omegaVec=omegaVec.*domega;
+    omegaVec*=(2*omegaNew.n/pi);
 
     u3x=uxt*omegaVec;
     u3y=uyt*omegaVec;    
 
     Vh<complex> u=u3x, v=u3y;    
-    int[int] Order=[1];    
+    int[int] Order=[1,1];    
     Vh<complex> Sigmavm = sqrt(Sigma(u,v)[0]*Sigma(u,v)[0]-Sigma(u,v)[0]*Sigma(u,v)[1]
                                +Sigma(u,v)[1]*Sigma(u,v)[1]+3*Sigma(u,v)[2]*Sigma(u,v)[2]);    
-        
-    //savevtk(solDir+"2_TimeDomain/Disp/vmStress"+n+".vtk",ThIce,real(Sigmavm),dataname="vy",order=Order);
-    //savevtk(solDir+"2_TimeDomain/Disp/dispX"+n+".vtk",ThIce,real(dispX),dataname="vx",order=Order);
-    savevtk(solDir+"2_TimeDomain/Disp/dispY"+n+".vtk", ThIce, real(v), dataname="vy",order=Order);
-    
+    Sigmavm[]*=Lc^2;
+    savevtk(solDir+"2_TimeDomain/Disp/Redisp"+n+".vtk", ThIce, real(Sigmavm), [real(u),real(v)], dataname="Re(Sigmavm) Re(disp)", order=Order);        
 
     if(mpirank==0)
-      cout<<"Writing file: "<<n<<" using Processor "<<mpirank<<" Max VY "<<v[].max<<endl;
+      cout<<"Writing file: "<<n<<" using Processor "<<mpirank<<endl;
   }

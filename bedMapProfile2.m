@@ -12,20 +12,20 @@ bedmap2('patchshelves','frame','on');
 scalebar
 [hice,hbed,hwater]=bedmap2_profile();
 
-%% Generate the figure showing the bed and ice thickness 
-[mylat,mylon]=psgrid('Vollmer Island',[180,580],0.1);
-bed=bedmap2_interp(mylat,mylon,'bed','spline');
-figure(100);
-subplot(1,2,1);
-surfps(mylat,mylon,bed)
-scalebarps
-axis tight
-hold on
-
-surface=bedmap2_interp(mylat,mylon,'surface','linear');
-surfps(mylat,mylon,surface)
-scalebarps
-axis tight
+% %% Generate the figure showing the bed and ice thickness 
+% [mylat,mylon]=psgrid('Vollmer Island',[180,580],0.1);
+% bed=bedmap2_interp(mylat,mylon,'bed','spline');
+% figure(100);
+% subplot(1,2,1);
+% surfps(mylat,mylon,bed)
+% scalebarps
+% axis tight
+% hold on
+% 
+% surface=bedmap2_interp(mylat,mylon,'surface','linear');
+% surfps(mylat,mylon,surface)
+% scalebarps
+% axis tight
 
 
 %% Extract the points and construct the spline
@@ -82,12 +82,12 @@ ppCav=spline(bedPts(:,1),bedPts(:,2));
 ppIceTop=spline(iceTop(:,1),iceTop(:,2));
 
 % Write the coefficients to a file.
-dlmwrite('./Meshes/BEDMAP2/iceCavInt_Coeffs.dat',ppIceCavInt.coefs,'precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/iceCavInt_Breaks.dat',ppIceCavInt.breaks','precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/iceTop_Coeffs.dat',ppIceTop.coefs,'precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/iceTop_Breaks.dat',ppIceTop.breaks','precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/cavBed_Coeffs.dat',ppCav.coefs,'precision',16,'delimiter','\t');
-dlmwrite('./Meshes/BEDMAP2/cavBed_Breaks.dat',ppCav.breaks','precision',16,'delimiter','\t');
+% dlmwrite('./Meshes/BEDMAP2/iceCavInt_Coeffs.dat',ppIceCavInt.coefs,'precision',16,'delimiter','\t');
+% dlmwrite('./Meshes/BEDMAP2/iceCavInt_Breaks.dat',ppIceCavInt.breaks','precision',16,'delimiter','\t');
+% dlmwrite('./Meshes/BEDMAP2/iceTop_Coeffs.dat',ppIceTop.coefs,'precision',16,'delimiter','\t');
+% dlmwrite('./Meshes/BEDMAP2/iceTop_Breaks.dat',ppIceTop.breaks','precision',16,'delimiter','\t');
+% dlmwrite('./Meshes/BEDMAP2/cavBed_Coeffs.dat',ppCav.coefs,'precision',16,'delimiter','\t');
+% dlmwrite('./Meshes/BEDMAP2/cavBed_Breaks.dat',ppCav.breaks','precision',16,'delimiter','\t');
 
 arrIce=[min(iceCavInt(:,1)); % Bottom left Ice
     max(iceCavInt(:,1)); % Bottom right Ice
@@ -97,4 +97,4 @@ arrIce=[min(iceCavInt(:,1)); % Bottom left Ice
     ppCav.pieces;
     fnval(ppIceCavInt,max(bedPts(:,1)))];
 
-dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
+% dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
