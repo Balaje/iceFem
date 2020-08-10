@@ -21,6 +21,7 @@ Amp1=sgolayfilt(Amp,2,41);
 L=length(Amp);
 
 %% Plot the signal and the difference.
+%{
 figure(1);
 subplot(2,1,1);
 plot(A.Var2,Amp,A.Var2,Amp1);
@@ -32,21 +33,23 @@ Amp2=Amp-Amp1;
 plot(A.Var2,Amp2);
 xlabel('Time in Months');
 ylabel('Difference');
+%}
 
 %% Perform band-pass filter on the difference.
 %Y=Amp;
-figure(2);
-highpass(Amp2,0.0001,Fs);
+% figure(2);
+% highpass(Amp2,0.0001,Fs);
 [Y,d1]=highpass(Amp2,0.0001,Fs);
 
 %% Perform Fourier Transform to find the amplitude of the components.
-figure(3);
+% figure(3);
 YY=fft(Y);
 P2=abs(YY/L);
 % Looking at [0,L/2] due to symmetry
 P1=P2(1:floor(L/2)+1);
 P1(2:end-1) = 2*P1(2:end-1);
 f=Fs*(0:1/L:(1/2));
+%{
 % Plot the signal again.
 subplot(2,1,1);
 plot(t,Y);
@@ -61,6 +64,7 @@ xlabel('Frequency (mHz)');
 ylabel('Amplitude (m)');
 %xlim([1000*f(1),1000*f(end)]);
 hold on
+%}
 
 %% Linear regression in log scale.
 f1=f(find(f>=0.0001));
@@ -70,7 +74,7 @@ b=polyfit(X',Y1,1);
 XX=linspace(0.0001,0.01,500);
 X1=log10(XX);
 yhat=10.^(polyval(b,X1));
-plot(10.^(X1),yhat,'LineWidth',2);
+%plot(10.^(X1),yhat,'LineWidth',2);
 
 %% Write the frequency, amplitude and a random phase of the signal
 phase=20*rand(1,length(X1));
