@@ -3,11 +3,11 @@
 #PBS -l select=1:ncpus=8:mpiprocs=8:mem=16GB
 #PBS -l walltime=100:00:00
 #PBS -k oe
-#PBS -J 0-49
+#PBS -J 0-199
 
-JOBS=50
-TMIN=$(echo 1/0.0001 | bc -l)
-TMAX=$(echo 1/0.01 | bc -l)
+JOBS=200
+TMIN=$(echo 100 | bc -l)
+TMAX=$(echo 10000 | bc -l)
 
 STEP=$(echo \($TMAX-$TMIN\)/\($JOBS-1\) | bc -l)
 TVAL=$(echo $TMIN+$PBS_ARRAY_INDEX*$STEP | bc -l)

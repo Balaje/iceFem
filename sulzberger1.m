@@ -19,7 +19,7 @@ Amp1=sgolayfilt(Amp,2,41);
 %Amp1=0.5*(Amp11+Amp12);
 [t,Amp,Amp1]=freqRange(1,length(t),t,Amp,Amp1);
 L=length(Amp);
-
+Amp2=Amp-Amp1;
 %% Plot the signal and the difference.
 %{
 figure(1);
@@ -29,7 +29,6 @@ xlabel('Time in Months');
 ylabel('Displacement');
 legend('Original Signal','Tide Component (Smoothed)');
 subplot(2,1,2);
-Amp2=Amp-Amp1;
 plot(A.Var2,Amp2);
 xlabel('Time in Months');
 ylabel('Difference');
@@ -71,7 +70,7 @@ f1=f(find(f>=0.0001));
 P2=P1(find(f>=0.0001));
 X=log10(f1); Y1=log10(P2);
 b=polyfit(X',Y1,1);
-XX=linspace(0.0001,0.01,500);
+XX=linspace(0.0001,0.01,1000);
 X1=log10(XX);
 yhat=10.^(polyval(b,X1));
 %plot(10.^(X1),yhat,'LineWidth',2);

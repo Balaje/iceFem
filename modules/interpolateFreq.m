@@ -1,6 +1,7 @@
 function [omegaNew,detH,condH] = interpolateFreq(a,b,omega,Nev,filePath,npts,isSolve)
 %% Interpolate the matrix to a larger frequency space.
-omegaNew = linspace(a,b,npts+1);
+Tnew= linspace(a,b,npts+1);
+omegaNew = 2*pi./omegaNew;
 
 H = zeros(Nev^2,length(omega(:)));
 F = zeros(Nev,length(omega(:)));
@@ -80,7 +81,7 @@ if(isSolve)
 %         spparms('bandden',1);
 %         spparms('piv_tol',1e-6);
 %         spparms('sym_tol',1e-6);
-        lambdajNew = Hmat\Fmat;        
+        lambdajNew = Hmat.'\Fmat;        
         lambdaj(:,p) = lambdajNew;
     end
     

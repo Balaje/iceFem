@@ -5,18 +5,18 @@ clear
 close all
 
 [~,~,~,~,E,nu,rhow,rhoi,g,~]=getProperties();
-a=0.0001;
-b=0.01;
-omega=linspace(a,b,50); %Solved in the HPC grid.
-T=2*pi./omega;
+a=100;
+b=10000;
+T=linspace(a,b,50); %Solved in the HPC grid.
+omega=2*pi./T;
 Ad=1;
 Ap=(g./(1i*omega))*Ad;
 
 %% Define the new frequency space.
-npts=500;
+npts=1000;
 a1=a; b1=b;
-omegaNew=linspace(a1,b1,npts+1);
-Tnew=2*pi./omegaNew;
+TNew=linspace(a1,b1,npts+1);
+omegaNew=2*pi./TNew;
 ApNew=(g./(1i*omegaNew))*Ad;
 file1='1_BEDMAP2/';
 
