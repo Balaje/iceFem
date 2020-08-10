@@ -228,11 +228,13 @@ if(mpirank==0){
   Vh iux=imag(etax), iuy=imag(etay);
 
   // Save the displacements as VTK files
+  /*
   savevtk("1_BEDMAP2/ThIce.vtk",ThIce);
   savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
   savevtk("1_BEDMAP2/ThNewIce"+iter+".vtk",ThNewIce);
   int[int] Order=[1];
   savevtk("1_BEDMAP2/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);
+  */
  }
 
 if(mpirank==0)

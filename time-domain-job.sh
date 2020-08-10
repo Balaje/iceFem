@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -l select=1:ncpus=20:mpiprocs=20:mem=32GB
+#PBS -l select=1:ncpus=20:mpiprocs=20:mem=64GB
 #PBS -l walltime=10:00:00
 #PBS -k oe
 

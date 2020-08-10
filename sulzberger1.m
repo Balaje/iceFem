@@ -70,7 +70,7 @@ f1=f(find(f>=0.0001));
 P2=P1(find(f>=0.0001));
 X=log10(f1); Y1=log10(P2);
 b=polyfit(X',Y1,1);
-XX=linspace(0.0001,0.01,1000);
+XX=linspace(0.001,0.0025,1000);
 X1=log10(XX);
 yhat=10.^(polyval(b,X1));
 %plot(10.^(X1),yhat,'LineWidth',2);

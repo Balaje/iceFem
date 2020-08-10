@@ -6,7 +6,7 @@ close all
 
 [~,~,~,~,E,nu,rhow,rhoi,g,~]=getProperties();
 a=100;
-b=10000;
+b=1000;
 T=linspace(a,b,50); %Solved in the HPC grid.
 omega=2*pi./T;
 Ad=1;
@@ -14,7 +14,7 @@ Ap=(g./(1i*omega))*Ad;
 
 %% Define the new frequency space.
 npts=1000;
-a1=a; b1=b;
+a1=400; b1=1000;
 TNew=linspace(a1,b1,npts+1);
 omegaNew=2*pi./TNew;
 ApNew=(g./(1i*omegaNew))*Ad;

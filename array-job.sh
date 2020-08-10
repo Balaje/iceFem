@@ -7,7 +7,7 @@
 
 JOBS=200
 TMIN=$(echo 100 | bc -l)
-TMAX=$(echo 10000 | bc -l)
+TMAX=$(echo 1000 | bc -l)
 
 STEP=$(echo \($TMAX-$TMIN\)/\($JOBS-1\) | bc -l)
 TVAL=$(echo $TMIN+$PBS_ARRAY_INDEX*$STEP | bc -l)

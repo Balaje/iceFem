@@ -50,7 +50,7 @@ complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
 
 //Write time domain solution
-real dt=50, T=2000;
+real dt=10, T=10000;
 real[int] time=-T:dt:T;
 
 //Extracting the frequency and the Fourier Transform vector.
