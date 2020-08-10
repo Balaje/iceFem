@@ -12,7 +12,7 @@ macro extractFS(fefunc, febdymesh, filename){
   ofstream file(filename);
   for(int m=0; m<febdymesh.nv; m++){
     if(febdymesh(m).y==0)
-      file<<real(fefunc(febdymesh(m).x,0))<<"+"<<imag(fefunc(febdymesh(m).x,0))<<"i"<<"\t";
+      file<<real(fefunc(febdymesh(m).x,0))<<"\t"<<imag(fefunc(febdymesh(m).x,0))<<"\n";
   }
 }//EOM" End of macro to extract the Free Surface of the function .
 
@@ -40,6 +40,7 @@ splitMeshLoad; //load the split mesh
 if(nborders!=4)
   dd=0.;
 
+mesh ThEmptyCav=emptymesh(ThCavity);
 //Solve the dispersion equation.
 solveDispersion;
 if(mpirank==0)
@@ -77,9 +78,8 @@ set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
 plot(phi0,wait=0,fill=1,value=1,dim=3);
-mesh emptyCav=emptymesh(ThCavity);
 if(mpirank==0){
-  extractFS(dy(phi0), emptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
+  extractFS(dy(phi0), ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
   cout<<"Solved Diffraction Potential "<<endl<<endl;
  }
 
@@ -115,7 +115,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
-    extractFS(dy(phih), emptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
+    extractFS(dy(phih), ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
     phij[m]=phih;
     PHIJProc(m,:)=phij[m][];
 
