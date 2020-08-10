@@ -6,15 +6,15 @@ H = zeros(Nev^2,length(omega(:)));
 F = zeros(Nev,length(omega(:)));
 
 for iter=1:length(omega(:))
-    HRe = load([filePath,'ReH',num2str(iter-1),'.dat']);
-    HIm = load([filePath,'ImH',num2str(iter-1),'.dat']);
+    HRe = load([filePath,'ReH',num2str(iter),'.dat']);
+    HIm = load([filePath,'ImH',num2str(iter),'.dat']);
     HMat = HRe + 1i*HIm;
     % Store all the Entries - (Frequency-wise)
     H(:,iter) = HMat(:);
     
     if(isSolve)
-        FRe = load([filePath,'ReF',num2str(iter-1),'.dat']);
-        FIm = load([filePath,'ImF',num2str(iter-1),'.dat']);
+        FRe = load([filePath,'ReF',num2str(iter),'.dat']);
+        FIm = load([filePath,'ImF',num2str(iter),'.dat']);
         FMat = FRe + 1i*FIm;
         F(:,iter) = FMat;
     end
@@ -80,7 +80,7 @@ if(isSolve)
 %         spparms('bandden',1);
 %         spparms('piv_tol',1e-6);
 %         spparms('sym_tol',1e-6);
-        lambdajNew = Hmat.'\Fmat;        
+        lambdajNew = Hmat\Fmat;        
         lambdaj(:,p) = lambdajNew;
     end
     
