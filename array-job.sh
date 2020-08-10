@@ -3,10 +3,9 @@
 #PBS -l select=1:ncpus=8:mpiprocs=8:mem=16GB
 #PBS -l walltime=100:00:00
 #PBS -k oe
-#PBS -J 0-9
-#PBS -q testq
+#PBS -J 0-199
 
-JOBS=10
+JOBS=200
 
 OMEGAMIN=0.0001
 OMEGAMAX=0.01
@@ -20,5 +19,5 @@ source /etc/profile.d/modules.sh
 module load freefem
 cd $PBS_O_WORKDIR
 export FF_INCLUDEPATH="$PBS_O_WORKDIR/include"
-echo mpirun -np 8 FreeFem++-mpi -nw -v 0 solveBEDMAP2.edp -isMesh 0 -nborders 6 -Tr $TVAL -Ti 0 -iter $(( $PBS_ARRAY_INDEX+1 ))
+mpirun -np 8 FreeFem++-mpi -nw -v 0 solveBEDMAP2.edp -isMesh 0 -nborders 6 -Tr $TVAL -Ti 0 -iter $(( $PBS_ARRAY_INDEX+1 ))
 exit 0
