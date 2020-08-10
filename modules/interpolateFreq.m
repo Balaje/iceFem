@@ -1,7 +1,7 @@
 function [omegaNew,detH,condH] = interpolateFreq(a,b,omega,Nev,filePath,npts,isSolve)
 %% Interpolate the matrix to a larger frequency space.
-Tnew= linspace(a,b,npts+1);
-omegaNew = 2*pi./omegaNew;
+TNew= linspace(a,b,npts+1);
+omegaNew = 2*pi./TNew;
 
 H = zeros(Nev^2,length(omega(:)));
 F = zeros(Nev,length(omega(:)));
