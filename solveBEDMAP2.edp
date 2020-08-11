@@ -79,7 +79,7 @@ phih[]=LHS^-1*RHS[];
 phi0=phih;
 plot(phi0,wait=0,fill=1,value=1,dim=3);
 if(mpirank==0){
-  //extractFS(dy(phi0), ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
+  extractFS(dy(phi0), ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
   cout<<"Solved Diffraction Potential "<<endl<<endl;
  }
 
@@ -115,7 +115,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
-    //extractFS(dy(phih), ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
+    extractFS(dy(phih), ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
     phij[m]=phih;
     PHIJProc(m,:)=phij[m][];
 
@@ -131,6 +131,10 @@ mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
 cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
 mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
+if(mpirank==0)//Concatenate files together.  
+    system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
+
+  
 //Unpack and set to phij locally in all procs
 for(int m=0; m<nev; m++){
   phij[m][]=PHIJ(m,:);
