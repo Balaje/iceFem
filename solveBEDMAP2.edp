@@ -134,7 +134,7 @@ mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 if(mpirank==0){//Concatenate files together.
   system("rm 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
   system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
-  system("rm -vf 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"_iter+".dat");
+  system("rm -vf 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat");
  }
 
   
