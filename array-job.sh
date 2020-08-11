@@ -7,7 +7,7 @@
 
 JOBS=200
 
-OMEGAMIN=0.0001
+OMEGAMIN=0.0005
 OMEGAMAX=0.01
 PI=$(echo 4*a\(1\) | bc -l)
 

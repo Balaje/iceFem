@@ -77,7 +77,7 @@ bpoly=polyfit(X',Y1,1);
 %% New frequency space.
 a=0.001; b=0.0025;
 npts=1000;
-XX=linspace(0.001,0.0025,npts);
+XX=linspace(a,b,npts);
 X1=log10(XX);
 yhat=10.^(polyval(bpoly,X1));
 % plot(10.^(X1),yhat,'LineWidth',2);
@@ -87,7 +87,7 @@ FAmp=[10.^(X1); yhat; phase];
 dlmwrite('FAmp.dat',FAmp,'delimiter','\t','precision',16);
 
 %% Interpolate the linear system.
-omega=linspace(0.0001,0.01,50); % Original frequency space in HPC
+omega=linspace(0.0005,0.01,50); % Original frequency space in HPC
 a1=a; b1=b;
 file1='1_BEDMAP2/';
 % Interpolate the system, solve and write the solution.
