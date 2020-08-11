@@ -76,7 +76,7 @@ bpoly=polyfit(X',Y1,1);
 
 %% New frequency space.
 a=0.001; b=0.0025;
-npts=1000;
+npts=300;
 XX=linspace(a,b,npts);
 X1=log10(XX);
 yhat=10.^(polyval(bpoly,X1));
