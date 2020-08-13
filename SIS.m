@@ -50,7 +50,6 @@ npts=200;
 XX=linspace(a,b,npts);
 X1=log10(XX);
 yhat=10.^(polyval(bpoly,X1));
-loglog(10.^(X1),yhat,'LineWidth',2);
 % Write the frequency, amplitude and a random phase of the signal
 phase=2*pi*rand(1,length(X1));
 FAmp=[10.^(X1); yhat; phase];
