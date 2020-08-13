@@ -7,9 +7,9 @@
 
 JOBS=200
 
-OMEGAMIN=0.0005
-OMEGAMAX=0.01
 PI=$(echo 4*a\(1\) | bc -l)
+OMEGAMIN=$(echo \(2*$PI*0.0001\) | bc -l)
+OMEGAMAX=$(echo \(2*$PI*0.01\) | bc -l)
 
 STEP=$(echo \($OMEGAMAX-$OMEGAMIN\)/\($JOBS-1\) | bc -l)
 OMEGAVAL=$(echo $OMEGAMIN+$PBS_ARRAY_INDEX*$STEP | bc -l)
