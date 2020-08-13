@@ -15,7 +15,7 @@ Ap=(g./(1i*omega))*Ad;
 
 
 % Set the new-frequency space;
-npts=3000;
+npts=1000;
 a1=a; b1=b;
 omegaNew=linspace(a1,b1,npts+1);
 Tnew=2*pi./omegaNew;
@@ -23,7 +23,7 @@ ApNew=(g./(1i*omegaNew))*Ad;
 file1='1_BEDMAP2/';
 rc=zeros(length(omega),1);
 for m=1:length(omega)
-    RC=load([file1,'2_RefCoeff/RefCoeff',num2str(m-1),'.dat']);
+    RC=load([file1,'2_RefCoeff/RefCoeff',num2str(m),'.dat']);
     rc(m)=RC(1)+1i*RC(2);
 end
 
@@ -35,12 +35,12 @@ rr=zeros(length(omega),nev);
 lambdaj=zeros(nev,length(omega));
 rrc=zeros(length(omega),1);
 for m=1:length(omega)
-    rcDiff = load([filePath,'/RefCoeff_Dif/refC',num2str(m-1),'.dat']);
-    rcRad = load([filePath,'/RefCoeff_Rad/refC',num2str(m-1),'.dat']);    
+    rcDiff = load([filePath,'/RefCoeff_Dif/refC',num2str(m),'.dat']);
+    rcRad = load([filePath,'/RefCoeff_Rad/refC',num2str(m),'.dat']);    
     rd(m) = rcDiff(1)+1i*rcDiff(2);
     rr(m,:) = (rcRad(:,1)+1i*rcRad(:,2)).';
     
-    lam = load([file1,'/2_ModesMatrix/lambdaj',num2str(m-1),'.dat']);
+    lam = load([file1,'/2_ModesMatrix/lambdaj',num2str(m),'.dat']);
     lam = (lam(:,1)+1i*lam(:,2)).';
     
     lambdaj(:,m) = lam;

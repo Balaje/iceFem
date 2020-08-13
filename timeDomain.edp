@@ -22,7 +22,7 @@ int nborders=getARGV("-nborders",6);
 iceBEDMAP2(nborders,0);
 
 nev=64;
-int nfreq=300;
+int nfreq=200;
 complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat", lambdaRe);
 readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat", lambdaIm);
@@ -46,6 +46,17 @@ uy=lambda*my;
 complex[int,int] uxt=ux', uyt=uy';
 uxt=conj(uxt);
 uyt=conj(uyt);
+
+if(mpirank==0)
+{  
+  real[int] maxabsdisp(nfreq);
+  ofstream file("uyabs.dat");
+  for(int m=0; m<nfreq; m++){    
+    maxabsdisp[m]=uyt(:,m).linfty;    
+    file<<maxabsdisp[m]<<"\t";
+  }
+}
+
 complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
 
