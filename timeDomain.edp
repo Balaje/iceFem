@@ -61,7 +61,7 @@ complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
 
 //Write time domain solution
-real dt=100, T=15000;
+real dt=10, T=5000;
 real[int] time=-T:dt:T;
 
 /*

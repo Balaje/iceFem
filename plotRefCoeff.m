@@ -6,16 +6,16 @@ close all
 format long
 
 [~,~,~,~,E,nu,rhow,rhoi,g,~]=getProperties();
-a=0.0001;
-b=0.01;
-omega=linspace(a,b,51); %Solved in the HPC grid.
+a=2*pi*0.0001;
+b=2*pi*0.01;
+omega=linspace(a,b,200); %Solved in the HPC grid.
 T=2*pi./omega;
 Ad=1;
 Ap=(g./(1i*omega))*Ad;
 
 
 % Set the new-frequency space;
-npts=1000;
+npts=500;
 a1=a; b1=b;
 omegaNew=linspace(a1,b1,npts+1);
 Tnew=2*pi./omegaNew;
@@ -73,8 +73,23 @@ for m=1:length(omegaNew)
     rcNew(m)=rcNew(m)+(LAM(m,:)*rrNew(m,:).');    
 end
 
+%%
 figure(2);
-subplot(2,1,1);
-semilogx(2*pi./Tnew,real(rcNew),'b',2*pi./Tnew,imag(rcNew),'r');
-subplot(2,1,2);
-semilogx(2*pi./Tnew,condH);
+subplot(3,1,1);
+semilogx(Tnew,real(rcNew),'b',Tnew,imag(rcNew),'r','Linewidth',1.5);
+legend('Re parts of R($\omega$)','Im parts of R($\omega$)')
+xlim([Tnew(end),Tnew(1)]);
+grid on
+
+subplot(3,1,2);
+semilogx(Tnew,condH,'Linewidth',1.5);
+xlim([Tnew(end),Tnew(1)]);
+grid on
+legend('Condition Number of Reduced system')
+
+subplot(3,1,3);
+UY=load('uyabs.dat');
+semilogx(T,UY,'Linewidth',1.5);
+legend('$\max(abs(u_y))$')
+xlabel('Wave period $T$ (in s)')
+grid on

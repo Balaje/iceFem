@@ -37,7 +37,7 @@ bpoly=polyfit(X',Y1,1);
 %% Original frequency space in the HPC
 a1=2*pi*0.0001; 
 b1=2*pi*0.01;
-omega=2*pi*linspace(a1,b1,200); % Original frequency space in HPC
+omega=linspace(a1,b1,200); % Original frequency space in HPC
 file1='1_BEDMAP2/';
 % Interpolate the system, solve and write the solution.
 filePath = [file1,'2_ModesMatrix/'];
