@@ -139,27 +139,67 @@ macro iceBEDMAP2(nborders, isBuild)
     {
       if(nborders==4)
         {
-          if(mpirank==0){
-            if(abs(cavEnd-iceEnd)<1e-5){
-              cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
-              border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
-              border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-              border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
-              border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
-              ThIce=buildmesh(C01(5000)+C02(100)+C03(5000)+C04(100));
-              cout<<"Built Ice-Mesh\n";
+          if(mpirank==0)
+            {
+              if(isNotch)
+                {
+                  cout<<"Add Notch Option Enabled"<<endl;
+                  if(abs(cavEnd-iceEnd)<1e-5){
+                    cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                    real lenofIce=abs(iceBegin-iceEnd), crackBegin=iceBegin+0.4*lenofIce, crackEnd=crackBegin+0.01*lenofIce;
+                    real crackDepthEnd=0.5*splineRecon(coefsTop,breaksTop,crackEnd,npieces)+0.5*splineRecon(coefsBot,breaksBot,crackEnd,npieces);
+
+                    border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                    border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                    border C03a(t=iceEnd,crackEnd){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                    border C03b(t=splineRecon(coefsTop,breaksTop,crackEnd,npieces),crackDepthEnd){x=crackEnd; y=t; label=3;};
+                    border C03c(t=crackEnd,crackBegin){x=t; y=crackDepthEnd; label=3;};
+                    border C03d(t=crackDepthEnd,splineRecon(coefsTop,breaksTop,crackBegin,npieces)){x=crackBegin; y=t; label=3;};
+                    border C03e(t=crackBegin,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                    border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+
+                    ThIce=buildmesh(C01(5000)+C02(100)+C03a(3000)+C03b(100)+C03c(100)+C03d(100)+C03e(2000)+C04(100));
+                  }
+                  else{
+                    cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;                    
+                    real lenofIce=abs(iceBegin-iceEnd), crackBegin=iceBegin+0.4*lenofIce, crackEnd=crackBegin+0.01*lenofIce;
+                    real crackDepthEnd=0.5*(splineRecon(coefsTop,breaksTop,crackEnd,npieces)+0.5*splineRecon(coefsBot,breaksBot,crackEnd,npieces));
+
+                    border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                    border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
+                    border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                    border C03a(t=iceEnd,crackEnd){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                    border C03b(t=splineRecon(coefsTop,breaksTop,crackEnd,npieces),crackDepthEnd){x=crackEnd; y=t; label=3;};
+                    border C03c(t=crackEnd,crackBegin){x=t; y=crackDepthEnd; label=3;};
+                    border C03d(t=crackDepthEnd,splineRecon(coefsTop,breaksTop,crackBegin,npieces)){x=crackBegin; y=t; label=3;};
+                    border C03e(t=crackBegin,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                    border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+
+                    ThIce=buildmesh(C01(2000)+C01x(2000)+C02(100)+C03a(3000)+C03b(100)+C03c(100)+C03d(100)+C03e(2000)+C04(100));
+                  }
+                }
+              else{
+                if(abs(cavEnd-iceEnd)<1e-5){
+                  cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                  border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                  border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                  border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                  border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+                  ThIce=buildmesh(C01(5000)+C02(100)+C03(5000)+C04(100));
+                  cout<<"Built Ice-Mesh\n";
+                }
+                else {
+                  cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                  border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                  border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
+                  border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                  border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                  border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+                  ThIce=buildmesh(C01(2000)+C01x(2000)+C02(100)+C03(2000)+C04(100));
+                  cout<<"Built Ice-Mesh\n";
+                }
+              }
             }
-            else {
-              cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
-              border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
-              border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
-              border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-              border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
-              border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
-              ThIce=buildmesh(C01(2000)+C01x(2000)+C02(100)+C03(2000)+C04(100));
-              cout<<"Built Ice-Mesh\n";
-            }
-          }
           else if(mpirank==1){
             cout<<"Begin Cavity-Mesh. Proc "<<mpirank<<endl;
             real yy1=splineRecon(coefsCav,breaksCav,cavEnd,npieces1), yy2=splineRecon(coefsBot,breaksBot,cavEnd,npieces);
@@ -176,27 +216,72 @@ macro iceBEDMAP2(nborders, isBuild)
         }
       else
         {
-          if(mpirank==0){
-            if(abs(cavEnd-iceEnd)<1e-5){
-              cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
-              border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
-              border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-              border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
-              border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
-              ThIce=buildmesh(C01(500)+C02(100)+C03(500)+C04(100));
-              cout<<"Built Ice-Mesh\n";
+          if(mpirank==0)
+            {
+              if(isNotch)
+                {
+                  cout<<"Add Notch Option Enabled"<<endl;
+                  if(abs(cavEnd-iceEnd)<1e-5)
+                    {
+                      cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                      real lenofIce=abs(iceBegin-iceEnd), crackBegin=iceBegin+0.4*lenofIce, crackEnd=crackBegin+0.01*lenofIce;
+                      real crackDepthEnd=0.5*splineRecon(coefsTop,breaksTop,crackEnd,npieces)+0.5*splineRecon(coefsBot,breaksBot,crackEnd,npieces);
+
+                      border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                      border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                      border C03a(t=iceEnd,crackEnd){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                      border C03b(t=splineRecon(coefsTop,breaksTop,crackEnd,npieces),crackDepthEnd){x=crackEnd; y=t; label=3;};
+                      border C03c(t=crackEnd,crackBegin){x=t; y=crackDepthEnd; label=3;};
+                      border C03d(t=crackDepthEnd,splineRecon(coefsTop,breaksTop,crackBegin,npieces)){x=crackBegin; y=t; label=3;};
+                      border C03e(t=crackBegin,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                      border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+
+                      ThIce=buildmesh(C01(5000)+C02(100)+C03a(3000)+C03b(100)+C03c(100)+C03d(100)+C03e(2000)+C04(100));
+                    }
+                  else
+                    {
+                      cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                      real angleOfCrack=0.1;
+                      real lenofIce=abs(iceBegin-iceEnd), crackBegin=iceBegin+0.4*lenofIce, crackEnd=crackBegin+0.005*lenofIce;
+                      real crackDepthEnd=0.5*splineRecon(coefsTop,breaksTop,crackEnd,npieces)+0.5*splineRecon(coefsBot,breaksBot,crackEnd,npieces);
+
+                      border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                      border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
+                      border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                      border C03a(t=iceEnd,crackEnd){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                      border C03b(t=splineRecon(coefsTop,breaksTop,crackEnd,npieces),crackDepthEnd){x=crackEnd; y=t; label=3;};
+                      border C03c(t=crackEnd,crackBegin){x=t; y=crackDepthEnd; label=3;};
+                      border C03d(t=crackDepthEnd,splineRecon(coefsTop,breaksTop,crackBegin,npieces)){x=crackBegin; y=t; label=3;};
+                      border C03e(t=crackBegin,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                      border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+
+                      ThIce=buildmesh(C01(2000)+C01x(2000)+C02(100)+C03a(3000)+C03b(100)+C03c(100)+C03d(100)+C03e(2000)+C04(100));
+                    }
+                }
+              else
+                {
+                  if(abs(cavEnd-iceEnd)<1e-5)
+                    {
+                      cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                      border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                      border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                      border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                      border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+                      ThIce=buildmesh(C01(500)+C02(100)+C03(500)+C04(100));
+                      cout<<"Built Ice-Mesh\n";
+                    }
+                  else{
+                    cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                    border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                    border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
+                    border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                    border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                    border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+                    ThIce=buildmesh(C01(500)+C01x(100)+C02(100)+C03(500)+C04(100));
+                    cout<<"Built Ice-Mesh\n";
+                  }
+                }
             }
-            else{
-              cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
-              border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
-              border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
-              border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-              border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
-              border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
-              ThIce=buildmesh(C01(500)+C01x(100)+C02(100)+C03(500)+C04(100));
-              cout<<"Built Ice-Mesh\n";
-            }
-          }
           else if(mpirank==1){
             cout<<"Begin Cavity-Mesh. Proc "<<mpirank<<endl;
             border S01(t=cavBegin,cavEnd){x=t; y=splineRecon(coefsCav,breaksCav,t,npieces1); label=1;};
@@ -300,7 +385,7 @@ macro refineMesh(){
     cout<<"Ice : Before Refinement, NBV = "<<ThIce.nv<<endl;
     func metricFuncIce=getARGV("-hsize",0.02);
     ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
-    cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;    
+    cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
     savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
     plot(ThIce,wait=1);
   }
