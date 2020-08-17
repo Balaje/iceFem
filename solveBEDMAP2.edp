@@ -30,6 +30,7 @@ macro writeSolution(var, filename){
 }//Tiny macro to write files
 
 //Construct/Load the meshes.
+bool isNotch=1;
 iceBEDMAP2(nborders,isMesh);
 if(isMesh){
   refineMesh; //refine the meshes and overwrite the original meshes.
