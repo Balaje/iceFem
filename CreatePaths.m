@@ -16,8 +16,8 @@ else
  fprintf('>> Must addpath to bedmap2\n')
 end
 
-if exist('~/Documents/MATLAB/bedmap2_toolbox_v4.6.2/','dir')
- addpath('~/Documents/MATLAB/bedmap2_toolbox_v4.6.2/')
+if exist('~/bedmap2_toolbox_v4.6.2/','dir')
+ addpath('~/bedmap2_toolbox_v4.6.2/')
 else
  fprintf('>> Must addpath to bedmap2_toolbox*\n')
 end
