@@ -40,7 +40,8 @@ for m=1:length(omega)
     rd(m) = rcDiff(1)+1i*rcDiff(2);
     rr(m,:) = (rcRad(:,1)+1i*rcRad(:,2)).';
     
-    lam = load([file1,'/2_ModesMatrix/lambdaj',num2str(m),'.dat']);
+    lam = fileread([file1,'/2_ModesMatrix/lambdaj',num2str(m),'.dat']);
+    lam=str2num(lam);
     lam = (lam(:,1)+1i*lam(:,2)).';
     
     lambdaj(:,m) = lam;
@@ -90,6 +91,13 @@ legend('Condition Number of Reduced system')
 subplot(3,1,3);
 UY=load('uyabs.dat');
 semilogx(T,UY,'Linewidth',1.5);
-legend('$\max(abs(u_y))$')
 xlabel('Wave period $T$ (in s)')
 grid on
+hold on
+[val,indx]=find(T>300);
+UY1=UY(indx);
+[pks,loc]=findpeaks(UY1);
+plot(T(loc),UY1(loc),'o');
+
+dlmwrite('waveperiods.txt',T(loc),'delimiter','\n','precision',8);
+
