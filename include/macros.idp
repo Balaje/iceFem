@@ -304,8 +304,8 @@ macro iceBEDMAP2(nborders, isBuild)
     }
   else
     {
-      ThCavity=readmesh("Meshes/cavMeshBEDMAP.msh");
-      ThIce=readmesh("Meshes/iceMeshBEDMAP.msh");
+      ThCavity=readmesh("Meshes/cavMeshBEDMAP1.msh");
+      ThIce=readmesh("Meshes/iceMeshBEDMAP1.msh");
     }
 }//This is a macro to obtain the ice-cavity profiles from BEDMAP2
 
