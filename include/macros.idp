@@ -240,7 +240,7 @@ macro iceBEDMAP2(nborders, isBuild)
                     }
                   else
                     {
-                      cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                      cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;                      
                       real angleOfCrack=0.1;
                       real lenofIce=abs(iceBegin-iceEnd), crackBegin=iceBegin+0.4*lenofIce, crackEnd=crackBegin+0.005*lenofIce;
                       real crackDepthEnd=0.5*splineRecon(coefsTop,breaksTop,crackEnd,npieces)+0.5*splineRecon(coefsBot,breaksBot,crackEnd,npieces);
@@ -271,11 +271,15 @@ macro iceBEDMAP2(nborders, isBuild)
                       cout<<"Built Ice-Mesh\n";
                     }
                   else{
+                    real lenofIce=abs(iceBegin-iceEnd);
+                    real crackheight=tth/2., crackwidth=0.005*lenofIce;
+                    real crackLoc=LL/2.;
+                    
                     cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
                     border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
                     border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
                     border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-                    border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                    border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces) + crackwidth*exp(-(t-crackLoc)^2/(2*crackwidth^2)); label=3;};
                     border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
                     ThIce=buildmesh(C01(500)+C01x(100)+C02(100)+C03(500)+C04(100));
                     cout<<"Built Ice-Mesh\n";
@@ -754,9 +758,8 @@ macro buildReducedSystemOptim(){
           tmpim=phiMaTh(:,n).im'*Tyy(:,m);
           KProcY(m,n)=tmpre+1i*tmpim;
         }
-
       BProcX(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcX(:,m);
-      BProcY(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcY(:,m);
+      BProcY(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcY(:,m);      
     }
   FProc=FProcX+FProcY;
   BProc=BProcX+BProcY;
