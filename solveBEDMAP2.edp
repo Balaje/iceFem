@@ -67,11 +67,7 @@ Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
 if(mpirank==0){
-  writeEigen;
-  cout<<"Solved EigenValue Problem ... "<<endl;
-  ofstream file("1_BEDMAP2/2_Modes/eval.dat");
-  for(int m=0; m<nev; m++)
-    file<<ev[m]<<endl;
+  cout<<"Solved EigenValue Problem ... "<<endl;  
  }
 
 //Solve for the Diffraction potential
@@ -136,17 +132,9 @@ mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
 cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
 mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
-if(mpirank==0){//Concatenate files together.
-  system("rm 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
-  system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
-  system("rm -f 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat");
- }
-
-  
 //Unpack and set to phij locally in all procs
-for(int m=0; m<nev; m++){
-  phij[m][]=PHIJ(m,:);
- }
+for(int m=0; m<nev; m++)
+  phij[m][]=PHIJ(m,:); 
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
@@ -196,7 +184,6 @@ if(mpirank==0){
   file1.precision(16);
   for(int m=0; m<nev; m++)
     file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
-
  }
 broadcast(processor(0),xi);
 
@@ -214,7 +201,7 @@ mpiReduce(phiProc[],phi[],processor(0),mpiSUM);
 mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
 mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 
-if(mpirank==0){
+if(mpirank==0){    
   //Compute the reflection coefficient.
   phi=phi0+phi;
 
@@ -251,7 +238,17 @@ if(mpirank==0){
   Vh<complex> Sigmavm = sqrt(Sigma(etax,etay)[0]*Sigma(etax,etay)[0]-Sigma(etax,etay)[0]*Sigma(etax,etay)[1]
 			     +Sigma(etax,etay)[1]*Sigma(etax,etay)[1]+3*Sigma(etax,etay)[2]*Sigma(etax,etay)[2]);    
   Sigmavm[]*=Lc^2;
-  savevtk("1_BEDMAP2/2_Stresses/ReDisp"+iter+".vtk", ThIce, real(Sigmavm), [real(etax),real(etay)], dataname="Re(Sigmavm) Re(disp)", order=Order1);        
+  savevtk("1_BEDMAP2/2_Stresses/ReDisp"+iter+".vtk", ThIce, real(Sigmavm), [real(etax),real(etay)], dataname="Re(Sigmavm) Re(disp)", order=Order1);
+
+  //Write the eigenfunctions
+  writeEigen;
+  ofstream file("1_BEDMAP2/2_Modes/eval.dat");
+  for(int m=0; m<nev; m++)
+    file<<ev[m]<<endl;
+
+  system("rm 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
+  system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
+  system("rm -f 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat");
  }
 
 if(mpirank==0)
