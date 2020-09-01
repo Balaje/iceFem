@@ -117,7 +117,7 @@ macro iceBEDMAP2(nborders, isBuild)
   real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
   complex t = Tr+1i*Ti;
   real EI = E*th^3/(12*(1-nu^2));
-  Lc = (EI/(rhow*ag))^(1./4.);
+  Lc = (EI/(rhow*ag))^(1./4.);  
   tc = sqrt(rhow*Lc^6/(EI*H));
   omega = 2*pi/t;
   LL = L/Lc;
@@ -243,7 +243,8 @@ macro iceBEDMAP2(nborders, isBuild)
                       cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
                       cout<<"THIS"<<endl;
                       real lenofIce=abs(iceBegin-iceEnd), crackLoc=iceBegin+0.4*lenofIce;                      
-                      real crackheight=0.5*splineRecon(coefsTop,breaksTop,crackLoc,npieces)-0.5*splineRecon(coefsBot,breaksBot,crackLoc,npieces), crackwidth=0.005*lenofIce;                      
+                      real crackheight=0.0001*splineRecon(coefsTop,breaksTop,crackLoc,npieces)-0.0001*splineRecon(coefsBot,breaksBot,crackLoc,npieces), crackwidth=0.005*lenofIce;
+                      cout<<lenofIce<<endl;
 
                       border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
                       border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};

@@ -242,9 +242,11 @@ if(mpirank==0){
 
   //Write the eigenfunctions
   writeEigen;
-  ofstream file("1_BEDMAP2/2_Modes/eval.dat");
-  for(int m=0; m<nev; m++)
-    file<<ev[m]<<endl;
+  {
+    ofstream file("1_BEDMAP2/2_Modes/eval.dat");
+    for(int m=0; m<nev; m++)
+      file<<ev[m]<<endl;
+  }
 
   system("rm 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
   system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
