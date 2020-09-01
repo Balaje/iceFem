@@ -5,6 +5,28 @@ include "MPIplot.idp"
 load "medit"
 string solDir="1_BEDMAP2/";
 
+//macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
+//2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
+//muhat*(dy(u)+dx(v))]//EOM"
+
+macro Sigma(ux,uy,vx,vy)[2*muhat*ux+lambdahat*(ux+vy),
+                         2*muhat*vy+lambdahat*(ux+vy),
+                         muhat*(uy+vx)]//EOM"
+
+macro buildGRmat(){
+  varf vm(unused,v) = int2d(ThIce)(v);
+  varf vdx(u,v) = int2d(ThIce)(dx(u)*v);
+  varf vdy(u,v) = int2d(ThIce)(dy(u)*v);
+  real [int] Mlump = vm(0,Vh);
+  real [int] one(Vh.ndof); one = 1;
+  real [int] M1 = one./Mlump;
+  matrix dM1 = M1;
+  matrix Mdx = vdx(Vh,Vh);
+  Mx = dM1*Mdx;
+  matrix Mdy = vdy(Vh,Vh);
+  My = dM1*Mdy;
+}//EOM"
+
 macro readFile(rows,cols,filename,array){
   ifstream file(filename);
   for(int m=0; m<rows; m++)
@@ -32,7 +54,7 @@ lambda*=1i;
 lambda+=lambdaRe;
 
 complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
-for(int m=0; m<nev; m++)  
+for(int m=0; m<nev; m++)
   {
     complex[int] tmp(Vh.ndof);
     readSolFile(solDir+"2_Modes/MODEX"+m+".dat",tmp);
@@ -48,29 +70,47 @@ complex[int,int] uxt=ux', uyt=uy';
 uxt=conj(uxt);
 uyt=conj(uyt);
 
-if(mpirank==0)
-{  
+
+/*
+  if(mpirank==0)
+  {
+  matrix Mx, My;
+  buildGRmat;
+
   real[int] maxabsdisp(nfreq);
-  ofstream file("uyabs.dat");
-  for(int m=0; m<nfreq; m++){    
-    maxabsdisp[m]=uyt(:,m).linfty;    
-    file<<maxabsdisp[m]<<"\t";
+  real[int] stressFreq(nfreq);
+  ofstream file(solDir+"uyabs.dat");
+  for(int m=0; m<nfreq; m++){
+  maxabsdisp[m]=uyt(:,m).linfty;
+  Vh<complex> u=uxt(:,m), v=uyt(:,m);
+
+  Vh<complex> ux, uy, vx, vy;
+  ux[]=Mx*u[]; vx[]=Mx*v[];
+  uy[]=My*u[]; vy[]=My*v[];
+  Vh<complex> Sigmavm = sqrt(Sigma(ux,uy,vx,vy)[0]*Sigma(ux,uy,vx,vy)[0]-Sigma(ux,uy,vx,vy)[0]*Sigma(ux,uy,vx,vy)[1]+Sigma(ux,uy,vx,vy)[1]*Sigma(ux,uy,vx,vy)[1]+3*Sigma(ux,uy,vx,vy)[2]*Sigma(ux,uy,vx,vy)[2]);
+  Sigmavm[]*=Lc^2;
+  int[int] Order=[1,1];
+  savevtk(solDir+"2_Stresses/Redisp"+m+".vtk", ThIce, abs(Sigmavm), [real(u),real(v)], dataname="Re(Sigmavm) Re(disp)", order=Order);
+
+  stressFreq[m]=Sigmavm[].linfty;
+  file<<maxabsdisp[m]<<"\t"<<stressFreq[m]<<endl;
   }
-}
+  }
+*/
+
 
 complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
 
 //Write time domain solution
-real dt=5, T=5000;
+real dt=50, T=10000;
 real[int] time=-T:dt:T;
 
-/*
-mesh ThPlotIce=adaptmesh(ThIce,0.5,IsMetric=1,nbvx=1e6);
-if(mpirank==0)
-  cout<<"Number of plot vertices = "<<ThPlotIce.nv<<endl;
-fespace VVh(ThPlotIce,P1);
-*/
+//mesh ThPlotIce=adaptmesh(ThIce,0.5,IsMetric=1,nbvx=1e6);
+//if(mpirank==0)
+//  cout<<"Number of plot vertices = "<<ThPlotIce.nv<<endl;
+//fespace VVh(ThPlotIce,P1);
+
 
 //Extracting the frequency and the Fourier Transform vector.
 complex[int] domega(nfreq), omegaNew(nfreq);
@@ -88,29 +128,38 @@ complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
 int parti=time.n/mpisize;
 int scaleFac=1;
 
-macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
-                 2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
-                 muhat*(dy(u)+dx(v))]//EOM"
-
+matrix Mx, My;
 for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
-  {    
+  {
     omegaVec=(-1i)*omegaNew;
-    omegaVec*=time(n);    
-    omegaVec+=(-1i)*randn;    
-    omegaVec=exp(omegaVec);    
-    omegaVec=omegaVec.*FAmp(1,:);    
+    omegaVec*=time(n);
+    omegaVec+=(-1i)*randn;
+    omegaVec=exp(omegaVec);
+    omegaVec=omegaVec.*FAmp(1,:);
     omegaVec=omegaVec.*domega;
     omegaVec*=(2*omegaNew.n/pi);
 
     u3x=uxt*omegaVec;
-    u3y=uyt*omegaVec;    
+    u3y=uyt*omegaVec;
 
-    Vh<complex> u=u3x, v=u3y;    
-    int[int] Order=[1,1];    
-    Vh<complex> Sigmavm = sqrt(Sigma(u,v)[0]*Sigma(u,v)[0]-Sigma(u,v)[0]*Sigma(u,v)[1]
-                               +Sigma(u,v)[1]*Sigma(u,v)[1]+3*Sigma(u,v)[2]*Sigma(u,v)[2]);    
+    Vh<complex> u=u3x, v=u3y;
+    int[int] Order=[1,1];
+
+    Vh<complex> ux, uy, vx, vy;
+    ux[]=Mx*u[]; vx[]=Mx*v[];
+    uy[]=My*u[]; vy[]=My*v[];
+    Vh<complex> Sigmavm = sqrt(Sigma(ux,uy,vx,vy)[0]*Sigma(ux,uy,vx,vy)[0]-Sigma(ux,uy,vx,vy)[0]*Sigma(ux,uy,vx,vy)[1]+Sigma(ux,uy,vx,vy)[1]*Sigma(ux,uy,vx,vy)[1]+3*Sigma(ux,uy,vx,vy)[2]*Sigma(ux,uy,vx,vy)[2]);
     Sigmavm[]*=Lc^2;
-    savevtk(solDir+"2_TimeDomain/Disp/Redisp"+n+".vtk", ThIce, real(Sigmavm), [real(u),real(v)], dataname="Re(Sigmavm) Re(disp)", order=Order);        
+    savevtk(solDir+"2_TimeDomain/Disp/Redisp"+n+".vtk", ThIce, real(Sigmavm), [real(u),real(v)], dataname="Re(Sigmavm) Re(disp)", order=Order);
+    {
+      ofstream file(solDir+"2_TimeDomain/Disp/stressAtBdy"+n+".dat");
+      file.precision(10);
+      for(int k=0; k<ThIce.nv; k++)
+        {
+          if(ThIce(k).label==1)
+            file<<ThIce(k).x<<"\t"<<ThIce(k).y<<"\t"<<real(Sigmavm(ThIce(k).x,ThIce(k).y))<<endl;
+        }
+    }
 
     if(mpirank==0)
       cout<<"Writing file: "<<n<<" using Processor "<<mpirank<<endl;
