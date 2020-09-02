@@ -192,7 +192,7 @@ macro iceBEDMAP2(nborders, isBuild)
                 cout<<"THIS."<<endl;
                 real widthFrac=getARGV("-notchWidth",0.005), heightFrac=getARGV("-notchHeight",0.5);
                 real icelen=abs(iceBegin-iceEnd), crackloc=iceBegin+icelen*0.4, crackwidth=icelen*widthFrac;
-                real crackheight=widthFrac*(splineRecon(coefsTop,breaksTop,crackloc,npieces)-splineRecon(coefsBot,breaksBot,crackloc,npieces));
+                real crackheight=heightFrac*(splineRecon(coefsTop,breaksTop,crackloc,npieces)-splineRecon(coefsBot,breaksBot,crackloc,npieces));
                 border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
                 border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
                 border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
