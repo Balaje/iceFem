@@ -189,10 +189,13 @@ macro iceBEDMAP2(nborders, isBuild)
                 }
               else{
                 cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                cout<<"THIS."<<endl;
+                real icelen=abs(iceBegin-iceEnd), crackloc=iceBegin+icelen*0.4, crackwidth=icelen*0.005;
+                real crackheight=0.5*(splineRecon(coefsTop,breaksTop,crackloc,npieces)-splineRecon(coefsBot,breaksBot,crackloc,npieces));
                 border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
                 border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
                 border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-                border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces)-crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
                 border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
                 ThIce=buildmesh(C01(500)+C01x(100)+C02(100)+C03(500)+C04(100));
                 cout<<"Built Ice-Mesh\n";
