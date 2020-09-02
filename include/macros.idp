@@ -241,6 +241,7 @@ macro iceBEDMAP2(nborders, isBuild)
                   else
                     {
                       cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                      cout<<"THIS"<<endl;
                       real angleOfCrack=0.1;
                       real lenofIce=abs(iceBegin-iceEnd), crackBegin=iceBegin+0.4*lenofIce, crackEnd=crackBegin+0.005*lenofIce;
                       real crackDepthEnd=0.5*splineRecon(coefsTop,breaksTop,crackEnd,npieces)+0.5*splineRecon(coefsBot,breaksBot,crackEnd,npieces);
@@ -304,8 +305,8 @@ macro iceBEDMAP2(nborders, isBuild)
     }
   else
     {
-      ThCavity=readmesh("Meshes/cavMeshBEDMAP1.msh");
-      ThIce=readmesh("Meshes/iceMeshBEDMAP1.msh");
+      ThCavity=readmesh("Meshes/cavMeshBEDMAP.msh");
+      ThIce=readmesh("Meshes/iceMeshBEDMAP.msh");
     }
 }//This is a macro to obtain the ice-cavity profiles from BEDMAP2
 
