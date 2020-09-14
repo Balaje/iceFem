@@ -79,11 +79,11 @@ phih[]=LHS^-1*RHS[];
 phi0=phih;
 plot(phi0,wait=0,fill=1,value=1,dim=3);
 if(mpirank==0){
-  extractFS(phi0, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
+  //extractFS(phi0, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
   cout<<"Solved Diffraction Potential "<<endl<<endl;
  }
 
-
+/*
 if(mpirank==0)
   {
     complex[int] phiVec(phi0.n), c(NModes+1);
@@ -95,6 +95,7 @@ if(mpirank==0)
     file.precision(16);
     file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
   }
+*/
 
 int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
@@ -115,21 +116,23 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
-    extractFS(phih, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
+    //extractFS(phih, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
     phij[m]=phih;
     PHIJProc(m,:)=phij[m][];
 
     //Compute the radiation reflection coefficients
+    /*
     pk1=0.;
     phiVecm = phij[m][];
     RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+    */
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
 real cpuComm=mpiWtime();
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
 cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
-mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
+//mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs
 for(int m=0; m<nev; m++)
