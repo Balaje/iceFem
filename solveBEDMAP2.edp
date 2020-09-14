@@ -240,7 +240,7 @@ if(mpirank==0){
   real nu=0.33;
   Vh<complex> Sigmavm = Sigma(etax,etay)[0]*Sigma(etax,etay)[0]-Sigma(etax,etay)[0]*Sigma(etax,etay)[1]
 			     +Sigma(etax,etay)[1]*Sigma(etax,etay)[1]+3*Sigma(etax,etay)[2]*Sigma(etax,etay)[2];    
-  Vh<complex> Sigmaz = nu*(Sigma(etax,etay)[0]+Sigma(etax,etay)[1])^2;
+  Vh<complex> Sigmaz = nu^2*(Sigma(etax,etay)[0]+Sigma(etax,etay)[1])^2;
 
   Sigmavm= (Sigmavm)*(x<110) + (Sigmavm-Sigmaz*(1-nu)/nu)*(x>=110);
   savevtk("1_BEDMAP2/2_Stresses/ReDisp"+iter+".vtk", ThIce, real(Sigmavm), [real(etax),real(etay)], dataname="Re(Sigmavm) Re(disp)", order=Order1);
