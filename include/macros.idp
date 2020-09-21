@@ -179,24 +179,25 @@ macro iceBEDMAP2(nborders, isBuild)
           if(mpirank==0)
             {
               if(abs(cavEnd-iceEnd)<1e-5){
-                  cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
-                  border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
-                  border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-                  border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
-                  border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
-                  ThIce=buildmesh(C01(500)+C02(100)+C03(500)+C04(100));
-                  cout<<"Built Ice-Mesh\n";
-                }
+                cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
+                border C01(t=iceBegin,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
+                border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces); label=3;};
+                border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
+                ThIce=buildmesh(C01(500)+C02(100)+C03(500)+C04(100));
+                cout<<"Built Ice-Mesh\n";
+              }
               else{
                 cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
                 cout<<"THIS."<<endl;
                 real widthFrac=getARGV("-notchWidth",0.005), heightFrac=getARGV("-notchHeight",0.5);
-                real icelen=abs(iceBegin-iceEnd), crackloc=iceBegin+icelen*0.4, crackwidth=icelen*widthFrac;
-                real crackheight=widthFrac*(splineRecon(coefsTop,breaksTop,crackloc,npieces)-splineRecon(coefsBot,breaksBot,crackloc,npieces));
-                border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=1;};
+                real icelen=abs(iceBegin-iceEnd), crackloc=iceBegin+0.35*icelen, crackwidth=icelen*widthFrac;
+                real crackheight=heightFrac*(splineRecon(coefsTop,breaksTop,crackloc,npieces)-splineRecon(coefsBot,breaksBot,crackloc,npieces));
+                cout<<crackloc<<endl;
+                border C01(t=iceBegin,cavEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=1;};
                 border C01x(t=cavEnd,iceEnd){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=2;};
                 border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
-                border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces)-crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
+                border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces)-0*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
                 border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
                 ThIce=buildmesh(C01(500)+C01x(100)+C02(100)+C03(500)+C04(100));
                 cout<<"Built Ice-Mesh\n";
@@ -204,9 +205,13 @@ macro iceBEDMAP2(nborders, isBuild)
             }
           else if(mpirank==1){
             cout<<"Begin Cavity-Mesh. Proc "<<mpirank<<endl;
+            cout<<"THIS. AGAIN"<<endl;
+            real widthFrac=getARGV("-notchWidth",0.005), heightFrac=getARGV("-notchHeight",0.5);
+            real icelen=abs(iceBegin-iceEnd), crackloc=iceBegin+0.35*icelen, crackwidth=icelen*widthFrac;
+            real crackheight=heightFrac*(splineRecon(coefsTop,breaksTop,crackloc,npieces)-splineRecon(coefsBot,breaksBot,crackloc,npieces));
             border S01(t=cavBegin,cavEnd){x=t; y=splineRecon(coefsCav,breaksCav,t,npieces1); label=1;};
             border S02(t=splineRecon(coefsCav,breaksCav,cavEnd,npieces1),cavTop){x=cavEnd; y=t; label=2;};
-            border S03(t=cavEnd,iceBegin){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces); label=3;};
+            border S03(t=cavEnd,iceBegin){x=t; y=splineRecon(coefsBot,breaksBot,t,npieces)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
             border S04(t=0,splineRecon(coefsCav,breaksCav,cavBegin,npieces1)){x=0; y=t; label=4;};
             border S05(t=0,iceBegin){x=t; y=0; label=5;};
             border S06(t=0,splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=6;};
@@ -266,7 +271,11 @@ macro setMeshIce(brx, midx, midy)
   ix1 = 0; iy1 = icebottomleft;
   ix3 = LL; iy3 = icebottomright;
 
-  border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3); label=1;};
+  real crackheight=0.8*tth;
+  real crackwidth=0.005*LL;
+  real crackloc=LL/2;
+
+  border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=1;};
   border I02(t=iy3,icetopleft) {x=LL; y=t; label=2;};
   border I03(t=LL,0) {x=t; y=icetopleft; label=3;};
   border I04i(t=icetopleft,0) {x=0; y=t; label=4;};
@@ -291,9 +300,15 @@ macro setMeshCav(midx, midy, endy)
       x2=midx; y2=midy;
       x3=LL; y3=endy;
     }
+
+  real crackheight=0.8*tth;
+  real crackwidth=0.005*LL;
+  real crackloc=LL/2;
+
+  
   border C01(t=0,LL){x = t; y = splineCurve(t,x1,uy1,x2,y2,x3,y3); label=1;};
   border C02(t=y3,iy3) {x=LL; y=t; label=2;};
-  border C03(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3); label=3;};
+  border C03(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
   border C04(t=icebottomleft,uy1) {x=0; y=t; label=4;};
   ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(-LL/tth*N2)+C04(N2));
 }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
@@ -368,7 +383,9 @@ macro splitMeshLoad()
 macro solveEigen()
 {
   Xh [u,v],[uu,vv];
-  varf a([u,v],[uu,vv]) = int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
+  real nu=0.33;
+  real lambdahat1=lambdahat*(1-2*nu)/(1-nu);
+  varf a([u,v],[uu,vv]) = int2d(ThIce)((lambdahat*(x>=100)+lambdahat*(x<100))*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
   varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv));
   matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
   matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
@@ -419,32 +436,11 @@ macro solveEigenEB()
 
 macro writeEigen()
 {
-  for(int m=0; m<nev; m++)
-    {
-      Vh modeX = VX[m];
-      Vh modeY = VY[m];
-      {
-        ofstream file(SolutionDir+"2_Modes/modex"+m+".bb");
-        file.precision(16);
-        file<<"2 1 1 "<<modeX.n<<" 2 \n";
-        for(int p=0; p<modeX[].n; p++)
-          file<<modeX[][p]<<endl;
-        ofstream file2(SolutionDir+"2_Modes/MODEX"+m+".dat");
-        file2.precision(16);
-        file2<<modeX[]<<endl;
-      }
-      {
-        ofstream file(SolutionDir+"2_Modes/modey"+m+".bb");
-        file.precision(16);
-        file<<"2 1 1 "<<modeY.n<<" 2 \n";
-        for(int p=0; p<modeY[].n; p++)
-          file<<modeY[][p]<<endl;
-
-        ofstream file2(SolutionDir+"2_Modes/MODEY"+m+".dat");
-        file2.precision(16);
-        file2<<modeY[]<<endl;
-      }
-    }
+  int[int] Order1=[1,1];
+  for(int m=0; m<nev; m++){
+    Vh modeX=VX[m], modeY=VY[m];
+    savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
+  }
 }//Macro to write the Eigenfunctions.
 
 
