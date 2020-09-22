@@ -26,7 +26,9 @@ setMeshCav(midx, midy, endy);
 refineMesh;
 
 //Split Mesh for domain decomposition
-splitMeshSave;
+bool isSplit = getARGV("-isSplit",1);
+if(isSplit)
+  splitMeshSave;
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.

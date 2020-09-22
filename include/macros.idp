@@ -443,7 +443,7 @@ macro writeEigen()
   int[int] Order1=[1,1];
   for(int m=0; m<nev; m++){
     Vh modeX=VX[m], modeY=VY[m];
-    savevtk(SolutionDir+"2_Modes/Modes"+iter+"_m_"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
+    savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
   }
 }//Macro to write the Eigenfunctions.
 
