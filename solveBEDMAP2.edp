@@ -99,6 +99,7 @@ if(mpirank==0)
 
 int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
+
 F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);

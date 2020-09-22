@@ -277,7 +277,7 @@ macro setMeshIce(brx, midx, midy)
 
   border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=1;};
   border I02(t=iy3,icetopleft) {x=LL; y=t; label=2;};
-  border I03(t=LL,0) {x=t; y=icetopleft; label=3;};
+  border I03(t=LL,0) {x=t; y=icetopleft-0*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
   border I04i(t=icetopleft,0) {x=0; y=t; label=4;};
   border I04ii(t=0,icebottomleft){x=0; y=t; label=5;};
   ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04i(LL/tth*N1)+I04ii(LL/tth*N1));
@@ -308,7 +308,7 @@ macro setMeshCav(midx, midy, endy)
   
   border C01(t=0,LL){x = t; y = splineCurve(t,x1,uy1,x2,y2,x3,y3); label=1;};
   border C02(t=y3,iy3) {x=LL; y=t; label=2;};
-  border C03(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
+  border C03(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
   border C04(t=icebottomleft,uy1) {x=0; y=t; label=4;};
   ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(-LL/tth*N2)+C04(N2));
 }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
@@ -439,7 +439,7 @@ macro writeEigen()
   int[int] Order1=[1,1];
   for(int m=0; m<nev; m++){
     Vh modeX=VX[m], modeY=VY[m];
-    savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
+    savevtk(SolutionDir+"2_Modes/Modes"+iter+"_m_"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
   }
 }//Macro to write the Eigenfunctions.
 
