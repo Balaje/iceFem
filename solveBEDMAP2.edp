@@ -16,8 +16,8 @@ macro extractFS(fefunc, febdymesh, filename){
   }
 }//EOM" End of macro to extract the Free Surface of the function .
 
-macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
-                 2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
+macro Sigma(u,v)[2*muhat*dx(u)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
+                 2*muhat*dy(v)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
 		 muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
 
 nev=64;
@@ -99,6 +99,7 @@ if(mpirank==0)
 
 int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
+
 F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
@@ -238,11 +239,11 @@ if(mpirank==0){
   //Compute and save the von--mises stress
   int[int] Order1=[1,1];
   real nu=0.33;
-  Vh<complex> Sigmavm = Sigma(etax,etay)[0]*Sigma(etax,etay)[0]-Sigma(etax,etay)[0]*Sigma(etax,etay)[1]
-			     +Sigma(etax,etay)[1]*Sigma(etax,etay)[1]+3*Sigma(etax,etay)[2]*Sigma(etax,etay)[2];    
-  Vh<complex> Sigmaz = (Sigma(etax,etay)[0]+Sigma(etax,etay)[1])^2;
+  Vh<complex> Sigmavm = Sigma(ux,uy)[0]*Sigma(ux,uy)[0]-Sigma(ux,uy)[0]*Sigma(ux,uy)[1]
+			     +Sigma(ux,uy)[1]*Sigma(ux,uy)[1]+3*Sigma(ux,uy)[2]*Sigma(ux,uy)[2];    
+  Vh<complex> Sigmaz = (Sigma(ux,uy)[0]+Sigma(ux,uy)[1])^2;
 
-  Vh<complex> Sigmavm1= (Sigmavm)*(x<110) + (Sigmavm-Sigmaz*(1-nu)*nu)*(x>=110);
+  Vh<complex> Sigmavm1= (Sigmavm)*(x<100) + (Sigmavm-Sigmaz*(1-nu)*nu)*(x>=100);
   savevtk("1_BEDMAP2/2_Stresses/ReDisp"+iter+".vtk", ThIce, real(Sigmavm1), [real(etax),real(etay)], dataname="Re(Sigmavm) Re(disp)", order=Order1);
 
   //Write the eigenfunctions
@@ -252,10 +253,11 @@ if(mpirank==0){
     for(int m=0; m<nev; m++)
       file<<ev[m]<<endl;
   }
-
+  /*
   system("rm 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
   system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
   system("rm -f 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat");
+  */
  }
 
 if(mpirank==0)
