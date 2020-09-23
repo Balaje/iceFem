@@ -622,10 +622,7 @@ macro buildReducedSystemOptim(){
   matrix massMa=ip(MMh,MMh);
   matrix massMax=ipx(MMh,MMh);
   matrix massMay=ipy(MMh,MMh);
-
-  mesh ThCavEmpty=emptymesh(ThCavity);
-  fespace WWh(ThCavEmpty,P1);
-  WWh<complex> phi00=phi0;
+  
   phi0aTh=M1xM*phi00[];
   phi0aTh=phi0aTh*(-1i*omega*gammahat);
   for(int m=0; m<nev; m++)
@@ -633,9 +630,8 @@ macro buildReducedSystemOptim(){
       Vh vxx=VX[m],vyy=VY[m];
       VXaTh(:,m)=M2xM*vxx[];
       VYaTh(:,m)=M2xM*vyy[];
-      VY1aTh(:,m)=deltahat*VYaTh(:,m);
-      WWh<complex> phijj=phij[m];
-      phiMaTh(:,m)=M1xM*phijj[];
+      VY1aTh(:,m)=deltahat*VYaTh(:,m);      
+      phiMaTh(:,m)=M1xM*phijj[m][];
       phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
     }
 

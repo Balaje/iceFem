@@ -10,7 +10,7 @@ include "macros.idp"
 
 macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
                  2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
-		 muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
+                 muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
@@ -56,7 +56,7 @@ for(int m=0; m<NModes+1; m++)
 
 //Get the emptymesh and the solution on the boundary.
 mesh ThEmptyCav=emptymesh(ThCavity);
-
+fespace WhBdy(ThEmptyCav,P1);
 
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
@@ -67,27 +67,36 @@ set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
 phi0=phih;//Store in phi0;
 
-if(mpirank==0)
+//Interpolate to boundary.
+WhBdy<complex> phi00=phi0;
+
+/*
+  if(mpirank==0)
   {
-    complex[int] phiVec(phi0.n), c(NModes+1);
-    phiVec=phi0[];
-    complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c);
-    //Write the reflection coefficient to a file.
-    ofstream file("1_SIMPLE5/2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
-    file.precision(16);
-    file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
+  complex[int] phiVec(phi0.n), c(NModes+1);
+  phiVec=phi0[];
+  complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c);
+  //Write the reflection coefficient to a file.
+  ofstream file("1_SIMPLE5/2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
+  file.precision(16);
+  file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
   }
+*/
 
 //Solve for radiation potential.
 int parti = nev/mpisize;
+
 Wh<complex>[int] phij(nev);
+//Define array of boundary functions.
+WhBdy<complex>[int] phijj(nev);
+
 F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
 AB.resize(nev,nev);
 complex[int] FProc(nev), RefmProc(nev), Refm(nev);
 complex[int,int] BProc(nev,nev), KProc(nev,nev);
-complex[int,int] PHIJ(nev,Wh.ndof),PHIJProc(nev,Wh.ndof);
+complex[int,int] PHIJ(nev,WhBdy.ndof),PHIJProc(nev,WhBdy.ndof);
 complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
 
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
@@ -98,24 +107,30 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     LHS=STIMA+(MQ);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
-    phij[m]=phih;
-    PHIJProc(m,:)=phij[m][];
+    phij[m]=phih; //Leave the bulk as it is. This will not be used in constructing the matrices.
+
+    //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
+    phijj[m]=phih;
+    PHIJProc(m,:)=phijj[m][];
+
     //Compute the radiation reflection coefficients
-    pk1=0.;
-    phiVecm = phij[m][];
-    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+    /*
+      pk1=0.;
+      phiVecm = phij[m][];
+      RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+    */
 
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
 real cpuComm=mpiWtime();
-mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
+mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM); //Collect on all cpus.
 cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
-mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
+//mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
-//Unpack and set to phij locally in all procs
-for(int m=0; m<nev; m++){
-  phij[m][]=PHIJ(m,:);
+//Unpack and set to phij locally in all procs (Only boundary)
+for(int m=0; m<nev; m++){  
+  phijj[m][]=PHIJ(m,:);
  }
 
 //Load the split mesh.
@@ -204,7 +219,7 @@ if(mpirank==0){
   //Write data to MATLAB
   //iter could be used to index the solution.
   Vh ux=real(etax), uy=real(etay);
-  int[int] Order=[1,1];  
+  int[int] Order=[1,1];
   savevtk("1_SIMPLE5/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk("1_SIMPLE5/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
  }
