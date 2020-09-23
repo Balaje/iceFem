@@ -8,8 +8,8 @@ string SolutionDir="1_SIMPLE5/";
 
 include "macros.idp"
 
-macro Sigma(u,v)[2*muhat*dx(u)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
-                 2*muhat*dy(v)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
+macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
+                 2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
 		 muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
 
 //Sets up an example problem. Can control input using CMD line args.
@@ -203,7 +203,8 @@ if(mpirank==0){
 
   //Write data to MATLAB
   //iter could be used to index the solution.
-  Vh ux=real(etax), uy=real(etay);  
-  int[int] Order=[1,1,1,1];
-  savevtk("1_SIMPLE5/sol"+iter+".vtk",ThCavity,[real(etax),real(etay)],[imag(etax),imag(etay)],[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])], dataname="ReDisp ImDisp ReSigma ImSigma",order=Order);
+  Vh ux=real(etax), uy=real(etay);
+  int[int] Order=[1,1];  
+  savevtk("1_SIMPLE5/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+  savevtk("1_SIMPLE5/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
  }
