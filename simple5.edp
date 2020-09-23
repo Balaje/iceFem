@@ -8,6 +8,10 @@ string SolutionDir="1_SIMPLE5/";
 
 include "macros.idp"
 
+macro Sigma(u,v)[2*muhat*dx(u)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
+                 2*muhat*dy(v)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
+		 muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
+
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
 nev=64;
@@ -49,6 +53,10 @@ MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
 ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
 for(int m=0; m<NModes+1; m++)
   chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+
+//Get the emptymesh and the solution on the boundary.
+mesh ThEmptyCav=emptymesh(ThCavity);
+
 
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
@@ -189,15 +197,13 @@ if(mpirank==0){
   complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
   cout.precision(16);
   cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
+  cout<<"Total Time = "<<mpiWtime()-cpu<<endl;
   mesh ThNewIce=movemesh(ThIce,[x+real(etax),y+real(etay)]);
   Wh rphi=real(phi);
 
   //Write data to MATLAB
   //iter could be used to index the solution.
-  Vh ux=real(etax), uy=real(etay);
-  savevtk("1_SIMPLE5/ThIce"+iter+".vtk",ThIce);
-  savevtk("1_SIMPLE5/ThCavity"+iter+".vtk",ThCavity);
-  savevtk("1_SIMPLE5/ThNewIce"+iter+".vtk",ThNewIce);
-  int[int] Order=[1];
-  savevtk("1_SIMPLE5/rphi"+iter+".vtk",ThCavity,rphi,dataname="rphi",order=Order);
+  Vh ux=real(etax), uy=real(etay);  
+  int[int] Order=[1,1,1,1];
+  savevtk("1_SIMPLE5/sol"+iter+".vtk",ThCavity,[real(etax),real(etay)],[imag(etax),imag(etay)],[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])], dataname="ReDisp ImDisp ReSigma ImSigma",order=Order);
  }
