@@ -44,7 +44,6 @@ splitMeshLoad; //load the split mesh
 if(nborders!=4)
   dd=0.;
 
-mesh ThEmptyCav=emptymesh(ThCavity);
 //Solve the dispersion equation.
 solveDispersion;
 if(mpirank==0)
@@ -69,6 +68,9 @@ if(mpirank==0){
   cout<<"Solved EigenValue Problem ... "<<endl;  
  }
 
+mesh ThEmptyCav=emptymesh(ThCavity);
+fespace WhBdy(ThEmptyCav,P1);
+
 //Solve for the Diffraction potential
 Wh<complex> phi0;
 func fh=chi1;
@@ -77,6 +79,9 @@ LHS=STIMA+(MQ)+(-BMASSMA);
 set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
+
+WhBdy<complex> phi00=phi0;
+
 plot(phi0,wait=0,fill=1,value=1,dim=3);
 if(mpirank==0){
   //extractFS(phi0, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
@@ -99,6 +104,7 @@ if(mpirank==0)
 
 int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
+WhBdy<complex>[int] phijj(nev);
 
 F.resize(nev);
 B.resize(nev,nev);
@@ -106,7 +112,7 @@ K.resize(nev,nev);
 AB.resize(nev,nev);
 complex[int] FProc(nev), RefmProc(nev), Refm(nev);
 complex[int,int] BProc(nev,nev), KProc(nev,nev);
-complex[int,int] PHIJ(nev,Wh.ndof),PHIJProc(nev,Wh.ndof);
+complex[int,int] PHIJ(nev,WhBdy.ndof),PHIJProc(nev,WhBdy.ndof);
 complex[int] phiVecm(Wh.ndof), cc(NModes+1), pk1(NModes+1);
 
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
@@ -117,9 +123,11 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
-    //extractFS(phih, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
+    //extractFS(phih, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");    
     phij[m]=phih;
-    PHIJProc(m,:)=phij[m][];
+
+    phijj[m]=phih;
+    PHIJProc(m,:)=phijj[m][];
 
     //Compute the radiation reflection coefficients
     /*
@@ -136,8 +144,9 @@ cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
 //mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs
-for(int m=0; m<nev; m++)
-  phij[m][]=PHIJ(m,:); 
+for(int m=0; m<nev; m++){
+  phijj[m][]=PHIJ(m,:);
+ }
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
