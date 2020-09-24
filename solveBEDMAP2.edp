@@ -18,7 +18,7 @@ macro extractFS(fefunc, febdymesh, filename){
 
 macro Sigma(u,v)[2*muhat*dx(u)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
                  2*muhat*dy(v)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
-		 muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
+                 muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
 
 nev=64;
 NModes=5;
@@ -65,11 +65,13 @@ Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
 if(mpirank==0){
-  cout<<"Solved EigenValue Problem ... "<<endl;  
+  cout<<"Solved EigenValue Problem ... "<<endl;
  }
 
 mesh ThEmptyCav=emptymesh(ThCavity);
 fespace WhBdy(ThEmptyCav,P1);
+if(mpirank==0)
+  cout<<"Number of cavity boundary DOFs = "<<WhBdy.ndof<<endl;
 
 //Solve for the Diffraction potential
 Wh<complex> phi0;
@@ -84,21 +86,21 @@ WhBdy<complex> phi00=phi0;
 
 plot(phi0,wait=0,fill=1,value=1,dim=3);
 if(mpirank==0){
-  //extractFS(phi0, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");  
+  //extractFS(phi0, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");
   cout<<"Solved Diffraction Potential "<<endl<<endl;
  }
 
 /*
-if(mpirank==0)
+  if(mpirank==0)
   {
-    complex[int] phiVec(phi0.n), c(NModes+1);
-    phiVec = phi0[]; //Get the vector form of the finite element function.
-    complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
+  complex[int] phiVec(phi0.n), c(NModes+1);
+  phiVec = phi0[]; //Get the vector form of the finite element function.
+  complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
 
-    //Write the reflectiion coeffiecient to a file.
-    ofstream file("1_BEDMAP2/2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
-    file.precision(16);
-    file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
+  //Write the reflectiion coeffiecient to a file.
+  ofstream file("1_BEDMAP2/2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
+  file.precision(16);
+  file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
   }
 */
 
@@ -123,7 +125,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
-    //extractFS(phih, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");    
+    //extractFS(phih, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
     phij[m]=phih;
 
     phijj[m]=phih;
@@ -131,10 +133,11 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
 
     //Compute the radiation reflection coefficients
     /*
-    pk1=0.;
-    phiVecm = phij[m][];
-    RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
+      pk1=0.;
+      phiVecm = phij[m][];
+      RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
     */
+
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
@@ -213,7 +216,7 @@ mpiReduce(phiProc[],phi[],processor(0),mpiSUM);
 mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
 mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 
-if(mpirank==0){    
+if(mpirank==0){
   //Compute the reflection coefficient.
   phi=phi0+phi;
 
@@ -249,7 +252,7 @@ if(mpirank==0){
   int[int] Order1=[1,1];
   real nu=0.33;
   Vh<complex> Sigmavm = Sigma(ux,uy)[0]*Sigma(ux,uy)[0]-Sigma(ux,uy)[0]*Sigma(ux,uy)[1]
-			     +Sigma(ux,uy)[1]*Sigma(ux,uy)[1]+3*Sigma(ux,uy)[2]*Sigma(ux,uy)[2];    
+    +Sigma(ux,uy)[1]*Sigma(ux,uy)[1]+3*Sigma(ux,uy)[2]*Sigma(ux,uy)[2];
   Vh<complex> Sigmaz = (Sigma(ux,uy)[0]+Sigma(ux,uy)[1])^2;
 
   Vh<complex> Sigmavm1= (Sigmavm)*(x<100) + (Sigmavm-Sigmaz*(1-nu)*nu)*(x>=100);
@@ -263,9 +266,9 @@ if(mpirank==0){
       file<<ev[m]<<endl;
   }
   /*
-  system("rm 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
-  system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
-  system("rm -f 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat");
+    system("rm 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
+    system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
+    system("rm -f 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat");
   */
  }
 

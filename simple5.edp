@@ -57,6 +57,8 @@ for(int m=0; m<NModes+1; m++)
 //Get the emptymesh and the solution on the boundary.
 mesh ThEmptyCav=emptymesh(ThCavity);
 fespace WhBdy(ThEmptyCav,P1);
+if(mpirank==0)
+  cout<<"Number of cavity boundary DOFs = "<<WhBdy.ndof<<endl;
 
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
