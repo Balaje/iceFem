@@ -15,12 +15,12 @@ Ap=(g./(1i*omega))*Ad;
 
 
 % Set the new-frequency space;
-npts=199;
+npts=499;
 a1=a; b1=b;
 omegaNew=linspace(a1,b1,npts+1);
 Tnew=2*pi./omegaNew;
 ApNew=(g./(1i*omegaNew))*Ad;
-file1='1_BEDMAP2/';
+file1='7_BEDMAP2/';
 rc=zeros(length(omega),1);
 for m=1:length(omega)
     RC=load([file1,'2_RefCoeff/RefCoeff',num2str(m),'.dat']);
@@ -71,33 +71,34 @@ LAM=LAMRe+1i*LAMIm;
 rcNew=zeros(length(omegaNew),1);
 for m=1:length(omegaNew)
     rcNew(m)=rdNew(m);
-    rcNew(m)=rcNew(m)+(LAM(m,:)*rrNew(m,:).');    
+    rcNew(m)=rcNew(m)+(LAM(m,:)*rrNew(m,:).'); 
+%     
+%     % Plot the lambdaj chart
+%     figure(10);
+%     bar(1:length(LAM(m,:)), abs(LAM(m,:)));
+%     ylim([0,200]);
+%     pause(0.01);    
 end
 
 %%
 figure(2);
-subplot(3,1,1);
+subplot(2,1,1);
 semilogx(Tnew,real(rcNew),'b',Tnew,imag(rcNew),'r','Linewidth',1.5);
 legend('Re parts of R($\omega$)','Im parts of R($\omega$)')
 xlim([Tnew(end),Tnew(1)]);
 grid on
 
-subplot(3,1,2);
-semilogx(Tnew,condH,'Linewidth',1.5);
-xlim([Tnew(end),Tnew(1)]);
-grid on
-legend('Condition Number of Reduced system')
 
-subplot(3,1,3);
-UY=load('uyabs.dat');
-semilogx(T,UY,'Linewidth',1.5);
+subplot(2,1,2);
+UY=load([file1,'uyabs.dat']);
+semilogx(T,UY(:,1),'Linewidth',1.5);
 xlabel('Wave period $T$ (in s)')
 grid on
 hold on
-[val,indx]=find(T>300);
-UY1=UY(indx);
-[pks,loc]=findpeaks(UY1);
-plot(T(loc),UY1(loc),'o');
-
-dlmwrite('waveperiods.txt',T(loc),'delimiter','\n','precision',8);
+% [val,indx]=find(T>300);
+% UY1=UY(indx,1);
+% [pks,loc]=findpeaks(UY1(:,1));
+% plot(T(loc),UY1(loc),'o');
+% 
+% dlmwrite('waveperiods.txt',T(loc),'delimiter','\n','precision',8);
 
