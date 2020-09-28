@@ -274,7 +274,7 @@ macro setMeshIce(brx, midx, midy)
   real heightFrac=getARGV("-notchHeight",0.8);
   real crackheight=heightFrac*tth;
   real crackwidth=widthFrac*LL;
-  real crackloc=LL/3;
+  real crackloc=getARGV("-notchLoc",0.5)*LL;
 
   border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=1;};
   border I02(t=iy3,icetopleft) {x=LL; y=t; label=2;};
@@ -306,7 +306,7 @@ macro setMeshCav(midx, midy, endy)
   real heightFrac=getARGV("-notchHeight",0.8);
   real crackheight=heightFrac*tth;
   real crackwidth=widthFrac*LL;
-  real crackloc=LL/3;
+  real crackloc=getARGV("-notchLoc",0.5)*LL;;
 
   
   border C01(t=0,LL){x = t; y = splineCurve(t,x1,uy1,x2,y2,x3,y3); label=1;};

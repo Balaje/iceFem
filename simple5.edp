@@ -224,4 +224,5 @@ if(mpirank==0){
   int[int] Order=[1,1];
   savevtk("1_SIMPLE5/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk("1_SIMPLE5/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
+  savevtk("1_SIMPLE5/ThCavity"+iter+".vtk",ThCavity);
  }
