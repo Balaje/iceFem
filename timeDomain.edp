@@ -51,9 +51,10 @@ if(mpirank==0)
 complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
 //real[int] tmp(Vh.ndof);
 for(int m=0; m<nev; m++)
-  {    
-    mx(m,:).re=VX[m][];
-    my(m,:).re=VY[m][];
+  {
+    Vh VX1=VX[m], VY1=VY[m];
+    mx(m,:).re=VX1[];
+    my(m,:).re=VY1[];
   }
 
 int nfreq=getARGV("-nfreq",200);
@@ -62,7 +63,7 @@ for(int m=0; m<nfreq; m++)
   {
     ifstream file(solDir+"2_ModesMatrix/lambdaj"+m+".dat");
     for(int n=0; n<nev; n++)
-      file>>lambdaRe(m,n)>>lambdaIm(m,n);
+      file>>lambdaRe(m,n)>>lambdaIm(m,n);         
   }
 complex[int,int] lambda=lambdaIm;
 lambda*=1i;
