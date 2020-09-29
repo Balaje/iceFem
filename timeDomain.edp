@@ -5,27 +5,30 @@ include "MPIplot.idp"
 load "medit"
 string solDir="1_BEDMAP2/";
 
-//macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
-//2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
-//muhat*(dy(u)+dx(v))]//EOM"
+macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
+                 2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
+                 muhat*(dy(u)+dx(v))]//EOM"
 
+/*
+//Gradient Recovery
 macro Sigma(ux,uy,vx,vy)[2*muhat*ux+lambdahat*(ux+vy),
-                         2*muhat*vy+lambdahat*(ux+vy),
-                         muhat*(uy+vx)]//EOM"
+2*muhat*vy+lambdahat*(ux+vy),
+muhat*(uy+vx)]//EOM"
 
 macro buildGRmat(){
-  varf vm(unused,v) = int2d(ThIce)(v);
-  varf vdx(u,v) = int2d(ThIce)(dx(u)*v);
-  varf vdy(u,v) = int2d(ThIce)(dy(u)*v);
-  real [int] Mlump = vm(0,Vh);
-  real [int] one(Vh.ndof); one = 1;
-  real [int] M1 = one./Mlump;
-  matrix dM1 = M1;
-  matrix Mdx = vdx(Vh,Vh);
-  Mx = dM1*Mdx;
-  matrix Mdy = vdy(Vh,Vh);
-  My = dM1*Mdy;
+varf vm(unused,v) = int2d(ThIce)(v);
+varf vdx(u,v) = int2d(ThIce)(dx(u)*v);
+varf vdy(u,v) = int2d(ThIce)(dy(u)*v);
+real [int] Mlump = vm(0,Vh);
+real [int] one(Vh.ndof); one = 1;
+real [int] M1 = one./Mlump;
+matrix dM1 = M1;
+matrix Mdx = vdx(Vh,Vh);
+Mx = dM1*Mdx;
+matrix Mdy = vdy(Vh,Vh);
+My = dM1*Mdy;
 }//EOM"
+*/
 
 macro readFile(rows,cols,filename,array){
   ifstream file(filename);
@@ -34,85 +37,49 @@ macro readFile(rows,cols,filename,array){
       file>>array(m,n);
 }//Macro to read files.EOM"
 
-macro readSolFile(filename,var){
-  ifstream file(filename);
-  file>>var;
-}//EOM"
-
-//Parameters are required.
-bool isNotch=true;
+//Load the mesh
 int nborders=getARGV("-nborders",6);
+nev=64;
 iceBEDMAP2(nborders,0);
 
-nev=64;
-int nfreq=200;
+Xh[int][VX,VY](nev);
+real[int] ev(nev);
+solveEigen;
+if(mpirank==0)
+  cout<<"Solved Eigenvalue problem"<<endl;
+
+int nfreq=getARGV("-nfreq",200);
 complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
-readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat", lambdaRe);
-readFile(nfreq, nev, solDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat", lambdaIm);
+for(int m=0; m<nfreq; m++)
+  {
+    ifstream file(solDir+"2_ModesMatrix/lambdaj"+m+".dat");
+    for(int n=0; n<nev; n++)
+      file>>lambdaRe(m,n)>>lambdaIm(m,n);
+  }
 complex[int,int] lambda=lambdaIm;
 lambda*=1i;
 lambda+=lambdaRe;
 
-complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
-for(int m=0; m<nev; m++)
+//Construct the solution again.
+Vh<complex> ux,uy;
+complex[int,int] UX(Vh.ndof,nfreq), UY(Vh.ndof,nfreq);
+for(int n=0; n<nfreq; n++)
   {
-    complex[int] tmp(Vh.ndof);
-    readSolFile(solDir+"2_Modes/MODEX"+m+".dat",tmp);
-    mx(m,:)=tmp;
-    readSolFile(solDir+"2_Modes/MODEY"+m+".dat",tmp);
-    my(m,:)=tmp;
+    for(int m=0; m<nev; m++)
+      {
+        ux+=lambda[m]*VX[m];
+        uy+=lambda[m]*VY[m];
+      }
+    UX(:,n)=ux[];
+    UY(:,n)=uy[];
   }
-
-complex[int,int] ux(nfreq,Vh.ndof), uy(nfreq,Vh.ndof);
-ux=lambda*mx;
-uy=lambda*my;
-complex[int,int] uxt=ux', uyt=uy';
-uxt=conj(uxt);
-uyt=conj(uyt);
-
-
-/*
-  if(mpirank==0)
-  {
-  matrix Mx, My;
-  buildGRmat;
-
-  real[int] maxabsdisp(nfreq);
-  real[int] stressFreq(nfreq);
-  ofstream file(solDir+"uyabs.dat");
-  for(int m=0; m<nfreq; m++){
-  maxabsdisp[m]=uyt(:,m).linfty;
-  Vh<complex> u=uxt(:,m), v=uyt(:,m);
-
-  Vh<complex> ux, uy, vx, vy;
-  ux[]=Mx*u[]; vx[]=Mx*v[];
-  uy[]=My*u[]; vy[]=My*v[];
-  Vh<complex> Sigmavm = sqrt(Sigma(ux,uy,vx,vy)[0]*Sigma(ux,uy,vx,vy)[0]-Sigma(ux,uy,vx,vy)[0]*Sigma(ux,uy,vx,vy)[1]+Sigma(ux,uy,vx,vy)[1]*Sigma(ux,uy,vx,vy)[1]+3*Sigma(ux,uy,vx,vy)[2]*Sigma(ux,uy,vx,vy)[2]);
-  Sigmavm[]*=Lc^2;
-  int[int] Order=[1,1];
-  savevtk(solDir+"2_Stresses/Redisp"+m+".vtk", ThIce, abs(Sigmavm), [real(u),real(v)], dataname="Re(Sigmavm) Re(disp)", order=Order);
-
-  stressFreq[m]=Sigmavm[].linfty;
-  file<<maxabsdisp[m]<<"\t"<<stressFreq[m]<<endl;
-  }
-  }
-*/
-
 
 complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
-
 //Write time domain solution
 real dt=50, T=10000;
 real[int] time=-T:dt:T;
 
-//mesh ThPlotIce=adaptmesh(ThIce,0.5,IsMetric=1,nbvx=1e6);
-//if(mpirank==0)
-//  cout<<"Number of plot vertices = "<<ThPlotIce.nv<<endl;
-//fespace VVh(ThPlotIce,P1);
-
-
-//Extracting the frequency and the Fourier Transform vector.
 complex[int] domega(nfreq), omegaNew(nfreq);
 omegaNew=FAmp(0,:);
 domega=omegaNew(1:omegaNew.n);
@@ -126,9 +93,7 @@ randn=FAmp(2,:);
 //Find the complex solution.
 complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
 int parti=time.n/mpisize;
-int scaleFac=1;
 
-matrix Mx, My;
 for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
   {
     omegaVec=(-1i)*omegaNew;
@@ -139,28 +104,12 @@ for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
     omegaVec=omegaVec.*domega;
     omegaVec*=(2*omegaNew.n/pi);
 
-    u3x=uxt*omegaVec;
-    u3y=uyt*omegaVec;
+    u3x=UX*omegaVec;
+    u3y=UY*omegaVec;
 
-    Vh<complex> u=u3x, v=u3y;
+    Vh<complex> etax=u3x, etay=u3y;    
     int[int] Order=[1,1];
-
-    Vh<complex> ux, uy, vx, vy;
-    ux[]=Mx*u[]; vx[]=Mx*v[];
-    uy[]=My*u[]; vy[]=My*v[];
-    Vh<complex> Sigmavm = sqrt(Sigma(ux,uy,vx,vy)[0]*Sigma(ux,uy,vx,vy)[0]-Sigma(ux,uy,vx,vy)[0]*Sigma(ux,uy,vx,vy)[1]+Sigma(ux,uy,vx,vy)[1]*Sigma(ux,uy,vx,vy)[1]+3*Sigma(ux,uy,vx,vy)[2]*Sigma(ux,uy,vx,vy)[2]);
-    Sigmavm[]*=Lc^2;
-    savevtk(solDir+"2_TimeDomain/Disp/Redisp"+n+".vtk", ThIce, real(Sigmavm), [real(u),real(v)], dataname="Re(Sigmavm) Re(disp)", order=Order);
-    {
-      ofstream file(solDir+"2_TimeDomain/Disp/stressAtBdy"+n+".dat");
-      file.precision(10);
-      for(int k=0; k<ThIce.nv; k++)
-        {
-          if(ThIce(k).label==1)
-            file<<ThIce(k).x<<"\t"<<ThIce(k).y<<"\t"<<real(Sigmavm(ThIce(k).x,ThIce(k).y))<<endl;
-        }
-    }
-
-    if(mpirank==0)
-      cout<<"Writing file: "<<n<<" using Processor "<<mpirank<<endl;
+    savevtk("1_BEDMAP2/2_TimeDomain/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+    savevtk("1_BEDMAP2/2_TimeDomain/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
+    savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
   }
