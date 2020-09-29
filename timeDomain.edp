@@ -48,6 +48,14 @@ solveEigen;
 if(mpirank==0)
   cout<<"Solved Eigenvalue problem"<<endl;
 
+complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
+//real[int] tmp(Vh.ndof);
+for(int m=0; m<nev; m++)
+  {    
+    mx(m,:).re=VX[m][];
+    my(m,:).re=VY[m][];
+  }
+
 int nfreq=getARGV("-nfreq",200);
 complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
 for(int m=0; m<nfreq; m++)
@@ -62,17 +70,12 @@ lambda+=lambdaRe;
 
 //Construct the solution again.
 Vh<complex> ux,uy;
-complex[int,int] UX(Vh.ndof,nfreq), UY(Vh.ndof,nfreq);
-for(int n=0; n<nfreq; n++)
-  {
-    for(int m=0; m<nev; m++)
-      {
-        ux+=lambda[m]*VX[m];
-        uy+=lambda[m]*VY[m];
-      }
-    UX(:,n)=ux[];
-    UY(:,n)=uy[];
-  }
+complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof);
+UX=lambda*mx;
+UY=lambda*my;
+complex[int,int] UXT=UX', UYT=UY';
+UXT=conj(UXT);
+UYT=conj(UYT);
 
 complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
@@ -102,14 +105,17 @@ for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
     omegaVec=exp(omegaVec);
     omegaVec=omegaVec.*FAmp(1,:);
     omegaVec=omegaVec.*domega;
-    omegaVec*=(2*omegaNew.n/pi);
+    omegaVec*=(2*omegaNew.n/pi);    
+    
+    u3x=UXT*omegaVec;
+    u3y=UYT*omegaVec;    
 
-    u3x=UX*omegaVec;
-    u3y=UY*omegaVec;
-
-    Vh<complex> etax=u3x, etay=u3y;    
+    Vh<complex> etax=u3x, etay=u3y;
     int[int] Order=[1,1];
-    savevtk("1_BEDMAP2/2_TimeDomain/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
-    savevtk("1_BEDMAP2/2_TimeDomain/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-    savevtk("1_BEDMAP2/ThCavity.vtk",ThCavity);
+    savevtk(solDir+"/2_TimeDomain/sol1_"+n+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+    savevtk(solDir+"/2_TimeDomain/sol2_"+n+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
+    savevtk(solDir+"/ThCavity.vtk",ThCavity);
+
+    if(mpirank==0)
+      cout<<"Time t="<<n<<endl;
   }
