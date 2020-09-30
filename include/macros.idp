@@ -40,11 +40,12 @@ fespace Wh(ThCavity,P1);
 real lambdahat, muhat, rhoi;
 real rhow, Ad;
 real Lc, tc;
-int iter, NModes=3, nev=20;
+int NModes=3, nev=20;
 real LL,HH,dd,tth, ag;
 real gammahat, deltahat, densRat;
 complex omega, Ap, tt;
 bool isUniformIce, isUniformCav;
+string iter;
 
 complex [int] k(NModes+1), kd(NModes+1);
 complex [int,int] B(nev,nev), K(nev,nev), AB(nev,nev), Hmat(nev,nev);
@@ -53,7 +54,7 @@ complex [int] F(nev);
 macro setProblem()
 {
   real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
-  iter=getARGV("-iter",0);
+  iter=getARGV("-iter","0");
   real E, nu;
   real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
   real d = rhoi/rhow*th;
@@ -388,7 +389,7 @@ macro solveEigen()
   Xh [u,v],[uu,vv];
   real nu=0.33;
   real lambdahat1=lambdahat*(1-2*nu)/(1-nu);
-  varf a([u,v],[uu,vv]) = int2d(ThIce)((lambdahat*(x>=100)+lambdahat*(x<100))*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
+    varf a([u,v],[uu,vv]) = int2d(ThIce)((lambdahat*(x>=100)+lambdahat*(x<100))*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
   varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv));
   matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
   matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
