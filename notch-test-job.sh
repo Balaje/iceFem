@@ -6,6 +6,7 @@
 #PBS -l walltime=10:00:00
 #PBS -k oe
 #PBS -J 0-14
+#PBS -q testq
 
 JOBS=15
 
