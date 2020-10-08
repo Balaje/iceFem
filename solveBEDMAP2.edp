@@ -218,6 +218,8 @@ mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 
 if(mpirank==0){
   //Compute the reflection coefficient.
+  cout<<"\n\n\n";
+  cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;  
   phi=phi0+phi;
 
   //Write the reflection coefficient to a file.
@@ -243,8 +245,11 @@ if(mpirank==0){
   int[int] Order=[1,1];
   savevtk("1_BEDMAP2/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk("1_BEDMAP2/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-  savevtk("1_BEDMAP2/ThCavity"+iter+".vtk",ThCavity);
+  savevtk("1_BEDMAP2/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
 
+  int[int] Order1=[1,1,1];
+  solveStat;
+  savevtk("1_BEDMAP2/sol3_"+iter+".vtk",ThIce,[ustat,vstat],[real(etax),real(etay)],[imag(etax),imag(etay)],dataname="Disp ReDisp ImDisp",order=Order1);
 
   //Write the eigenfunctions
   writeEigen;
