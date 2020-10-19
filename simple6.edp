@@ -9,9 +9,12 @@ verbosity=0.;
 load "iovtk"
 
 include "macros.idp"
-load "medit"
 
-nev=60;
+macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
+                 2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
+                 muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
+
+nev=20;
 setProblem;
 
 solveDispersion;
@@ -88,5 +91,11 @@ if(mpirank==0){
   phiVec = phi[]; //Get the vector form of the finite element function.
   complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
   cout.precision(16);
-  cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;  
+  cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
+
+  int[int] Order=[1,1];
+  savevtk("1_SIMPLE6/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+  savevtk("1_SIMPLE6/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
+  
+  savevtk("1_SIMPLE6/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
  }
