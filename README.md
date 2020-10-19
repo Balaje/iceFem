@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This iteration of iceFEM implements the algorithms in parallel with an aim to solve bigger problems. For the main branch visit the link [here](https://github.com/Balaje/iceFem/tree/master). The schematic and
+This iteration of iceFEM implements the algorithms in parallel with an aim to solve bigger problems. For this implementation, the program requires the ``MPI`` version of FreeFem installed. If the full program is installed, the parallel version is available by default. For the main branch visit the link [here](https://github.com/Balaje/iceFem/tree/master). The schematic and
 the governing equations remain the same as the previous version and is shown in the Figure below.
 
 | ![Geo](./Images/iceGeo.png)
@@ -109,6 +109,7 @@ Time to solve per problem = 16.5614
 
 Total Time ~ 400-420 s (Without mesh construction)
 ```
+We can see the improvement in parallelising the code. To solve 64 problems which takes about 16s each to solve, a serial code would take ``64x16=1024s`` to solve. However, parallelising the code cuts the total time to about ``400s`` in total considering the time to solve the eigenvalue problem and the construction of the non-local boundary condition.
 
 I have also added support for adding artificial notches in the ice shelf. This is to simulate rifts in the ice which may accelerate calving in the ice. This is done by specifying parameters
 
