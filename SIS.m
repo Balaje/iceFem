@@ -37,11 +37,11 @@ bpoly=polyfit(X',Y1,1);
 %% Original frequency space in the HPC
 a1=2*pi*0.0001; 
 b1=2*pi*0.01;
-omega=linspace(a1,b1,200); % Original frequency space in HPC
-file1='1_BEDMAP2/';
-% Interpolate the system, solve and write the solution.
-filePath = [file1,'2_ModesMatrix/'];
-nev=64;
+% omega=linspace(a1,b1,200); % Original frequency space in HPC
+% file1='1_BEDMAP2/';
+% % Interpolate the system, solve and write the solution.
+% filePath = [file1,'2_ModesMatrix/'];
+% nev=64;
 
 %% New frequency space.
 a=a1; 
@@ -56,4 +56,4 @@ FAmp=[10.^(X1); yhat; phase];
 dlmwrite('FAmp.dat',FAmp,'delimiter','\t','precision',16);
 
 %% Interpolate the linear system.
-[omegaNew,detH,condH] = interpolateFreq(a,b,omega,nev,filePath,npts-1,1);
+% [omegaNew,detH,condH] = interpolateFreq(a,b,omega,nev,filePath,npts-1,1);
