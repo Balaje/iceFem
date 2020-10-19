@@ -272,7 +272,7 @@ macro setMeshIce(brx, midx, midy)
   ix3 = LL; iy3 = icebottomright;
 
   real widthFrac=getARGV("-notchWidth",0.005);
-  real heightFrac=getARGV("-notchHeight",0.8);
+  real heightFrac=getARGV("-notchHeight",0.0);
   real crackheight=heightFrac*tth;
   real crackwidth=widthFrac*LL;
   real crackloc=getARGV("-notchLoc",0.5)*LL;
@@ -304,7 +304,7 @@ macro setMeshCav(midx, midy, endy)
     }
 
   real widthFrac=getARGV("-notchWidth",0.005);
-  real heightFrac=getARGV("-notchHeight",0.8);
+  real heightFrac=getARGV("-notchHeight",0.0);
   real crackheight=heightFrac*tth;
   real crackwidth=widthFrac*LL;
   real crackloc=getARGV("-notchLoc",0.5)*LL;;
@@ -695,8 +695,8 @@ macro buildReducedSystemOptim(){
 matrix IceR1, CavR1, MatInterP, MassMa, MassMaX, MassMaY;
 mesh ThIceEmpty, ThCavEmpty;
 macro getInterpMatrices(){
-  ThIceEmpty=emptymesh(ThIce);
-  ThCavEmpty=emptymesh(ThCavity);
+  ThIceEmpty=(ThIce);
+  ThCavEmpty=(ThCavity);
   fespace VVh(ThIceEmpty,P1);
   fespace WWh(ThCavEmpty,P1);
   IceR1=interpolate(VVh,Vh,inside=true);
