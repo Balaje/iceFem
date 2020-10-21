@@ -98,6 +98,8 @@ randn=FAmp(2,:);
 complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
 int parti=time.n/mpisize;
 
+mesh Th1=emptymesh(ThIce);
+fespace Vh1(Th1,P1);
 for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
   {
     omegaVec=(-1i)*omegaNew;
@@ -116,6 +118,15 @@ for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
     savevtk(solDir+"/2_TimeDomain/sol1_"+n+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
     savevtk(solDir+"/2_TimeDomain/sol2_"+n+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
     savevtk(solDir+"/ThCavity.vtk",ThCavity);
+
+    ofstream file(solDir+"/2_Stresses/stressAtBdy"+n+".dat");
+    for(int m=0; m<Th1.nv; m++){
+      if(Th1(m).label==1)
+	{
+	  Vh1 sigmaxx=real(Sigma(etax,etay)[0]), sigmayy=real(Sigma(etax,etay)[1]), sigmaxy=real(Sigma(etax,etay)[2]);
+	  file<<Th1(m).x<<"\t"<<Th1(m).y<<"\t"<<sigmaxx(Th1(m).x,Th1(m).y)<<"\t"<<sigmayy(Th1(m).x,Th1(m).y)<<"\t"<<sigmaxy(Th1(m).x,Th1(m).y)<<endl;	    
+	}
+    }
 
     if(mpirank==0)
       cout<<"Time t="<<n<<endl;
