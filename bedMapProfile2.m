@@ -5,8 +5,8 @@ clear
 close all
 
 %% Zoom in on to the Sulzberger Ice Shelf and generate the profiles.
-mapzoom('Vollmer Island','mapwidth',180,'inset','se');
-bedmap2 gl
+%mapzoom('Vollmer Island','mapwidth',180,'inset','se');
+%bedmap2 gl
 bedmap2('patchcoast');
 bedmap2('patchshelves','frame','on');
 scalebar
@@ -82,12 +82,12 @@ ppCav=spline(bedPts(:,1),bedPts(:,2));
 ppIceTop=spline(iceTop(:,1),iceTop(:,2));
 
 % Write the coefficients to a file.
-% dlmwrite('./Meshes/BEDMAP2/iceCavInt_Coeffs.dat',ppIceCavInt.coefs,'precision',16,'delimiter','\t');
-% dlmwrite('./Meshes/BEDMAP2/iceCavInt_Breaks.dat',ppIceCavInt.breaks','precision',16,'delimiter','\t');
-% dlmwrite('./Meshes/BEDMAP2/iceTop_Coeffs.dat',ppIceTop.coefs,'precision',16,'delimiter','\t');
-% dlmwrite('./Meshes/BEDMAP2/iceTop_Breaks.dat',ppIceTop.breaks','precision',16,'delimiter','\t');
-% dlmwrite('./Meshes/BEDMAP2/cavBed_Coeffs.dat',ppCav.coefs,'precision',16,'delimiter','\t');
-% dlmwrite('./Meshes/BEDMAP2/cavBed_Breaks.dat',ppCav.breaks','precision',16,'delimiter','\t');
+dlmwrite('./Meshes/BEDMAP2/iceCavInt_Coeffs.dat',ppIceCavInt.coefs,'precision',16,'delimiter','\t');
+dlmwrite('./Meshes/BEDMAP2/iceCavInt_Breaks.dat',ppIceCavInt.breaks','precision',16,'delimiter','\t');
+dlmwrite('./Meshes/BEDMAP2/iceTop_Coeffs.dat',ppIceTop.coefs,'precision',16,'delimiter','\t');
+dlmwrite('./Meshes/BEDMAP2/iceTop_Breaks.dat',ppIceTop.breaks','precision',16,'delimiter','\t');
+dlmwrite('./Meshes/BEDMAP2/cavBed_Coeffs.dat',ppCav.coefs,'precision',16,'delimiter','\t');
+dlmwrite('./Meshes/BEDMAP2/cavBed_Breaks.dat',ppCav.breaks','precision',16,'delimiter','\t');
 
 arrIce=[min(iceCavInt(:,1)); % Bottom left Ice
     max(iceCavInt(:,1)); % Bottom right Ice
@@ -97,4 +97,4 @@ arrIce=[min(iceCavInt(:,1)); % Bottom left Ice
     ppCav.pieces;
     fnval(ppIceCavInt,max(bedPts(:,1)))];
 
-% dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');
+dlmwrite('./Meshes/BEDMAP2/iceDat.dat',arrIce,'precision',16,'delimiter','\t');

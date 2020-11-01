@@ -71,7 +71,7 @@ macro setProblem()
   tt = t/tc;
   complex ndOmega = 2*pi/tt;
   complex alpha = HH*ndOmega^2;
-  Ap = ag/(1i*omega)*Ad;  
+  Ap = ag/(1i*omega)*Ad;
   real mu1 = elasCons[0], lambda = elasCons[1];
   muhat = mu1/Lc^2;
   lambdahat = lambda/Lc^2;
@@ -199,7 +199,7 @@ macro iceBEDMAP2(nborders, isBuild)
                 border C02(t=splineRecon(coefsBot,breaksBot,iceEnd,npieces),splineRecon(coefsTop,breaksTop,iceEnd,npieces)){x=iceEnd; y=t; label=2;};
                 border C03(t=iceEnd,iceBegin){x=t; y=splineRecon(coefsTop,breaksTop,t,npieces)-0*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
                 border C04(t=splineRecon(coefsTop,breaksTop,iceBegin,npieces),splineRecon(coefsBot,breaksBot,iceBegin,npieces)){x=iceBegin; y=t; label=4;};
-                ThIce=buildmesh(C01(500)+C01x(100)+C02(100)+C03(500)+C04(100));
+                ThIce=buildmesh(C01(5000)+C01x(1000)+C02(100)+C03(5000)+C04(100));
                 cout<<"Built Ice-Mesh\n";
               }
             }
@@ -317,13 +317,31 @@ macro setMeshCav(midx, midy, endy)
   ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(-LL/tth*N2)+C04(N2));
 }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
+macro solveEigen()
+{
+  Xh [u,v],[uu,vv];
+  real nu=0.33;
+  real lambdahat1=lambdahat*(1-2*nu)/(1-nu);
+  varf a([u,v],[uu,vv]) = int2d(ThIce)((lambdahat*(x>=100)+lambdahat*(x<100))*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
+  varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)((u*uu + v*vv));
+  matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
+  matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
+  int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
+}//This is a macro for solving the elasticity Eigenvalue problem.
+
+
 macro refineMesh(){
   if(mpirank==0){
+    real widthFrac=getARGV("-notchWidth",0.005);
+    real heightFrac=getARGV("-notchHeight",0.0);
+    real crackheight=heightFrac*tth;
+    real crackwidth=widthFrac*LL;
+    real crackloc=getARGV("-notchLoc",0.5)*LL;
     cout<<"Imported Ice Mesh (proc 0)..."<<endl;
     cout<<"Refining Ice Mesh (proc 0) ..."<<endl;
     cout<<"Ice : Before Refinement, NBV = "<<ThIce.nv<<endl;
-    func metricFuncIce=getARGV("-hsize",0.02);
-    ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
+    real metricFuncIce=getARGV("-hsize",0.02);
+    ThIce=adaptmesh(ThIce,metricFuncIce*(0.1*tth-splineCurve(x,0,-0.9*tth,LL/2,-0.9*tth,LL,-0.9*tth)-1*crackheight*exp(-(x-crackloc)^2/(2*crackwidth^2))),IsMetric=1,nbvx=2e6);
     cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
     savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
     plot(ThIce,wait=1);
@@ -332,9 +350,9 @@ macro refineMesh(){
     cout<<"Imported Cavity Mesh (proc 1)..."<<endl;
     cout<<"Refining Cavity Mesh (proc 1) ..."<<endl;
     real LCav=abs(cavBegin-cavEnd)/Lc;
-    func metricFuncCav=getARGV("-hsize",0.02);
+    func metricFuncCav=getARGV("-hsize",0.01);
     cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;
-    ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
+    ThCavity=adaptmesh(ThCavity,0.01,IsMetric=1,nbvx=2e6);
     cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
     savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
     plot(ThCavity,wait=1);
@@ -390,21 +408,9 @@ Xh [ustat,vstat],[uustat,vvstat];
 macro solveStat()
 {
   problem elasStat([ustat,vstat],[uustat,vvstat])=int2d(ThIce)(lambdahat*div(ustat,vstat)*div(uustat,vvstat) + 2*muhat*epsilon(ustat,vstat)'*epsilon(uustat,vvstat)) - int2d(ThIce)(-rhoi*ag*vvstat) - int1d(ThIce,1)(deltahat*vstat*(uustat*N.x+vvstat*N.y)) + on(2,ustat=0,vstat=0);
-  elasStat;  
+  elasStat;
 }//EOM"
 
-
-macro solveEigen()
-{
-  Xh [u,v],[uu,vv];
-  real nu=0.33;
-  real lambdahat1=lambdahat*(1-2*nu)/(1-nu);
-  varf a([u,v],[uu,vv]) = int2d(ThIce)((lambdahat*(x>=100)+lambdahat*(x<100))*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
-  varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)((u*uu + v*vv));
-  matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
-  matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
-  int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
-}//This is a macro for solving the elasticity Eigenvalue problem.
 
 real[int] mu(nev);
 macro solveEigenEB()
@@ -695,8 +701,8 @@ macro buildReducedSystemOptim(){
 matrix IceR1, CavR1, MatInterP, MassMa, MassMaX, MassMaY;
 mesh ThIceEmpty, ThCavEmpty;
 macro getInterpMatrices(){
-  ThIceEmpty=(ThIce);
-  ThCavEmpty=(ThCavity);
+  ThIceEmpty=emptymesh(ThIce);
+  ThCavEmpty=emptymesh(ThCavity);
   fespace VVh(ThIceEmpty,P1);
   fespace WWh(ThCavEmpty,P1);
   IceR1=interpolate(VVh,Vh,inside=true);

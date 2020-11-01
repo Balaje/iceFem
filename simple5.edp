@@ -14,7 +14,7 @@ macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=16;
+nev=64;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
