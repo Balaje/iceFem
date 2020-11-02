@@ -340,19 +340,38 @@ macro refineMesh(){
     cout<<"Imported Ice Mesh (proc 0)..."<<endl;
     cout<<"Refining Ice Mesh (proc 0) ..."<<endl;
     cout<<"Ice : Before Refinement, NBV = "<<ThIce.nv<<endl;
-    real metricFuncIce=getARGV("-hsize",0.02);
-    ThIce=adaptmesh(ThIce,metricFuncIce*(0.1*tth-splineCurve(x,0,-0.9*tth,LL/2,-0.9*tth,LL,-0.9*tth)-1*crackheight*exp(-(x-crackloc)^2/(2*crackwidth^2))),IsMetric=1,nbvx=2e6);
+    int isUniformRef=getARGV("-isUniRef",1);
+    if(!isUniformRef){
+      real metricFuncIce=getARGV("-hsize",0.02);
+      ThIce=adaptmesh(ThIce,metricFuncIce*(0.1*tth-splineCurve(x,0,-0.9*tth,LL/2,-0.9*tth,LL,-0.9*tth)-1*crackheight*exp(-(x-crackloc)^2/(2*crackwidth^2))),IsMetric=1,nbvx=2e6);
+    }
+    else if(isUniformRef){
+      real metricFuncIce=getARGV("-hsize",0.02);
+      ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
+    }
     cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
     savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
     plot(ThIce,wait=1);
   }
   else if(mpirank==1){
+    real widthFrac=getARGV("-notchWidth",0.005);
+    real heightFrac=getARGV("-notchHeight",0.0);
+    real crackheight=heightFrac*tth;
+    real crackwidth=widthFrac*LL;
+    real crackloc=getARGV("-notchLoc",0.5)*LL;
     cout<<"Imported Cavity Mesh (proc 1)..."<<endl;
     cout<<"Refining Cavity Mesh (proc 1) ..."<<endl;
-    real LCav=abs(cavBegin-cavEnd)/Lc;
-    func metricFuncCav=getARGV("-hsize",0.01);
     cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;
-    ThCavity=adaptmesh(ThCavity,0.01,IsMetric=1,nbvx=2e6);
+    real LCav=abs(cavBegin-cavEnd)/Lc;
+    int isUniformRef=getARGV("-isUniRef",1);
+    if(!isUniformRef){
+      real metricFuncCav=getARGV("-hsize",0.01);
+      ThCavity=adaptmesh(ThCavity,0.5*metricFuncCav*(0.1*tth-splineCurve(x,0,-HH,LL/2,-HH,LL,-HH)-1*crackheight*exp(-(x-crackloc)^2/(2*crackwidth^2))),IsMetric=1,nbvx=2e6);
+    }
+    else if(isUniformRef){
+      real metricFuncIce=getARGV("-hsize",0.01);
+      ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
+    }
     cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
     savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
     plot(ThCavity,wait=1);
@@ -533,35 +552,24 @@ macro getLaplaceMatEBdbc(m,rad){
   RHS[]=lh(0,Wh);
 }//Same as above but for EB DBC.
 
-macro buildReducedSystem(VX,VY,phi0,phij,c0,cc,isForcedFront)
+macro buildReducedSystem(VX,VY,phi0,phij)
 {
   B.resize(nev,nev);
   K.resize(nev,nev);
   AB.resize(nev,nev);
   F.resize(nev);
-  func phid = isForcedFront*(Ap*cos(k[0]*(y+HH))/cos(k[0]*HH) +
-                             c0[0]*cos(k[0]*(y+HH))/cos(k[0]*HH) +
-                             c0[1]*cos(k[1]*(y+HH))/cos(k[1]*HH) +
-                             c0[2]*cos(k[2]*(y+HH))/cos(k[2]*HH) +
-                             c0[3]*cos(k[3]*(y+HH))/cos(k[3]*HH) );
   for(int m=0; m<nev; m++)
     {
 
-      F[m] = -(1i*omega*gammahat)*(int1d(ThIce,1,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y) ) +
-                                   int1d(ThIce,5,qforder=10)( phid*(VX[m]*N.x + VY[m]*N.y) ));
-      complex[int] cm=cc(:,m);
-      func phiminus = isForcedFront*(Ap*cos(k[0]*(y+HH))/cos(k[0]*HH) +
-                                     cm[0]*cos(k[0]*(y+HH))/cos(k[0]*HH) +
-                                     cm[1]*cos(k[1]*(y+HH))/cos(k[1]*HH) +
-                                     cm[2]*cos(k[2]*(y+HH))/cos(k[2]*HH) +
-                                     cm[3]*cos(k[3]*(y+HH))/cos(k[3]*HH));
+      F[m] = -(1i*omega*gammahat)*(int1d(ThIce,1,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y) ));
 
       for(int n=0; n<nev; n++)
         {
           B(m,n) = (rhoi*ev[m]-rhoi*omega^2)*int2d(ThIce)(VX[m]*VX[n] + VY[m]*VY[n]);
-          K(n,m) = int1d(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y)) +
-            int1d(ThIce,5,qforder=10)((-isForcedFront*y*deltahat + phiminus*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
+          K(n,m) = int1d(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
           AB(n,m) = 0;
+          if(mpirank==0)
+            cout<<"(m,n)"<<"("<<m<<","<<n<<")"<<endl;
         }
     }
 }//Macro to build the reduced system for the linear elasticity case. (Needs to be generalized even further. User should just specify the wetted surface and this should be computed).

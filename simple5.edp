@@ -37,13 +37,6 @@ if(isSplit)
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
 solveEigen;
-if(mpirank==0){
-  //cout<<"Solved EigenValue Problem ... "<<endl;
-  ofstream file("1_SIMPLE5/2_Modes/eval.dat");
-  for(int m=0; m<nev; m++)
-    file<<ev[m]<<endl;
-  writeEigen;
- }
 
 //  2) Get the Non-local boundary condition
 matrix<complex> MQ;
@@ -121,7 +114,6 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
       phiVecm = phij[m][];
       RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
     */
-
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
@@ -131,7 +123,7 @@ cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
 //mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs (Only boundary)
-for(int m=0; m<nev; m++){  
+for(int m=0; m<nev; m++){
   phijj[m][]=PHIJ(m,:);
  }
 
@@ -140,6 +132,7 @@ splitMeshLoad;
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
+//buildReducedSystem(VX,VY,phi0,phij);
 cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
 if(mpirank==0) //Write the matrices to a file.
@@ -209,7 +202,7 @@ mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 if(mpirank==0){
   //Compute the reflection coefficient.
   cout<<"\n\n\n";
-  cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;  
+  cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;
   phi=phi+phi0;
   complex[int] phiVec(phi.n), c(NModes+1);
   phiVec = phi[]; //Get the vector form of the finite element function.
@@ -226,16 +219,10 @@ if(mpirank==0){
   int[int] Order=[1,1];
   savevtk("1_SIMPLE5/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk("1_SIMPLE5/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-  
   savevtk("1_SIMPLE5/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
 
-  {
-    ofstream file("1_SIMPLE5/cavsol.dat");
-    file<<phi[].im;
-  }
-
-  //Solve for the static problem.
-  int[int] Order1=[1,1,1];
-  solveStat;
-  savevtk("1_SIMPLE5/sol3_"+iter+".vtk",ThIce,[ustat,vstat],[real(etax),real(etay)],[imag(etax),imag(etay)],dataname="Disp ReDisp ImDisp",order=Order1);    
+  ofstream file("1_SIMPLE5/2_Modes/eval.dat");
+  for(int m=0; m<nev; m++)
+    file<<ev[m]<<endl;
+  writeEigen;
  }
