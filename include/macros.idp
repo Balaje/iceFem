@@ -321,7 +321,7 @@ macro solveEigen()
 {
   Xh [u,v],[uu,vv];
   varf a([u,v],[uu,vv]) = int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
-  varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv));
+  varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)((u*uu + v*vv));
   matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
   matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
   int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
@@ -692,8 +692,8 @@ macro buildReducedSystemOptim(){
           KProcY(m,n)=tmpre+1i*tmpim;
         }
 
-      BProcX(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcX(:,m);
-      BProcY(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcY(:,m);
+      BProcX(:,m)=(ev[m]-rhoi*omega^2)*BProcX(:,m);
+      BProcY(:,m)=(ev[m]-rhoi*omega^2)*BProcY(:,m);
     }
   FProc=FProcX+FProcY;
   BProc=BProcX+BProcY;
@@ -803,8 +803,8 @@ macro buildReducedSystemNoSplit(macroName)
           KProcY(n,m)=tmpre+1i*tmpim;
         }
 
-      BProcX(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcX(:,m);
-      BProcY(:,m)=(rhoi*ev[m]-rhoi*omega^2)*BProcY(:,m);
+      BProcX(:,m)=(ev[m]-rhoi*omega^2)*BProcX(:,m);
+      BProcY(:,m)=(ev[m]-rhoi*omega^2)*BProcY(:,m);
 
       if(mpirank==0)
         cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
