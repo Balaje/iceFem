@@ -447,8 +447,8 @@ macro solveEigenEB()
         real r=xbar, rr;
         while(error>tol)
           {
-            f=cos(r*L)*cosh(r*L)+1;
-            difff=L*cos(r*L)*sinh(r*L)-L*sin(r*L)*cosh(r*L);
+            f=cos(r*L)+2*exp(-r*L)/(1+exp(-r*L));
+            difff=(2*L*exp(-2*L*r))/(exp(-L*r) + 1)^2 - (2*L*exp(-L*r))/(exp(-L*r) + 1) - L*sin(L*r);
             rr=r-f/difff;
             error=abs(r-rr);
             r=rr;
@@ -509,7 +509,8 @@ macro getLaplaceMatBEDMAP2(a,b){
 
 macro getLaplaceMatEB(m,rad){
   Wh<complex> psih;
-  func etaj = rad*((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+  real Px=(sqrt(2)*sin(mu[m]*L+pi/4) + exp(-mu[m]*LL))/(exp(-2*mu[m]*LL)+2*exp(-mu[m]*LL)*sin(mu[m]*LL)-1);
+  func etaj=rad*(-exp(-mu[m]*x)) + Px*(exp(-mu[m]*(LL-x))+exp(-mu[m]*(LL+x))) - sin(mu[m]*x) + (1-2*Px*exp(-mu[m]*LL))*cos(mu[m]*x);
   varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih));
   varf lh(unused,psih) = int1d(ThCavity,4,qforder=10)(-fh*psih)+ int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*etaj*psih);
   varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
