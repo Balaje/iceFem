@@ -469,6 +469,17 @@ macro solveEigenEB()
   mu=EBroots(nev,LL);
 }//This is a marco to compute the eigenmodes of the Euler Bernoulli equation
 
+macro integral1d(a,b,npts,eta,value)
+{  
+  real deltax=(b-a)/(npts);
+  real[int] wts(npts),pts(npts);
+  wts(1:npts-2)=2;
+  wts(0)=1; wts(npts-1)=0;
+  pts=a:deltax:b;
+  value=wts'*pts;  
+  value*=deltax;
+  value/=3;
+}//EOM Integral1d"
 
 macro writeEigen()
 {
@@ -511,6 +522,7 @@ macro getLaplaceMatEB(m,rad){
   Wh<complex> psih;
   real Px=(sqrt(2)*sin(mu[m]*L+pi/4) + exp(-mu[m]*LL))/(exp(-2*mu[m]*LL)+2*exp(-mu[m]*LL)*sin(mu[m]*LL)-1);
   func etaj=rad*(-exp(-mu[m]*x)) + Px*(exp(-mu[m]*(LL-x))+exp(-mu[m]*(LL+x))) - sin(mu[m]*x) + (1-2*Px*exp(-mu[m]*LL))*cos(mu[m]*x);
+  etaj=etaj(LL-x,0);
   varf ah(phih,psih) = int2d(ThCavity)(grad(phih)'*grad(psih));
   varf lh(unused,psih) = int1d(ThCavity,4,qforder=10)(-fh*psih)+ int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*etaj*psih);
   varf bMh(phih,psih) = int1d(ThCavity,4,qforder=10)(phih*psih);
