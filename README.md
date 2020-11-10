@@ -131,6 +131,18 @@ T | Reflection Coefficient, R | abs(R) |
 50 s| (-0.6399984548546397,-0.7683761954820765) | 0.9999999999999183 |
 5000 s | (-0.864578758274102,-0.502497333987288) | 0.9999999999615601 |
 
+## Convergence of the reflection coefficients
+It may be useful to compute the convergence of the reflection coefficients for various mesh sizes. Table below shows the convergence results for the reflection coefficients along with the computation time using 4 processors. Note that the computation time may vary since I may have added the time taken by the routine to split the mesh while running the results below.
+
+T | No of Vertices (Ice) | Reflection Coefficient, R | abs(R) | Computation time (in s)|
+--- | --- | --- | ---- | --- |
+5000 s | 74256 | (0.7788184783832949,0.6272493744418549) | 1.000000000004485 | 182.92829 |
+ | 135159 | 0.7788618386563695,0.6271955327529088 | 1.000000000010193 | 309.2567 |
+50 s | 74256 | (0.233145889676898,0.9724417690159223) | 1.000000000000024 | 220.0760 |
+ | 135159 | (0.1882588341259381,0.9821194486286965) | 1.000000000000596 | 429.2906 |
+
+
+
 
 ## Coming soon
 Will support 3D models in the future. Some examples currently in the works are shown below.
