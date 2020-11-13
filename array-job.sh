@@ -19,6 +19,5 @@ source /etc/profile.d/modules.sh
 module load freefem
 cd $PBS_O_WORKDIR
 export FF_INCLUDEPATH="$PBS_O_WORKDIR/include"
-mpirun -np 8 FreeFem++-mpi -nw -v 0 solveBEDMAP2.edp -isMesh 0 -nborders 6 -Tr $TVAL -Ti 0 -iter $(( $PBS_ARRAY_INDEX+1 )) -notchWidth 0.005 -notchHeight 0.0
-#mpirun -np 8 FreeFem++-mpi -nw -v 0 simple5.edp -Tr $TVAL -Ti 0 -iter $(( $PBS_ARRAY_INDEX+1 )) -hsize 0.01 -N 10 -isSplit 0 -notchWidth 0.005 -notchHeight 0.0
+mpirun -np 8 FreeFem++-mpi -nw -v 0 solveBEDMAP2.edp -isMesh 0 -nborders 6 -Tr $TVAL -Ti 0 -iter $(( $PBS_ARRAY_INDEX+1 )) -isUniRef 1 -notchWidth 0.005 -notchHeight 0.0
 exit 0
