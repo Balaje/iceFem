@@ -367,8 +367,8 @@ macro refineMesh(){
       ThCavity=adaptmesh(ThCavity,0.5*metricFuncCav*(0.1*tth-splineCurve(x,0,-HH,LL/2,-HH,LL,-HH)-1*crackheight*exp(-(x-crackloc)^2/(2*crackwidth^2))),IsMetric=1,nbvx=2e6);
     }
     else if(isUniformRef){
-      real metricFuncIce=getARGV("-hsize",0.01);
-      ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
+      real metricFuncCav=getARGV("-hsize",0.01);
+      ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
     }
     cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
     savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
