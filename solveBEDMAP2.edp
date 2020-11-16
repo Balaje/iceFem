@@ -156,7 +156,7 @@ for(int m=0; m<nev; m++){
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
 if(mpirank==0)
-  cout<<"V : "<<MaTh.nv<<" T "<<mpirank<<" = "<<mpiWtime()-cpu1<<" s"<<endl;
+  cout<<"P : "<<mpirank<<" V : "<<MaThEmpty.nv<<" T "<<mpirank<<" = "<<mpiWtime()-cpu1<<" s"<<endl;
 
 if(mpirank==0) //Write the matrices to a file.
   {

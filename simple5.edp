@@ -133,7 +133,7 @@ splitMeshLoad;
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
 //buildReducedSystem(VX,VY,phi0,phij);
-cout<<"No of vertices: "<<MaTh.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
+cout<<"No of vertices: "<<MaThEmpty.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
 if(mpirank==0) //Write the matrices to a file.
   {

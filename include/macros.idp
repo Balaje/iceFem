@@ -379,22 +379,24 @@ macro refineMesh(){
 }//EOM" (Macro to refine mesh).
 
 searchMethod=2;
+mesh MaThEmpty;
 macro splitMeshSave()
 {
   if(mpirank==0)
     system("mkdir MESHES_SPLIT");
   ffddmbuildDmesh(M,ThIce,mpiCommWorld);
   ffddmbuildDmesh(M1,ThCavity,mpiCommWorld);
-  ffddmbuildDfespace(Fe,M,real,def,init,P1);
-  savemesh(MaTh[mpirank],"MESHES_SPLIT/IceMaTh"+mpirank+".msh");
-  savemesh(M1aTh[mpirank],"MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
-  cout<<"Number of verts = "<<mpirank<<"\t"<<MaTh[mpirank].nv<<endl;
+  ffddmbuildDfespace(Fe,M,real,def,init,P1);    
   real cpuT=mpiWtime();
-  fespace MMh(MaTh[mpirank],P1);
+  MaThEmpty=emptymesh(MaTh[mpirank]);
+  cout<<"Number of verts = "<<mpirank<<"\t"<<MaThEmpty.nv<<endl;
+  fespace MMh(MaThEmpty,P1);
   mesh ThEmptyCav=emptymesh(ThCavity);
+  savemesh(MaThEmpty,"MESHES_SPLIT/IceMaTh"+mpirank+".msh");
+  savemesh(ThEmptyCav,"MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
   fespace WWh(ThEmptyCav,P1);
   matrix M1xM=interpolate(MMh,WWh,inside=true);
-  matrix M2xM=FeRih[mpirank];
+  matrix M2xM=interpolate(MMh,Vh,inside=true);
   cout<<"Time to interpolate = "<<mpiWtime()-cpuT<<endl;
   ofstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
   if(M1xM.nnz>0)
@@ -409,15 +411,15 @@ macro splitMeshSave()
 }//Macro to SPLIT MESH and WRITE the meshes and matrices to MESHES_SPLIT;
 
 matrix M1xM,M2xM;
-mesh MaTh, M1aTh;
+mesh M1aThEmpty;
 macro splitMeshLoad()
 {
   ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
   file1>>M1xM;
   ifstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
   file2>>M2xM;
-  MaTh=readmesh("MESHES_SPLIT/IceMaTh"+mpirank+".msh");
-  M1aTh=readmesh("MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
+  MaThEmpty=readmesh("MESHES_SPLIT/IceMaTh"+mpirank+".msh");
+  M1aThEmpty=readmesh("MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
 }//Macro to LOAD THE SPLIT MESH
 
 
@@ -643,17 +645,15 @@ macro writeToMATLAB(uh,Th,solfilename,meshfilename)
 
 //Macro to build the reduced system (optimized for split mesh)
 macro buildReducedSystemOptim(){
-  real[int,int] VXaTh(MaTh.nv,nev), VYaTh(MaTh.nv,nev), VY1aTh(MaTh.nv,nev);
-  complex[int] phi0aTh(MaTh.nv);
-  complex[int,int] phiMaTh(MaTh.nv,nev);
+  real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
+  complex[int] phi0aTh(MaThEmpty.nv);
+  complex[int,int] phiMaTh(MaThEmpty.nv,nev);
 
-  fespace MMh(MaTh,P1);
-  MMh AA,BB;
-  varf ip(AA,BB)=int2d(MaTh)(AA*BB);
-  varf ipx(AA,BB)=int1d(MaTh,1,qforder=10)(AA*BB*N.x);
-  varf ipy(AA,BB)=int1d(MaTh,1,qforder=10)(AA*BB*N.y);
-
-  matrix massMa=ip(MMh,MMh);
+  fespace MMh(MaThEmpty,P1);
+  MMh AA,BB;  
+  varf ipx(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.x);
+  varf ipy(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.y);
+  
   matrix massMax=ipx(MMh,MMh);
   matrix massMay=ipy(MMh,MMh);
 
@@ -669,14 +669,13 @@ macro buildReducedSystemOptim(){
       phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
     }
 
-  real[int,int] Tx(MaTh.nv,nev), Ty(MaTh.nv,nev),Txx(MaTh.nv,nev), Tyy(MaTh.nv,nev);
-  complex[int,int] BProcX(nev,nev), BProcY(nev,nev), KProcX(nev,nev), KProcY(nev,nev);
+  real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev);
+  complex[int,int] KProcX(nev,nev), KProcY(nev,nev);
   real tmpre, tmpim;
-  complex[int] FProcX(nev), FProcY(nev);
+  complex[int] FProcX(nev), FProcY(nev);  
+  
   for(int m=0; m<nev; m++)
-    {
-      Tx(:,m)=massMa*VXaTh(:,m);
-      Ty(:,m)=massMa*VYaTh(:,m);
+    {      
       Txx(:,m)=massMax*VXaTh(:,m);
       Tyy(:,m)=massMay*VYaTh(:,m);
 
@@ -687,11 +686,10 @@ macro buildReducedSystemOptim(){
       tmpim=phi0aTh.im'*Tyy(:,m);
       FProcY(m)=tmpre+1i*tmpim;
 
+      B(m,m)=(ev[m]-rhoi*omega^2);
+      
       for(int n=0; n<nev; n++)
-        {
-          BProcX(n,m)=VXaTh(:,n)'*Tx(:,m);
-          BProcY(n,m)=VYaTh(:,n)'*Ty(:,m);
-
+        {     
           tmpre=VY1aTh(:,n)'*Txx(:,m);
           tmpre=-1*tmpre;
           tmpre+=phiMaTh(:,n).re'*Txx(:,m);
@@ -703,15 +701,10 @@ macro buildReducedSystemOptim(){
           tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
           tmpim=phiMaTh(:,n).im'*Tyy(:,m);
           KProcY(m,n)=tmpre+1i*tmpim;
-        }
-
-      BProcX(:,m)=(ev[m]-rhoi*omega^2)*BProcX(:,m);
-      BProcY(:,m)=(ev[m]-rhoi*omega^2)*BProcY(:,m);
+        }      
     }
-  FProc=FProcX+FProcY;
-  BProc=BProcX+BProcY;
-  KProc=KProcX+KProcY;
-  mpiReduce(BProc,B,processor(0),mpiSUM);
+  FProc=FProcX+FProcY;  
+  KProc=KProcX+KProcY;  
   mpiReduce(FProc,F,processor(0),mpiSUM);
   mpiReduce(KProc,K,processor(0),mpiSUM);
 }//EOM"
@@ -795,12 +788,7 @@ macro buildReducedSystemNoSplit(macroName)
         {
           Vh vxn=VX[n], vyn=VY[n];
           real[int] tmp(ThIce.nv);
-
-          tmp=MassMa*vxm[];
-          BProcX(n,m)=vxn[]'*tmp;
-          tmp=MassMa*vym[];
-          BProcY(n,m)=vyn[]'*tmp;
-
+          
           tmpMatrix1=MassMaX*VXArr(:,n);
           tmpre=VYArr(:,m)'*tmpMatrix1;
           tmpre=-deltahat*tmpre;
@@ -816,8 +804,7 @@ macro buildReducedSystemNoSplit(macroName)
           KProcY(n,m)=tmpre+1i*tmpim;
         }
 
-      BProcX(:,m)=(ev[m]-rhoi*omega^2)*BProcX(:,m);
-      BProcY(:,m)=(ev[m]-rhoi*omega^2)*BProcY(:,m);
+      BProcX(m,m)=(ev[m]-rhoi*omega^2);      
 
       if(mpirank==0)
         cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
@@ -827,7 +814,7 @@ macro buildReducedSystemNoSplit(macroName)
       RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
     }
   mpiReduce(FProc,F,processor(0),mpiSUM);
-  BProc=BProcX+BProcY;
+  BProc=BProcX;
   KProc=KProcX+KProcY;
   mpiReduce(BProc,B,processor(0),mpiSUM);
   mpiReduce(KProc,K,processor(0),mpiSUM);
