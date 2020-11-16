@@ -3,7 +3,6 @@
 #PBS -l select=1:ncpus=4:mpiprocs=4:mem=16GB
 #PBS -l walltime=10:00:00
 #PBS -k oe
-#PBS -q testq
 
 source /etc/profile.d/modules.sh
 module load freefem
