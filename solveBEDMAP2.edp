@@ -26,6 +26,7 @@ string SolutionDir="1_BEDMAP2/";
 real cpu=mpiWtime();
 int isMesh= getARGV("-isMesh",0);
 int nborders= getARGV("-nborders",4);
+int isSplit= getARGV("-isSplit",1);
 iter=getARGV("-iter",0);
 
 macro writeSolution(var, filename){
@@ -37,7 +38,8 @@ macro writeSolution(var, filename){
 iceBEDMAP2(nborders,isMesh);
 if(isMesh){
   refineMesh; //refine the meshes and overwrite the original meshes.
-  splitMeshSave; //Split the meshes and save the matrices.
+  if(isSplit)
+    splitMeshSave; //Split the meshes and save the matrices.
  }
 splitMeshLoad; //load the split mesh
 
@@ -219,7 +221,7 @@ mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 if(mpirank==0){
   //Compute the reflection coefficient.
   cout<<"\n\n\n";
-  cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;  
+  cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;
   phi=phi0+phi;
 
   //Write the reflection coefficient to a file.
