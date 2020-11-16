@@ -65,9 +65,11 @@ if(mpirank==0)
 //Solve EigenValue problem
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
+real timeEigen=mpiWtime();
 solveEigen;
-if(mpirank==0){
+if(mpirank==0){  
   cout<<"Solved EigenValue Problem ... "<<endl;
+  cout<<"Time to solve = "<<mpiWtime()-timeEigen<<endl;
  }
 
 mesh ThEmptyCav=emptymesh(ThCavity);
