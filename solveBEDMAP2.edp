@@ -67,9 +67,9 @@ Xh[int][VX,VY](nev);
 real[int] ev(nev);
 real timeEigen=mpiWtime();
 solveEigen;
+cout<<"P: "<<mpirank<<" Time to solve = "<<mpiWtime()-timeEigen<<endl;
 if(mpirank==0){  
-  cout<<"Solved EigenValue Problem ... "<<endl;
-  cout<<"Time to solve = "<<mpiWtime()-timeEigen<<endl;
+  cout<<"Solved EigenValue Problem ... "<<endl;  
  }
 
 mesh ThEmptyCav=emptymesh(ThCavity);
@@ -89,24 +89,8 @@ phi0=phih;
 WhBdy<complex> phi00=phi0;
 
 plot(phi0,wait=0,fill=1,value=1,dim=3);
-if(mpirank==0){
-  //extractFS(phi0, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phi0FS"+iter+".dat");
+if(mpirank==0)  
   cout<<"Solved Diffraction Potential "<<endl<<endl;
- }
-
-/*
-  if(mpirank==0)
-  {
-  complex[int] phiVec(phi0.n), c(NModes+1);
-  phiVec = phi0[]; //Get the vector form of the finite element function.
-  complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
-
-  //Write the reflectiion coeffiecient to a file.
-  ofstream file("1_BEDMAP2/2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
-  file.precision(16);
-  file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-  }
-*/
 
 int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
@@ -128,19 +112,10 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     getLaplaceMatBEDMAP2(VX[m],VY[m]);
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
-    phih[]=LHS^-1*RHS[];
-    //extractFS(phih, ThEmptyCav, "1_BEDMAP2/2_Modes/PHI/phijFS_"+m+"_"+iter+".dat");
+    phih[]=LHS^-1*RHS[];   
     phij[m]=phih;
-
     phijj[m]=phih;
     PHIJProc(m,:)=phijj[m][];
-
-    //Compute the radiation reflection coefficients
-    /*
-      pk1=0.;
-      phiVecm = phij[m][];
-      RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-    */
 
     if(mpirank==0)
       cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
@@ -148,12 +123,10 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
 real cpuComm=mpiWtime();
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
 cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
-//mpiReduce(RefmProc,Refm,processor(0),mpiSUM);
 
 //Unpack and set to phij locally in all procs
-for(int m=0; m<nev; m++){
-  phijj[m][]=PHIJ(m,:);
- }
+for(int m=0; m<nev; m++)
+  phijj[m][]=PHIJ(m,:); 
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
@@ -262,11 +235,6 @@ if(mpirank==0){
     for(int m=0; m<nev; m++)
       file<<ev[m]<<endl;
   }
-  /*
-    system("rm 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
-    system("cat 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat >> 1_BEDMAP2/2_Modes/PHI/phijFS"+iter+".dat");
-    system("rm -f 1_BEDMAP2/2_Modes/PHI/phijFS_{0.."+(nev-1)+"}_"+iter+".dat");
-  */
  }
 
 if(mpirank==0)
