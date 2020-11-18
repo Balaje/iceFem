@@ -229,7 +229,7 @@ if(mpirank==0){
   savevtk("1_BEDMAP2/sol3_"+iter+".vtk",ThIce,[ustat,vstat],[real(etax),real(etay)],[imag(etax),imag(etay)],dataname="Disp ReDisp ImDisp",order=Order1);
 
   //Write the eigenfunctions
-  writeEigen;
+  writeEigen(1,1);
   {
     ofstream file("1_BEDMAP2/2_Modes/eval.dat");
     for(int m=0; m<nev; m++)

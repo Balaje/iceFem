@@ -327,6 +327,41 @@ macro solveEigen()
   int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
 }//This is a macro for solving the elasticity Eigenvalue problem.
 
+macro writeEigen(isVtk, isDat)
+{
+  int[int] Order1=[1,1];
+  ofstream fileEigen(SolutionDir+"/2_Modes/eval.dat");
+  for(int m=0; m<nev; m++)
+    {
+      fileEigen<<ev[m]<<endl;;
+      if(isVtk)
+        {
+          Vh modeX=VX[m],modeY=VY[m];
+          savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
+        }
+      if(isDat)
+        {
+          ofstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
+          fileX<<VX[m][];
+          ofstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
+          fileY<<VY[m][];
+        }
+    }
+}//Macro to write the Eigenfunctions to a file.
+
+macro readEigen()
+{
+  ifstream fileEigen(SolutionDir+"2_Modes/eval.dat");
+  for(int m=0; m<nev; m++)
+    {
+      fileEigen>>ev[m];
+      ifstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
+      fileX>>VX[m][];
+      ifstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
+      fileY>>VY[m][];
+    }
+}//EOM To read eigenfunctions from a file"
+
 
 macro refineMesh(){
   if(mpirank==0){
@@ -386,7 +421,7 @@ macro splitMeshSave()
     system("mkdir MESHES_SPLIT");
   ffddmbuildDmesh(M,ThIce,mpiCommWorld);
   ffddmbuildDmesh(M1,ThCavity,mpiCommWorld);
-  ffddmbuildDfespace(Fe,M,real,def,init,P1);    
+  ffddmbuildDfespace(Fe,M,real,def,init,P1);
   real cpuT=mpiWtime();
   MaThEmpty=emptymesh(MaTh[mpirank]);
   cout<<"Number of verts = "<<mpirank<<"\t"<<MaThEmpty.nv<<endl;
@@ -472,25 +507,16 @@ macro solveEigenEB()
 }//This is a marco to compute the eigenmodes of the Euler Bernoulli equation
 
 macro integral1d(a,b,npts,eta,value)
-{  
+{
   real deltax=(b-a)/(npts);
   real[int] wts(npts),pts(npts);
   wts(1:npts-2)=2;
   wts(0)=1; wts(npts-1)=0;
   pts=a:deltax:b;
-  value=wts'*pts;  
+  value=wts'*pts;
   value*=deltax;
   value/=3;
 }//EOM Integral1d"
-
-macro writeEigen()
-{
-  int[int] Order1=[1,1];
-  for(int m=0; m<nev; m++){
-    Vh modeX=VX[m], modeY=VY[m];
-    savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
-  }
-}//Macro to write the Eigenfunctions.
 
 
 matrix<complex> STIMA,BMASSMA;
@@ -650,10 +676,10 @@ macro buildReducedSystemOptim(){
   complex[int,int] phiMaTh(MaThEmpty.nv,nev);
 
   fespace MMh(MaThEmpty,P1);
-  MMh AA,BB;  
+  MMh AA,BB;
   varf ipx(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.x);
   varf ipy(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.y);
-  
+
   matrix massMax=ipx(MMh,MMh);
   matrix massMay=ipy(MMh,MMh);
 
@@ -672,10 +698,10 @@ macro buildReducedSystemOptim(){
   real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev);
   complex[int,int] KProcX(nev,nev), KProcY(nev,nev);
   real tmpre, tmpim;
-  complex[int] FProcX(nev), FProcY(nev);  
-  
+  complex[int] FProcX(nev), FProcY(nev);
+
   for(int m=0; m<nev; m++)
-    {      
+    {
       Txx(:,m)=massMax*VXaTh(:,m);
       Tyy(:,m)=massMay*VYaTh(:,m);
 
@@ -687,9 +713,9 @@ macro buildReducedSystemOptim(){
       FProcY(m)=tmpre+1i*tmpim;
 
       B(m,m)=(ev[m]-rhoi*omega^2);
-      
+
       for(int n=0; n<nev; n++)
-        {     
+        {
           tmpre=VY1aTh(:,n)'*Txx(:,m);
           tmpre=-1*tmpre;
           tmpre+=phiMaTh(:,n).re'*Txx(:,m);
@@ -701,10 +727,10 @@ macro buildReducedSystemOptim(){
           tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
           tmpim=phiMaTh(:,n).im'*Tyy(:,m);
           KProcY(m,n)=tmpre+1i*tmpim;
-        }      
+        }
     }
-  FProc=FProcX+FProcY;  
-  KProc=KProcX+KProcY;  
+  FProc=FProcX+FProcY;
+  KProc=KProcX+KProcY;
   mpiReduce(FProc,F,processor(0),mpiSUM);
   mpiReduce(KProc,K,processor(0),mpiSUM);
 }//EOM"
@@ -788,7 +814,7 @@ macro buildReducedSystemNoSplit(macroName)
         {
           Vh vxn=VX[n], vyn=VY[n];
           real[int] tmp(ThIce.nv);
-          
+
           tmpMatrix1=MassMaX*VXArr(:,n);
           tmpre=VYArr(:,m)'*tmpMatrix1;
           tmpre=-deltahat*tmpre;
@@ -804,7 +830,7 @@ macro buildReducedSystemNoSplit(macroName)
           KProcY(n,m)=tmpre+1i*tmpim;
         }
 
-      BProcX(m,m)=(ev[m]-rhoi*omega^2);      
+      BProcX(m,m)=(ev[m]-rhoi*omega^2);
 
       if(mpirank==0)
         cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
