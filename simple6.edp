@@ -12,6 +12,8 @@ load "iovtk"
 
 include "macros.idp"
 
+string SolutionDir="1_SIMPLE6/";
+
 macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
                  2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
                  muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
@@ -31,6 +33,7 @@ refineMesh;
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
 solveEigen;
+//readEigen;
 
 //  2) Get the Non-local boundary condition
 matrix<complex> MQ;
@@ -99,5 +102,7 @@ if(mpirank==0){
   savevtk("1_SIMPLE6/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk("1_SIMPLE6/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
   
-  savevtk("1_SIMPLE6/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);    
+  savevtk("1_SIMPLE6/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
+
+  writeEigen(1,1);
  }

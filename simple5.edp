@@ -37,8 +37,8 @@ if(isSplit)
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
-//solveEigen;
-readEigen;
+solveEigen;
+//readEigen;
 
 
 //  2) Get the Non-local boundary condition

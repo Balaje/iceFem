@@ -20,7 +20,7 @@ macro Sigma(u,v)[2*muhat*dx(u)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(
                  2*muhat*dy(v)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
                  muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
 
-nev=64;
+nev=8;
 NModes=5;
 string SolutionDir="1_BEDMAP2/";
 real cpu=mpiWtime();
@@ -66,8 +66,10 @@ if(mpirank==0)
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
 real timeEigen=mpiWtime();
-solveEigen;
-cout<<"P: "<<mpirank<<" Time to solve = "<<mpiWtime()-timeEigen<<endl;
+//solveEigen;
+readEigen;
+if(mpirank==0)
+  cout<<"P: "<<mpirank<<" Time to solve = "<<mpiWtime()-timeEigen<<endl;
 if(mpirank==0){  
   cout<<"Solved EigenValue Problem ... "<<endl;  
  }
