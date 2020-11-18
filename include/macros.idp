@@ -755,6 +755,10 @@ macro getInterpMatrices(){
   MassMa=ip(Vh,Vh);
   MassMaX=ip1(VVh,VVh);
   MassMaY=ip2(VVh,VVh);
+  if(mpirank==0){
+    cout<<"Size of Interpolation Matrix : "<<MatInterP.nnz<<endl;
+    cout<<"Size of Boundary Mass Matrix : "<<MassMaX.nnz<<endl;
+  }  
 }//EOM"
 
 
