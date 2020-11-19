@@ -26,12 +26,8 @@ real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
 setMeshIce(botRight, midPX, midPY);
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
 setMeshCav(midx, midy, endy);
-//Refine Mesh.
-refineMesh;
-//Split Mesh for domain decomposition
-bool isSplit = getARGV("-isSplit",1);
-if(isSplit)
-  splitMeshSave;
+refineMesh;//Refine Mesh.
+splitMesh(isSplit);//Split Mesh for domain decomposition
 real endtime=mpiWtime();
 cout<<"Proc "<<mpirank<<"\t\t\t Mesh construction and splitting took "<<endtime-starttime<<" s"<<endl;
 
@@ -54,9 +50,9 @@ for(int m=0; m<NModes+1; m++)
   chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
 //Get the emptymesh and the solution on the boundary.
-mesh ThEmptyCav=emptymesh(ThCavity);
-fespace WhBdy(ThEmptyCav,P1);
-if(mpirank==0){  
+
+
+if(mpirank==0){
   cout<<"Number of cavity boundary DOFs = "<<WhBdy.ndof<<endl<<endl;
  }
 
@@ -100,7 +96,7 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
 
     //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
     phijj[m]=phih;
-    PHIJProc(m,:)=phijj[m][];  
+    PHIJProc(m,:)=phijj[m][];
   }
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM); //Collect on all cpus.
 real potEndTime=mpiWtime();
@@ -110,9 +106,6 @@ cout<<"Proc "<<mpirank<<"\t\t\t Solving potentials took "<<potEndTime-potStartTi
 for(int m=0; m<nev; m++){
   phijj[m][]=PHIJ(m,:);
  }
-
-//Load the split mesh.
-splitMeshLoad;
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
@@ -153,7 +146,7 @@ if(mpirank==0){
   HHmat=Kmat+Bmat+ABmat;
   set(HHmat,solver=UMFPACK,eps=1e-20);
   xi=HHmat^-1*F;
-  
+
   //Write solution vector to file.
   ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
   file1.precision(8);
@@ -197,6 +190,6 @@ if(mpirank==0){
   savevtk("1_SIMPLE5/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk("1_SIMPLE5/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
   savevtk("1_SIMPLE5/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
- 
+
   writeEigen(1,1);
  }

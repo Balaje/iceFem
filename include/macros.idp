@@ -413,54 +413,31 @@ macro refineMesh(){
   broadcast(processor(1),ThCavity);
 }//EOM" (Macro to refine mesh).
 
-searchMethod=2;
-mesh MaThEmpty;
-macro splitMeshSave()
+bool isSplit = getARGV("-isSplit",0);
+mesh MaThEmpty=emptymesh(ThIce);
+mesh ThEmptyIce=emptymesh(ThIce);
+mesh ThEmptyCav=emptymesh(ThCavity);
+fespace WhBdy(ThEmptyCav,P1);
+macro splitMesh(isSplit)
 {
-  if(mpirank==0)
-    system("mkdir MESHES_SPLIT");
-  ffddmbuildDmesh(M,ThIce,mpiCommWorld);
-  ffddmbuildDmesh(M1,ThCavity,mpiCommWorld);
-  ffddmbuildDfespace(Fe,M,real,def,init,P1);  
-  MaThEmpty=emptymesh(MaTh[mpirank]);  
-  fespace MMh(MaThEmpty,P1);
-  mesh ThEmptyCav=emptymesh(ThCavity);
-  savemesh(MaThEmpty,"MESHES_SPLIT/IceMaTh"+mpirank+".msh");
-  savemesh(ThEmptyCav,"MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
-  fespace WWh(ThEmptyCav,P1);
-  matrix M1xM=interpolate(MMh,WWh,inside=true);
-  matrix M2xM=interpolate(MMh,Vh,inside=true);  
-  ofstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
-  if(M1xM.nnz>0)
-    file1<<M1xM;
-  else{
-    M1xM(1,1)=1e-10;
-    file1<<M1xM;
+  if(isSplit){
+    if(mpirank==0)
+      system("mkdir MESHES_SPLIT");
+    ffddmbuildDmesh(M,ThIce,mpiCommWorld);
+    ffddmbuildDfespace(Fe,M,real,def,init,P1);
+    MaThEmpty=emptymesh(MaTh[mpirank]);
+    fespace MMh(MaThEmpty,P1);
+
+    ThEmptyIce=emptymesh(ThIce);
+    ThEmptyCav=emptymesh(ThCavity);
   }
-  ofstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
-  file2<<M2xM;
-}//Macro to SPLIT MESH and WRITE the meshes and matrices to MESHES_SPLIT;
-
-matrix M1xM,M2xM;
-mesh M1aThEmpty;
-macro splitMeshLoad()
-{
-  ifstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
-  file1>>M1xM;
-  ifstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
-  file2>>M2xM;
-  MaThEmpty=readmesh("MESHES_SPLIT/IceMaTh"+mpirank+".msh");
-  M1aThEmpty=readmesh("MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
-}//Macro to LOAD THE SPLIT MESH
-
-
-Xh [ustat,vstat],[uustat,vvstat];
-macro solveStat()
-{
-  problem elasStat([ustat,vstat],[uustat,vvstat])=int2d(ThIce)(lambdahat*div(ustat,vstat)*div(uustat,vvstat) + 2*muhat*epsilon(ustat,vstat)'*epsilon(uustat,vvstat)) - int2d(ThIce)(-rhoi*ag*vvstat) - int1d(ThIce,1)(deltahat*vstat*(uustat*N.x+vvstat*N.y)) + on(2,ustat=0,vstat=0);
-  elasStat;
-}//EOM"
-
+  else
+    {
+      MaThEmpty=emptymesh(ThIce);
+      ThEmptyIce=emptymesh(ThIce);
+      ThEmptyCav=emptymesh(ThCavity);
+    }
+}//Macro to SPLIT MESH
 
 real[int] mu(nev);
 macro solveEigenEB()
@@ -670,24 +647,28 @@ macro buildReducedSystemOptim(){
   real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
   complex[int] phi0aTh(MaThEmpty.nv);
   complex[int,int] phiMaTh(MaThEmpty.nv,nev);
-
   fespace MMh(MaThEmpty,P1);
   MMh AA,BB;
   varf ipx(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.x);
   varf ipy(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.y);
+  MMh<complex> phi0Ice, phijIce;
 
   matrix massMax=ipx(MMh,MMh);
   matrix massMay=ipy(MMh,MMh);
 
-  phi0aTh=M1xM*phi00[];
+  phi0Ice=phi00;
+  phi0aTh=phi0Ice[];
   phi0aTh=phi0aTh*(-1i*omega*gammahat);
+
+
   for(int m=0; m<nev; m++)
     {
-      Vh vxx=VX[m],vyy=VY[m];
-      VXaTh(:,m)=M2xM*vxx[];
-      VYaTh(:,m)=M2xM*vyy[];
+      MMh vxx=VX[m],vyy=VY[m];
+      VXaTh(:,m)=vxx[];
+      VYaTh(:,m)=vyy[];
       VY1aTh(:,m)=deltahat*VYaTh(:,m);
-      phiMaTh(:,m)=M1xM*phijj[m][];
+      phijIce=phijj[m];
+      phiMaTh(:,m)=phijIce[];
       phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
     }
 
@@ -729,166 +710,9 @@ macro buildReducedSystemOptim(){
   KProc=KProcX+KProcY;
   mpiReduce(FProc,F,processor(0),mpiSUM);
   mpiReduce(KProc,K,processor(0),mpiSUM);
+
+  if(!isSplit){
+    K/=mpisize;
+    F/=mpisize;
+  }
 }//EOM"
-
-
-matrix IceR1, CavR1, MatInterP, MassMa, MassMaX, MassMaY;
-mesh ThIceEmpty, ThCavEmpty;
-macro getInterpMatrices(){
-  ThIceEmpty=emptymesh(ThIce);
-  ThCavEmpty=emptymesh(ThCavity);
-  fespace VVh(ThIceEmpty,P1);
-  fespace WWh(ThCavEmpty,P1);
-  IceR1=interpolate(VVh,Vh,inside=true);
-  CavR1=interpolate(WWh,Wh,inside=true);
-  MatInterP=interpolate(VVh,WWh,inside=true);
-
-  Vh AA,BB;
-  varf ip(AA,BB)=int2d(ThIce)(AA*BB);
-  VVh CC,DD;
-  varf ip1(CC,DD)=int1d(ThIceEmpty,1,qforder=10)(CC*DD*N.x);
-  varf ip2(CC,DD)=int1d(ThIceEmpty,1,qforder=10)(CC*DD*N.y);
-  MassMa=ip(Vh,Vh);
-  MassMaX=ip1(VVh,VVh);
-  MassMaY=ip2(VVh,VVh);
-  if(mpirank==0){
-    cout<<"Size of Interpolation Matrix : "<<MatInterP.nnz<<endl;
-    cout<<"Size of Boundary Mass Matrix : "<<MassMaX.nnz<<endl;
-  }  
-}//EOM"
-
-
-macro buildReducedSystemNoSplit(macroName)
-{
-  F.resize(nev);
-  B.resize(nev,nev);
-  K.resize(nev,nev);
-  AB.resize(nev,nev);
-  complex[int] FProc(nev), RefmProc(nev), Refm(nev);
-  complex[int,int] BProc(nev,nev), KProc(nev,nev);
-  complex[int,int] KProcX(nev,nev), KProcY(nev,nev), BProcX(nev,nev), BProcY(nev,nev);;
-  complex[int,int] PHIJ(nev,Wh.ndof),PHIJProc(nev,Wh.ndof);
-  complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
-
-  real[int,int] VXArr(ThIceEmpty.nv,nev), VYArr(ThIceEmpty.nv,nev);
-  complex[int] phi0B=CavR1*phi0[], phi0BIce=MatInterP*phi0B;
-  complex[int,int] PHIJProcBIce(nev,ThIceEmpty.nv);
-
-  Vh vxx,vyy;
-  for(int m=0; m<nev; m++)
-    {
-      vxx=VX[m];
-      vyy=VY[m];
-      VXArr(:,m)=IceR1*vxx[];
-      VYArr(:,m)=IceR1*vyy[];
-    }
-
-  phi0BIce*=-(1i*omega*gammahat);
-  for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
-    {
-      real cpu1=mpiWtime();
-      func fh=0;
-      macroName(VX[m],VY[m]);
-      LHS=STIMA+(MQ);
-      set(LHS,solver=UMFPACK,eps=1e-20);
-      phih[]=LHS^-1*RHS[];
-      phij[m]=phih;
-      PHIJProc(m,:)=phij[m][];
-      complex[int] tmpArr=CavR1*PHIJProc(m,:);
-      PHIJProcBIce(m,:)=MatInterP*tmpArr;
-      PHIJProcBIce(m,:)*=(1i*omega*gammahat);
-
-      real[int] tmpMatrix1(ThIceEmpty.nv), tmpMatrix2(ThIceEmpty.nv);
-      tmpMatrix1=MassMaX*VXArr(:,m);
-      real tmpre=phi0BIce.re'*tmpMatrix1;
-      real tmpim=phi0BIce.im'*tmpMatrix1;
-      FProc[m]=tmpre+1i*tmpim;
-
-      tmpMatrix2=MassMaY*VYArr(:,m);
-      tmpre=phi0BIce.re'*tmpMatrix2;
-      tmpim=phi0BIce.im'*tmpMatrix2;
-      FProc[m]+=tmpre+1i*tmpim;
-
-      Vh vxm=VX[m], vym=VY[m];
-      for(int n=0; n<nev; n++)
-        {
-          Vh vxn=VX[n], vyn=VY[n];
-          real[int] tmp(ThIce.nv);
-
-          tmpMatrix1=MassMaX*VXArr(:,n);
-          tmpre=VYArr(:,m)'*tmpMatrix1;
-          tmpre=-deltahat*tmpre;
-          tmpre+=PHIJProcBIce(m,:).re'*tmpMatrix1;
-          tmpim=PHIJProcBIce(m,:).im'*tmpMatrix1;
-          KProcX(n,m)=tmpre+1i*tmpim;
-
-          tmpMatrix2=MassMaY*VYArr(:,n);
-          tmpre=VYArr(:,m)'*tmpMatrix2;
-          tmpre=-deltahat*tmpre;
-          tmpre+=PHIJProcBIce(m,:).re'*tmpMatrix2;
-          tmpim=PHIJProcBIce(m,:).im'*tmpMatrix2;
-          KProcY(n,m)=tmpre+1i*tmpim;
-        }
-
-      BProcX(m,m)=(ev[m]-rhoi*omega^2);
-
-      if(mpirank==0)
-        cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
-
-      pk1=0.;
-      phiVecm = phij[m][];
-      RefmProc[m] = getRefModes(ThCavity, NModes, kd, k, phiVecm, HH, dd, Ap, cc, pk1);
-    }
-  mpiReduce(FProc,F,processor(0),mpiSUM);
-  BProc=BProcX;
-  KProc=KProcX+KProcY;
-  mpiReduce(BProc,B,processor(0),mpiSUM);
-  mpiReduce(KProc,K,processor(0),mpiSUM);
-}//EOM" Build reduced system without splitting. Obtains the radiation potential and constructs the system.
-
-/*
-//Come back to it in the future
-macro reduceBasisMatrix(A,B,C,X)
-{
-matrix Ctemp=C;
-matrix Atemp=A;
-X=B*Ctemp;
-X=Atemp'*X;
-}//EOM
-
-macro reduceBasisMatrixComplex(A,B,C,X)
-{
-matrix Ctemp=C;
-matrix<complex> Ctemp1=Ctemp;
-matrix<complex> Atemp=A, Btemp=B;
-X=Btemp*Ctemp1;
-X=Atemp*X;
-}//EOM
-
-macro reduceBasisVector(Avec,B,C,X)
-{
-matrix Ctemp=C;
-matrix X1=B*Ctemp;
-X=X1'*Avec;
-}//EOM
-
-macro myMpiReduce(XProc,X){
-real[int,int] smallVec(nev,nev);
-smallVec=1e-2;
-X=smallVec;
-matrix X1=smallVec;
-XProc+=X1;
-mpiReduce(XProc,X,processor(0),mpiSUM);
-X-=mpisize*X1;
-}//EOM" (Variation of the mpiReduce function to handle sparse matrices). Gather By default to processor(0)
-
-macro myMpiReduceComplex(XProc,X){
-complex[int,int] smallVec(nev,nev);
-smallVec=1e-2;
-X=smallVec;
-matrix<complex> X1=smallVec;
-XProc+=X1;
-mpiReduce(XProc,X,processor(0),mpiSUM);
-X-=mpisize*X1;
-}//EOM" (Variation of the mpiReduce function to handle sparse matrices). Gather By default to processor(0)
-*/
