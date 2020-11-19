@@ -319,12 +319,16 @@ macro setMeshCav(midx, midy, endy)
 
 macro solveEigen()
 {
-  Xh [u,v],[uu,vv];
-  varf a([u,v],[uu,vv]) = int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
-  varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)((u*uu + v*vv));
-  matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
-  matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
-  int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
+  if(mpirank==0){
+    Xh [u,v],[uu,vv];
+    varf a([u,v],[uu,vv]) = int2d(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
+    varf b([u,v],[uu,vv]) = int2d(ThIce,qft=qf1pTlump)((u*uu + v*vv));
+    matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
+    matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
+    int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
+  }
+  for(int m=0; m<nev; m++)
+    broadcast(processor(0),VX[m][]);
 }//This is a macro for solving the elasticity Eigenvalue problem.
 
 macro writeEigen(isVtk, isDat)
@@ -421,18 +425,19 @@ fespace WhBdy(ThEmptyCav,P1);
 macro splitMesh(isSplit)
 {
   if(isSplit){
-    if(mpirank==0)
-      system("mkdir MESHES_SPLIT");
     ffddmbuildDmesh(M,ThIce,mpiCommWorld);
     ffddmbuildDfespace(Fe,M,real,def,init,P1);
     MaThEmpty=emptymesh(MaTh[mpirank]);
     fespace MMh(MaThEmpty,P1);
-
+    if(mpirank==0)
+      cout<<"Splitting on ..."<<endl;
     ThEmptyIce=emptymesh(ThIce);
     ThEmptyCav=emptymesh(ThCavity);
   }
   else
     {
+      if(mpirank==0)
+        cout<<"Splitting off ..."<<endl;
       MaThEmpty=emptymesh(ThIce);
       ThEmptyIce=emptymesh(ThIce);
       ThEmptyCav=emptymesh(ThCavity);
@@ -610,14 +615,23 @@ macro buildReducedSystemEB(mu, phi0, phij, alpha, beta, gamma)
 
 
 matrix<complex> HHmat;
+complex[int] xi(nev);
 macro solveReducedSystem(){
-  matrix<complex> Kmat, Bmat, ABmat;
-  Kmat = K;
-  Bmat=B;
-  ABmat=AB;
-  HHmat=Kmat+Bmat+ABmat;
-  set(HHmat,solver=sparsesolver,eps=1e-20);
-  xi=HHmat^-1*F;
+  xi.resize(nev);
+  if(mpirank==0){
+    matrix<complex> Kmat, Bmat, ABmat;
+    Kmat = K;
+    Bmat=B;
+    ABmat=AB;
+    HHmat=Kmat+Bmat+ABmat;
+    set(HHmat,solver=sparsesolver,eps=1e-20);
+    xi=HHmat^-1*F;
+    ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
+    file1.precision(8);
+    for(int m=0; m<nev; m++)
+      file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
+  }
+  broadcast(processor(0),xi);
 }//Macro to solve the reduced system
 
 func eta = 0;
@@ -644,75 +658,172 @@ macro writeToMATLAB(uh,Th,solfilename,meshfilename)
 
 //Macro to build the reduced system (optimized for split mesh)
 macro buildReducedSystemOptim(){
-  real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
-  complex[int] phi0aTh(MaThEmpty.nv);
-  complex[int,int] phiMaTh(MaThEmpty.nv,nev);
-  fespace MMh(MaThEmpty,P1);
-  MMh AA,BB;
-  varf ipx(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.x);
-  varf ipy(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.y);
-  MMh<complex> phi0Ice, phijIce;
+  if(isSplit){
+    real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
+    complex[int] phi0aTh(MaThEmpty.nv);
+    complex[int,int] phiMaTh(MaThEmpty.nv,nev);
+    fespace MMh(MaThEmpty,P1);
+    MMh AA,BB;
+    varf ipx(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.x);
+    varf ipy(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.y);
+    MMh<complex> phi0Ice, phijIce;
 
-  matrix massMax=ipx(MMh,MMh);
-  matrix massMay=ipy(MMh,MMh);
+    matrix massMax=ipx(MMh,MMh);
+    matrix massMay=ipy(MMh,MMh);
 
-  phi0Ice=phi00;
-  phi0aTh=phi0Ice[];
-  phi0aTh=phi0aTh*(-1i*omega*gammahat);
+    phi0Ice=phi00;
+    phi0aTh=phi0Ice[];
+    phi0aTh=phi0aTh*(-1i*omega*gammahat);
 
 
-  for(int m=0; m<nev; m++)
+    for(int m=0; m<nev; m++)
+      {
+        MMh vxx=VX[m],vyy=VY[m];
+        VXaTh(:,m)=vxx[];
+        VYaTh(:,m)=vyy[];
+        VY1aTh(:,m)=deltahat*VYaTh(:,m);
+        phijIce=phijj[m];
+        phiMaTh(:,m)=phijIce[];
+        phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
+      }
+
+    real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev);
+    complex[int,int] KProcX(nev,nev), KProcY(nev,nev);
+    real tmpre, tmpim;
+    complex[int] FProcX(nev), FProcY(nev);
+
+    for(int m=0; m<nev; m++)
+      {
+        Txx(:,m)=massMax*VXaTh(:,m);
+        Tyy(:,m)=massMay*VYaTh(:,m);
+
+        tmpre=phi0aTh.re'*Txx(:,m);
+        tmpim=phi0aTh.im'*Txx(:,m);
+        FProcX(m)=tmpre+1i*tmpim;
+        tmpre=phi0aTh.re'*Tyy(:,m);
+        tmpim=phi0aTh.im'*Tyy(:,m);
+        FProcY(m)=tmpre+1i*tmpim;
+
+        B(m,m)=(ev[m]-rhoi*omega^2);
+
+        for(int n=0; n<nev; n++)
+          {
+            tmpre=VY1aTh(:,n)'*Txx(:,m);
+            tmpre=-1*tmpre;
+            tmpre+=phiMaTh(:,n).re'*Txx(:,m);
+            tmpim=phiMaTh(:,n).im'*Txx(:,m);
+            KProcX(m,n)=tmpre+1i*tmpim;
+
+            tmpre=VY1aTh(:,n)'*Tyy(:,m);
+            tmpre=-1*tmpre;
+            tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
+            tmpim=phiMaTh(:,n).im'*Tyy(:,m);
+            KProcY(m,n)=tmpre+1i*tmpim;
+          }
+      }
+    FProc=FProcX+FProcY;
+    KProc=KProcX+KProcY;
+    mpiReduce(FProc,F,processor(0),mpiSUM);
+    mpiReduce(KProc,K,processor(0),mpiSUM);
+  }
+  else
     {
-      MMh vxx=VX[m],vyy=VY[m];
-      VXaTh(:,m)=vxx[];
-      VYaTh(:,m)=vyy[];
-      VY1aTh(:,m)=deltahat*VYaTh(:,m);
-      phijIce=phijj[m];
-      phiMaTh(:,m)=phijIce[];
-      phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
+      if(mpirank==0){
+        real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
+        complex[int] phi0aTh(MaThEmpty.nv);
+        complex[int,int] phiMaTh(MaThEmpty.nv,nev);
+        fespace MMh(MaThEmpty,P1);
+        MMh AA,BB;
+        varf ipx(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.x);
+        varf ipy(AA,BB)=int1d(MaThEmpty,1,qforder=10)(AA*BB*N.y);
+        MMh<complex> phi0Ice, phijIce;
+
+        matrix massMax=ipx(MMh,MMh);
+        matrix massMay=ipy(MMh,MMh);
+
+        phi0Ice=phi00;
+        phi0aTh=phi0Ice[];
+        phi0aTh=phi0aTh*(-1i*omega*gammahat);
+
+
+        for(int m=0; m<nev; m++)
+          {
+            MMh vxx=VX[m],vyy=VY[m];
+            VXaTh(:,m)=vxx[];
+            VYaTh(:,m)=vyy[];
+            VY1aTh(:,m)=deltahat*VYaTh(:,m);
+            phijIce=phijj[m];
+            phiMaTh(:,m)=phijIce[];
+            phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
+          }
+
+        real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev);
+        complex[int,int] KProcX(nev,nev), KProcY(nev,nev);
+        real tmpre, tmpim;
+        complex[int] FProcX(nev), FProcY(nev);
+
+        for(int m=0; m<nev; m++)
+          {
+            Txx(:,m)=massMax*VXaTh(:,m);
+            Tyy(:,m)=massMay*VYaTh(:,m);
+
+            tmpre=phi0aTh.re'*Txx(:,m);
+            tmpim=phi0aTh.im'*Txx(:,m);
+            FProcX(m)=tmpre+1i*tmpim;
+            tmpre=phi0aTh.re'*Tyy(:,m);
+            tmpim=phi0aTh.im'*Tyy(:,m);
+            FProcY(m)=tmpre+1i*tmpim;
+
+            B(m,m)=(ev[m]-rhoi*omega^2);
+
+            for(int n=0; n<nev; n++)
+              {
+                tmpre=VY1aTh(:,n)'*Txx(:,m);
+                tmpre=-1*tmpre;
+                tmpre+=phiMaTh(:,n).re'*Txx(:,m);
+                tmpim=phiMaTh(:,n).im'*Txx(:,m);
+                KProcX(m,n)=tmpre+1i*tmpim;
+
+                tmpre=VY1aTh(:,n)'*Tyy(:,m);
+                tmpre=-1*tmpre;
+                tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
+                tmpim=phiMaTh(:,n).im'*Tyy(:,m);
+                KProcY(m,n)=tmpre+1i*tmpim;
+              }
+          }
+        FProc=FProcX+FProcY;
+        KProc=KProcX+KProcY;
+        K=KProc;
+        F=FProc;
+      }
+      broadcast(processor(0),K);
+      broadcast(processor(0),F);
+      broadcast(processor(0),B);
     }
 
-  real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev);
-  complex[int,int] KProcX(nev,nev), KProcY(nev,nev);
-  real tmpre, tmpim;
-  complex[int] FProcX(nev), FProcY(nev);
+}//EOM"
 
+macro writeReducedSystem()
+{
+  complex[int] RefmProc(nev), Refm(nev);
+  ofstream file1("1_SIMPLE5/2_ModesMatrix/ReH"+iter+".dat");
+  ofstream file2("1_SIMPLE5/2_ModesMatrix/ImH"+iter+".dat");
+  ofstream file3("1_SIMPLE5/2_ModesMatrix/ReF"+iter+".dat");
+  ofstream file4("1_SIMPLE5/2_ModesMatrix/ImF"+iter+".dat");
+  ofstream file5("1_SIMPLE5/2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");
+  file1.precision(16);
+  file2.precision(16);
+  file3.precision(16);
+  file4.precision(16);
   for(int m=0; m<nev; m++)
     {
-      Txx(:,m)=massMax*VXaTh(:,m);
-      Tyy(:,m)=massMay*VYaTh(:,m);
-
-      tmpre=phi0aTh.re'*Txx(:,m);
-      tmpim=phi0aTh.im'*Txx(:,m);
-      FProcX(m)=tmpre+1i*tmpim;
-      tmpre=phi0aTh.re'*Tyy(:,m);
-      tmpim=phi0aTh.im'*Tyy(:,m);
-      FProcY(m)=tmpre+1i*tmpim;
-
-      B(m,m)=(ev[m]-rhoi*omega^2);
-
+      file3<<real(F[m])<<endl;
+      file4<<imag(F[m])<<endl;
+      file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
       for(int n=0; n<nev; n++)
         {
-          tmpre=VY1aTh(:,n)'*Txx(:,m);
-          tmpre=-1*tmpre;
-          tmpre+=phiMaTh(:,n).re'*Txx(:,m);
-          tmpim=phiMaTh(:,n).im'*Txx(:,m);
-          KProcX(m,n)=tmpre+1i*tmpim;
-
-          tmpre=VY1aTh(:,n)'*Tyy(:,m);
-          tmpre=-1*tmpre;
-          tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
-          tmpim=phiMaTh(:,n).im'*Tyy(:,m);
-          KProcY(m,n)=tmpre+1i*tmpim;
+          file1<<real(B(m,n)+K(m,n))<<endl;
+          file2<<imag(B(m,n)+K(m,n))<<endl;
         }
     }
-  FProc=FProcX+FProcY;
-  KProc=KProcX+KProcY;
-  mpiReduce(FProc,F,processor(0),mpiSUM);
-  mpiReduce(KProc,K,processor(0),mpiSUM);
-
-  if(!isSplit){
-    K/=mpisize;
-    F/=mpisize;
-  }
 }//EOM"

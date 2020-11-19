@@ -29,7 +29,7 @@ setMeshCav(midx, midy, endy);
 refineMesh;//Refine Mesh.
 splitMesh(isSplit);//Split Mesh for domain decomposition
 real endtime=mpiWtime();
-cout<<"Proc "<<mpirank<<"\t\t\t Mesh construction and splitting took "<<endtime-starttime<<" s"<<endl;
+cout<<"Proc "<<mpirank<<"\t\t\t Mesh construction Time "<<endtime-starttime<<" s"<<endl;
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
@@ -53,7 +53,8 @@ for(int m=0; m<NModes+1; m++)
 
 
 if(mpirank==0){
-  cout<<"Number of cavity boundary DOFs = "<<WhBdy.ndof<<endl<<endl;
+  cout<<"Number of ice    boundary DOFs = "<<ThEmptyIce.nv<<endl;
+  cout<<"Number of cavity boundary DOFs = "<<ThEmptyCav.nv<<endl;
  }
 
 //  3) Solve for the diffraction potential.
@@ -75,11 +76,12 @@ Wh<complex>[int] phij(nev);
 //Define array of boundary functions.
 WhBdy<complex>[int] phijj(nev);
 
+
 F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
 AB.resize(nev,nev);
-complex[int] FProc(nev), RefmProc(nev), Refm(nev);
+complex[int] FProc(nev);
 complex[int,int] BProc(nev,nev), KProc(nev,nev);
 complex[int,int] PHIJ(nev,WhBdy.ndof),PHIJProc(nev,WhBdy.ndof);
 complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
@@ -103,57 +105,16 @@ real potEndTime=mpiWtime();
 cout<<"Proc "<<mpirank<<"\t\t\t Solving potentials took "<<potEndTime-potStartTime<<" s"<<endl;
 
 //Unpack and set to phij locally in all procs (Only boundary)
-for(int m=0; m<nev; m++){
+for(int m=0; m<nev; m++)
   phijj[m][]=PHIJ(m,:);
- }
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
 //buildReducedSystem(VX,VY,phi0,phij);
 cout<<"No of vertices: "<<MaThEmpty.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
-if(mpirank==0) //Write the matrices to a file.
-  {
-    ofstream file1("1_SIMPLE5/2_ModesMatrix/ReH"+iter+".dat");
-    ofstream file2("1_SIMPLE5/2_ModesMatrix/ImH"+iter+".dat");
-    ofstream file3("1_SIMPLE5/2_ModesMatrix/ReF"+iter+".dat");
-    ofstream file4("1_SIMPLE5/2_ModesMatrix/ImF"+iter+".dat");
-    ofstream file5("1_SIMPLE5/2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");
-    file1.precision(16);
-    file2.precision(16);
-    file3.precision(16);
-    file4.precision(16);
-    for(int m=0; m<nev; m++)
-      {
-        file3<<real(F[m])<<endl;
-        file4<<imag(F[m])<<endl;
-        file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
-        for(int n=0; n<nev; n++)
-          {
-            file1<<real(B(m,n)+K(m,n))<<endl;
-            file2<<imag(B(m,n)+K(m,n))<<endl;
-          }
-      }
-  }
-
 //Solve the reduced system;
-complex[int] xi(nev);
-if(mpirank==0){
-  matrix<complex> Kmat, Bmat, ABmat;
-  Kmat=K;
-  Bmat=B;
-  ABmat=AB;
-  HHmat=Kmat+Bmat+ABmat;
-  set(HHmat,solver=UMFPACK,eps=1e-20);
-  xi=HHmat^-1*F;
-
-  //Write solution vector to file.
-  ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
-  file1.precision(8);
-  for(int m=0; m<nev; m++)
-    file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
- }
-broadcast(processor(0),xi);
+solveReducedSystem;
 
 //Compute the solution.
 Vh <complex> etax, etay, etaxProc, etayProc;
