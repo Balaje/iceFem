@@ -626,7 +626,7 @@ macro solveReducedSystem(){
     HHmat=Kmat+Bmat+ABmat;
     set(HHmat,solver=UMFPACK,eps=1e-20);
     xi=HHmat^-1*F;
-    ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
+    ofstream file1(SolutionDir+"/2_ModesMatrix/lambdaj"+iter+".dat");
     file1.precision(8);
     for(int m=0; m<nev; m++)
       file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
