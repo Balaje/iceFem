@@ -81,8 +81,8 @@ F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
 AB.resize(nev,nev);
-complex[int] FProc(nev);
-complex[int,int] BProc(nev,nev), KProc(nev,nev);
+
+
 complex[int,int] PHIJ(nev,WhBdy.ndof),PHIJProc(nev,WhBdy.ndof);
 complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
 

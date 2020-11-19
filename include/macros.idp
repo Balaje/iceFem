@@ -659,6 +659,8 @@ macro writeToMATLAB(uh,Th,solfilename,meshfilename)
 //Macro to build the reduced system (optimized for split mesh)
 macro buildReducedSystemOptim(){
   if(isSplit){
+    complex[int] FProc(nev);
+    complex[int,int] BProc(nev,nev), KProc(nev,nev);
     real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
     complex[int] phi0aTh(MaThEmpty.nv);
     complex[int,int] phiMaTh(MaThEmpty.nv,nev);
@@ -729,6 +731,8 @@ macro buildReducedSystemOptim(){
   else
     {
       if(mpirank==0){
+        complex[int] FProc(nev);
+        complex[int,int] BProc(nev,nev), KProc(nev,nev);
         real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
         complex[int] phi0aTh(MaThEmpty.nv);
         complex[int,int] phiMaTh(MaThEmpty.nv,nev);
