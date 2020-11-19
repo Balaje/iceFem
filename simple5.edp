@@ -29,14 +29,16 @@ setMeshCav(midx, midy, endy);
 refineMesh;//Refine Mesh.
 splitMesh(isSplit);//Split Mesh for domain decomposition
 real endtime=mpiWtime();
-cout<<"Proc "<<mpirank<<"\t\t\t Mesh construction Time "<<endtime-starttime<<" s"<<endl;
+if(mpirank==0)
+  cout<<"Proc "<<mpirank<<"\t\t\t Mesh construction Time "<<endtime-starttime<<" s"<<endl;
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
 real eigenStartTime=mpiWtime();
 solveEigen;
 real eigenEndTime=mpiWtime();
-cout<<"Proc "<<mpirank<<"\t\t\t Time to solve Eigenvalue "<<eigenEndTime-eigenStartTime<<" s"<<endl;
+if(mpirank==0)
+  cout<<"Proc "<<mpirank<<"\t\t\t Time to solve Eigenvalue "<<eigenEndTime-eigenStartTime<<" s"<<endl;
 //readEigen;
 
 
@@ -102,7 +104,8 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   }
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM); //Collect on all cpus.
 real potEndTime=mpiWtime();
-cout<<"Proc "<<mpirank<<"\t\t\t Solving potentials took "<<potEndTime-potStartTime<<" s"<<endl;
+if(mpirank==0)
+  cout<<"Proc "<<mpirank<<"\t\t\t Solving potentials took "<<potEndTime-potStartTime<<" s"<<endl;
 
 //Unpack and set to phij locally in all procs (Only boundary)
 for(int m=0; m<nev; m++)
@@ -111,7 +114,8 @@ for(int m=0; m<nev; m++)
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
 //buildReducedSystem(VX,VY,phi0,phij);
-cout<<"No of vertices: "<<MaThEmpty.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
+if(mpirank==0)
+  cout<<"No of vertices: "<<MaThEmpty.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
 //Solve the reduced system;
 solveReducedSystem;
