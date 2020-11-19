@@ -624,7 +624,7 @@ macro solveReducedSystem(){
     Bmat=B;
     ABmat=AB;
     HHmat=Kmat+Bmat+ABmat;
-    set(HHmat,solver=sparsesolver,eps=1e-20);
+    set(HHmat,solver=UMFPACK,eps=1e-20);
     xi=HHmat^-1*F;
     ofstream file1("1_SIMPLE5/2_ModesMatrix/lambdaj"+iter+".dat");
     file1.precision(8);
