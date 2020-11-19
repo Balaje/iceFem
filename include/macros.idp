@@ -421,26 +421,22 @@ macro splitMeshSave()
     system("mkdir MESHES_SPLIT");
   ffddmbuildDmesh(M,ThIce,mpiCommWorld);
   ffddmbuildDmesh(M1,ThCavity,mpiCommWorld);
-  ffddmbuildDfespace(Fe,M,real,def,init,P1);
-  real cpuT=mpiWtime();
-  MaThEmpty=emptymesh(MaTh[mpirank]);
-  cout<<"Number of verts = "<<mpirank<<"\t"<<MaThEmpty.nv<<endl;
+  ffddmbuildDfespace(Fe,M,real,def,init,P1);  
+  MaThEmpty=emptymesh(MaTh[mpirank]);  
   fespace MMh(MaThEmpty,P1);
   mesh ThEmptyCav=emptymesh(ThCavity);
   savemesh(MaThEmpty,"MESHES_SPLIT/IceMaTh"+mpirank+".msh");
   savemesh(ThEmptyCav,"MESHES_SPLIT/CavityM1aTh"+mpirank+".msh");
   fespace WWh(ThEmptyCav,P1);
   matrix M1xM=interpolate(MMh,WWh,inside=true);
-  matrix M2xM=interpolate(MMh,Vh,inside=true);
-  cout<<"Time to interpolate = "<<mpiWtime()-cpuT<<endl;
+  matrix M2xM=interpolate(MMh,Vh,inside=true);  
   ofstream file1("MESHES_SPLIT/M1xM"+mpirank+".dat");
   if(M1xM.nnz>0)
     file1<<M1xM;
   else{
-    M1xM(1,1)=1e-9;
+    M1xM(1,1)=1e-10;
     file1<<M1xM;
   }
-
   ofstream file2("MESHES_SPLIT/M2xM"+mpirank+".dat");
   file2<<M2xM;
 }//Macro to SPLIT MESH and WRITE the meshes and matrices to MESHES_SPLIT;

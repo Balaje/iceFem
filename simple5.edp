@@ -20,24 +20,27 @@ setProblem;
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
 solveDispersion;
 
+real starttime=mpiWtime();
 //Build the meshes.
 real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
 setMeshIce(botRight, midPX, midPY);
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
 setMeshCav(midx, midy, endy);
-
 //Refine Mesh.
 refineMesh;
-
 //Split Mesh for domain decomposition
 bool isSplit = getARGV("-isSplit",1);
 if(isSplit)
   splitMeshSave;
-
+real endtime=mpiWtime();
+cout<<"Proc "<<mpirank<<"\t\t\t Mesh construction and splitting took "<<endtime-starttime<<" s"<<endl;
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
+real eigenStartTime=mpiWtime();
 solveEigen;
+real eigenEndTime=mpiWtime();
+cout<<"Proc "<<mpirank<<"\t\t\t Time to solve Eigenvalue "<<eigenEndTime-eigenStartTime<<" s"<<endl;
 //readEigen;
 
 
@@ -53,8 +56,9 @@ for(int m=0; m<NModes+1; m++)
 //Get the emptymesh and the solution on the boundary.
 mesh ThEmptyCav=emptymesh(ThCavity);
 fespace WhBdy(ThEmptyCav,P1);
-if(mpirank==0)
-  cout<<"Number of cavity boundary DOFs = "<<WhBdy.ndof<<endl;
+if(mpirank==0){  
+  cout<<"Number of cavity boundary DOFs = "<<WhBdy.ndof<<endl<<endl;
+ }
 
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
@@ -84,9 +88,9 @@ complex[int,int] BProc(nev,nev), KProc(nev,nev);
 complex[int,int] PHIJ(nev,WhBdy.ndof),PHIJProc(nev,WhBdy.ndof);
 complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
 
+real potStartTime=mpiWtime();
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
-    real cpu1=mpiWtime();
     func fh=0;
     getLaplaceMat(VX[m],VY[m]);
     LHS=STIMA+(MQ);
@@ -96,15 +100,11 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
 
     //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
     phijj[m]=phih;
-    PHIJProc(m,:)=phijj[m][];
-
-    //Compute the radiation reflection coefficients
-    if(mpirank==0)
-      cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
+    PHIJProc(m,:)=phijj[m][];  
   }
-real cpuComm=mpiWtime();
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM); //Collect on all cpus.
-cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
+real potEndTime=mpiWtime();
+cout<<"Proc "<<mpirank<<"\t\t\t Solving potentials took "<<potEndTime-potStartTime<<" s"<<endl;
 
 //Unpack and set to phij locally in all procs (Only boundary)
 for(int m=0; m<nev; m++){
