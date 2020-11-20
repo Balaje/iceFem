@@ -4,9 +4,10 @@
 verbosity=0.;
 real cpu=mpiWtime();
 bool debug=true;
-string SolutionDir="1_SIMPLE5/";
 
 include "macros.idp"
+
+SolutionDir="1_SIMPLE5/";
 
 macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
                  2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
@@ -14,7 +15,6 @@ macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
 
 //Sets up an example problem. Can control input using CMD line args.
 //For a detailed list of default args. Refer the manual.
-nev=64;
 setProblem;
 
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
@@ -35,7 +35,7 @@ if(mpirank==0)
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
 real eigenStartTime=mpiWtime();
-solveEigen;
+readEigen;
 real eigenEndTime=mpiWtime();
 if(mpirank==0)
   cout<<"Proc "<<mpirank<<"\t\t\t Time to solve Eigenvalue "<<eigenEndTime-eigenStartTime<<" s"<<endl;
@@ -145,16 +145,11 @@ if(mpirank==0){
   cout.precision(16);
   cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
   cout<<"Total Time = "<<mpiWtime()-cpu<<endl;
-  mesh ThNewIce=movemesh(ThIce,[x+real(etax),y+real(etay)]);
-  Wh rphi=real(phi);
 
   //Write data to MATLAB
-  //iter could be used to index the solution.
-  Vh ux=real(etax), uy=real(etay);
+  //iter could be used to index the solution.  
   int[int] Order=[1,1];
-  savevtk("1_SIMPLE5/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
-  savevtk("1_SIMPLE5/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-  savevtk("1_SIMPLE5/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
-
-  writeEigen(1,1);
+  savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+  savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
+  savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);  
  }

@@ -21,16 +21,18 @@ include "ffddm_partitioning.idp"
 macro def(u) u//EOM
 macro init(u) u//EOM
 
+string SolutionDir;
+
 //List of useful set of macros.
 macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
-macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
-macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
-macro bilinLap(u,v)(dx(u)*dx(v)+dy(u)*dy(v))//EOM"
-macro bilinElas(u,v,uu,vv,a,b)(a*div(u,v)*div(uu,vv) + 2*b*epsilon(u,v)'*epsilon(uu,vv))//EOM"
-macro ipScalar(u,v)(u*v)//EOM"
-macro ipVector(u,v,uu,vv)(u*uu+v*vv)//EOM"
+  macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
+  macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
+  macro bilinLap(u,v)(dx(u)*dx(v)+dy(u)*dy(v))//EOM"
+  macro bilinElas(u,v,uu,vv,a,b)(a*div(u,v)*div(uu,vv) + 2*b*epsilon(u,v)'*epsilon(uu,vv))//EOM"
+  macro ipScalar(u,v)(u*v)//EOM"
+  macro ipVector(u,v,uu,vv)(u*uu+v*vv)//EOM"
 
-mesh ThIce=square(10,10);
+  mesh ThIce=square(10,10);
 mesh ThCavity=square(10,10);
 
 fespace Vh(ThIce,P1);
@@ -45,7 +47,7 @@ real LL,HH,dd,tth, ag;
 real gammahat, deltahat, densRat;
 complex omega, Ap, tt;
 bool isUniformIce, isUniformCav;
-string iter;
+string iter=getARGV("-iter","0");
 
 complex [int] k(NModes+1), kd(NModes+1);
 complex [int,int] B(nev,nev), K(nev,nev), AB(nev,nev), Hmat(nev,nev);
@@ -53,8 +55,8 @@ complex [int] F(nev);
 
 macro setProblem()
 {
-  real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
-  iter=getARGV("-iter","0");
+  real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);  
+  nev=getARGV("-nev",16);
   real E, nu;
   real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
   real d = rhoi/rhow*th;
@@ -83,6 +85,7 @@ macro setProblem()
 real iceBegin, iceEnd, cavBegin, cavEnd, cavTop;
 macro iceBEDMAP2(nborders, isBuild)
 {
+  nev=getARGV("-nev",16);
   ifstream file("./Meshes/BEDMAP2/iceDat.dat");
   ifstream file1("./Meshes/BEDMAP2/iceCavInt_Breaks.dat");
   ifstream file2("./Meshes/BEDMAP2/iceCavInt_Coeffs.dat");
@@ -190,7 +193,7 @@ macro iceBEDMAP2(nborders, isBuild)
               }
               else{
                 cout<<"Begin Ice-Mesh. Proc "<<mpirank<<endl;
-                real widthFrac=getARGV("-notchWidth",0.005), heightFrac=getARGV("-notchHeight",0.5);
+                real widthFrac=getARGV("-notchWidth",0.005), heightFrac=getARGV("-notchHeight",0.0);
                 real icelen=abs(iceBegin-iceEnd), crackloc=iceBegin+0.35*icelen, crackwidth=icelen*widthFrac;
                 real crackheight=heightFrac*(splineRecon(coefsTop,breaksTop,crackloc,npieces)-splineRecon(coefsBot,breaksBot,crackloc,npieces));
                 cout<<"Notch Option Enabled. Height fraction="<<heightFrac<<endl;
@@ -205,7 +208,7 @@ macro iceBEDMAP2(nborders, isBuild)
             }
           else if(mpirank==1){
             cout<<"Begin Cavity-Mesh. Proc "<<mpirank<<endl;
-            real widthFrac=getARGV("-notchWidth",0.005), heightFrac=getARGV("-notchHeight",0.5);
+            real widthFrac=getARGV("-notchWidth",0.005), heightFrac=getARGV("-notchHeight",0.0);
             real icelen=abs(iceBegin-iceEnd), crackloc=iceBegin+0.35*icelen, crackwidth=icelen*widthFrac;
             real crackheight=heightFrac*(splineRecon(coefsTop,breaksTop,crackloc,npieces)-splineRecon(coefsBot,breaksBot,crackloc,npieces));
             cout<<"Notch Option Enabled. Height fraction="<<heightFrac<<endl;
@@ -355,15 +358,20 @@ macro writeEigen(isVtk, isDat)
 
 macro readEigen()
 {
-  ifstream fileEigen(SolutionDir+"2_Modes/eval.dat");
+  if(mpirank==0){
+    ifstream fileEigen(SolutionDir+"2_Modes/eval.dat");
+    for(int m=0; m<nev; m++)
+      {
+        fileEigen>>ev[m];
+        ifstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
+        fileX>>VX[m][];
+        ifstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
+        fileY>>VY[m][];
+      }
+  }
+  broadcast(processor(0),ev);
   for(int m=0; m<nev; m++)
-    {
-      fileEigen>>ev[m];
-      ifstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
-      fileX>>VX[m][];
-      ifstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
-      fileY>>VY[m][];
-    }
+    broadcast(processor(0),VX[m][]);
 }//EOM To read eigenfunctions from a file"
 
 
@@ -616,20 +624,20 @@ macro buildReducedSystemEB(mu, phi0, phij, alpha, beta, gamma)
 
 matrix<complex> HHmat;
 complex[int] xi(nev);
-macro solveReducedSystem(){
-  xi.resize(nev);
-  if(mpirank==0){
-    matrix<complex> Kmat, Bmat, ABmat;
+macro solveReducedSystem(){  
+  xi.resize(nev);  
+  if(mpirank==0){    
+    matrix<complex> Kmat, Bmat, ABmat;    
     Kmat = K;
     Bmat=B;
-    ABmat=AB;
+    ABmat=AB;    
     HHmat=Kmat+Bmat+ABmat;
-    set(HHmat,solver=UMFPACK,eps=1e-20);
-    xi=HHmat^-1*F;
-    ofstream file1(SolutionDir+"/2_ModesMatrix/lambdaj"+iter+".dat");
+    set(HHmat,solver=UMFPACK,eps=1e-20);    
+    xi=HHmat^-1*F;    
+    ofstream file1(SolutionDir+"/2_ModesMatrix/lambdaj"+iter+".dat");    
     file1.precision(8);
     for(int m=0; m<nev; m++)
-      file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
+      file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;    
   }
   broadcast(processor(0),xi);
 }//Macro to solve the reduced system

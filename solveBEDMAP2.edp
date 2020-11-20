@@ -16,18 +16,15 @@ macro extractFS(fefunc, febdymesh, filename){
   }
 }//EOM" End of macro to extract the Free Surface of the function .
 
-macro Sigma(u,v)[2*muhat*dx(u)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
-                 2*muhat*dy(v)+(lambdahat*(x>=100)+0.507*lambdahat*(x<100))*(dx(u)+dy(v)),
+macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
+                 2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
                  muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
 
-nev=8;
 NModes=5;
-string SolutionDir="1_BEDMAP2/";
+SolutionDir="1_BEDMAP2/";
 real cpu=mpiWtime();
-int isMesh= getARGV("-isMesh",0);
+int isMesh= getARGV("-isMesh",1);
 int nborders= getARGV("-nborders",4);
-int isSplit= getARGV("-isSplit",1);
-iter=getARGV("-iter",0);
 
 macro writeSolution(var, filename){
   ofstream file(filename);
@@ -38,10 +35,8 @@ macro writeSolution(var, filename){
 iceBEDMAP2(nborders,isMesh);
 if(isMesh){
   refineMesh; //refine the meshes and overwrite the original meshes.
-  if(isSplit)
-    splitMeshSave; //Split the meshes and save the matrices.
  }
-splitMeshLoad; //load the split mesh
+splitMesh(isSplit);
 
 if(nborders!=4)
   dd=0.;
@@ -66,18 +61,16 @@ if(mpirank==0)
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
 real timeEigen=mpiWtime();
-//solveEigen;
 readEigen;
-if(mpirank==0)
-  cout<<"P: "<<mpirank<<" Time to solve = "<<mpiWtime()-timeEigen<<endl;
-if(mpirank==0){  
-  cout<<"Solved EigenValue Problem ... "<<endl;  
+if(mpirank==0){
+  cout<<"P: "<<mpirank<<" Time to read = "<<mpiWtime()-timeEigen<<endl;
+  cout<<"Read EigenValue Problem ... "<<endl;
  }
 
-mesh ThEmptyCav=emptymesh(ThCavity);
-fespace WhBdy(ThEmptyCav,P1);
-if(mpirank==0)
-  cout<<"Number of cavity boundary DOFs = "<<WhBdy.ndof<<endl;
+if(mpirank==0){
+  cout<<"Number of ice    boundary DOFs = "<<ThEmptyIce.nv<<endl;
+  cout<<"Number of cavity boundary DOFs = "<<ThEmptyCav.nv<<endl;
+ }
 
 //Solve for the Diffraction potential
 Wh<complex> phi0;
@@ -90,10 +83,6 @@ phi0=phih;
 
 WhBdy<complex> phi00=phi0;
 
-plot(phi0,wait=0,fill=1,value=1,dim=3);
-if(mpirank==0)  
-  cout<<"Solved Diffraction Potential "<<endl<<endl;
-
 int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
 WhBdy<complex>[int] phijj(nev);
@@ -102,84 +91,37 @@ F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
 AB.resize(nev,nev);
-complex[int] FProc(nev), RefmProc(nev), Refm(nev);
-complex[int,int] BProc(nev,nev), KProc(nev,nev);
+
 complex[int,int] PHIJ(nev,WhBdy.ndof),PHIJProc(nev,WhBdy.ndof);
 complex[int] phiVecm(Wh.ndof), cc(NModes+1), pk1(NModes+1);
 
+real cpuComm=mpiWtime();
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
-    real cpu1=mpiWtime();
     func fh=0;
     getLaplaceMatBEDMAP2(VX[m],VY[m]);
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
-    phih[]=LHS^-1*RHS[];   
+    phih[]=LHS^-1*RHS[];
     phij[m]=phih;
     phijj[m]=phih;
     PHIJProc(m,:)=phijj[m][];
-
-    if(mpirank==0)
-      cout<<"P: "<<mpirank<<" S: "<<mpiWtime()-cpu1<<"s "<<endl;
   }
-real cpuComm=mpiWtime();
 mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
-cout<<"P: "<<mpirank<<" C: "<<mpiWtime()-cpuComm<<endl;
+if(mpirank==0)
+  cout<<"P: "<<mpirank<<" \t \t \t Solving time: "<<mpiWtime()-cpuComm<<endl;
 
 //Unpack and set to phij locally in all procs
 for(int m=0; m<nev; m++)
-  phijj[m][]=PHIJ(m,:); 
+  phijj[m][]=PHIJ(m,:);
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
 if(mpirank==0)
-  cout<<"P : "<<mpirank<<" V : "<<MaThEmpty.nv<<" T "<<mpirank<<" = "<<mpiWtime()-cpu1<<" s"<<endl;
+  cout<<"No of Vertices: "<<MaThEmpty.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<" s"<<endl;
 
-if(mpirank==0) //Write the matrices to a file.
-  {
-    ofstream file1("1_BEDMAP2/2_ModesMatrix/ReH"+iter+".dat");
-    ofstream file2("1_BEDMAP2/2_ModesMatrix/ImH"+iter+".dat");
-    ofstream file3("1_BEDMAP2/2_ModesMatrix/ReF"+iter+".dat");
-    ofstream file4("1_BEDMAP2/2_ModesMatrix/ImF"+iter+".dat");
-    ofstream file5("1_BEDMAP2/2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");
-    file1.precision(16);
-    file2.precision(16);
-    file3.precision(16);
-    file4.precision(16);
-    for(int m=0; m<nev; m++)
-      {
-        file3<<real(F[m])<<endl;
-        file4<<imag(F[m])<<endl;
-        file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
-        for(int n=0; n<nev; n++)
-          {
-            file1<<real(B(m,n)+K(m,n))<<endl;
-            file2<<imag(B(m,n)+K(m,n))<<endl;
-          }
-        file1<<endl;
-        file2<<endl;
-      }
-  }
-
-//Build the reduced system and solve it.
-complex[int] xi(nev);
-if(mpirank==0){
-  cout<<"Built the system... Solving ... "<<endl;
-  matrix<complex> Kmat, Bmat, ABmat;
-  Kmat=K;
-  Bmat=B;
-  ABmat=AB;
-  HHmat=Kmat+Bmat+ABmat;
-  set(HHmat,solver=LU,eps=1e-20);
-  xi=HHmat^-1*F;
-
-  //Write solution vector to file.
-  ofstream file1("1_BEDMAP2/2_ModesMatrix/lambdaj"+iter+".dat");
-  file1.precision(16);
-  for(int m=0; m<nev; m++)
-    file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
- }
-broadcast(processor(0),xi);
+//Solve the reduced system.
+solveReducedSystem;
 
 //Compute the solution.
 Vh <complex> etax, etay, etaxProc, etayProc;
@@ -211,12 +153,6 @@ if(mpirank==0){
   file.precision(16);
   file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
 
-  mesh ThNewIce=movemesh(ThIce,[x+real(etax),y+real(etay)]);
-  plot(ThNewIce,wait=1);
-  Wh rphi=real(phi);
-  Wh iphi=imag(phi);
-  plot(rphi,wait=1,fill=1,value=1);
-
   //Write data to MATLAB
   //iter could be used to index the solution.
 
@@ -225,18 +161,6 @@ if(mpirank==0){
   savevtk("1_BEDMAP2/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk("1_BEDMAP2/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
   savevtk("1_BEDMAP2/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
-
-  int[int] Order1=[1,1,1];
-  solveStat;
-  savevtk("1_BEDMAP2/sol3_"+iter+".vtk",ThIce,[ustat,vstat],[real(etax),real(etay)],[imag(etax),imag(etay)],dataname="Disp ReDisp ImDisp",order=Order1);
-
-  //Write the eigenfunctions
-  writeEigen(1,1);
-  {
-    ofstream file("1_BEDMAP2/2_Modes/eval.dat");
-    for(int m=0; m<nev; m++)
-      file<<ev[m]<<endl;
-  }
  }
 
 if(mpirank==0)
