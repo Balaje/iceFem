@@ -85,7 +85,7 @@ K.resize(nev,nev);
 AB.resize(nev,nev);
 
 
-complex[int,int] PHIJ(nev,WhBdy.ndof),PHIJProc(nev,WhBdy.ndof);
+complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,nev);
 complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
 
 real potStartTime=mpiWtime();
@@ -100,16 +100,17 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
 
     //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
     phijj[m]=phih;
-    PHIJProc(m,:)=phijj[m][];
+    PHIJProc(:,m)=phijj[m][];
   }
-mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM); //Collect on all cpus.
+complex[int,int] PHIJSub=PHIJProc(0:WhBdy.ndof-1,mpirank*parti:mpirank*parti+parti-1);
+mpiAllgather(PHIJSub,PHIJ,mpiCommWorld);
 real potEndTime=mpiWtime();
 if(mpirank==0)
   cout<<"Proc "<<mpirank<<"\t\t\t Solving potentials took "<<potEndTime-potStartTime<<" s"<<endl;
 
 //Unpack and set to phij locally in all procs (Only boundary)
 for(int m=0; m<nev; m++)
-  phijj[m][]=PHIJ(m,:);
+  phijj[m][]=PHIJ(:,m);
 
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
