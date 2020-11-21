@@ -95,12 +95,12 @@ for(int m=start; m<=stop; m++)
     phijj[m]=phih; //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
     PHIJProc(:,m-start)=phijj[m][];    
   }
-mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
 endtime=mpiWtime();
 difTime=endtime-starttime;
-mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
+mpiReduce(difTime,timeTaken,processor(0),mpiSUM);
 if(mpirank==0)
-  cout<<"Time taken to solve potentials = "<<timeTaken<<" s"<<endl;
+  cout<<"Time taken to solve potentials = "<<timeTaken/mpisize<<" s"<<endl;
+mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
 //Unpack and set to phij locally in all procs (Only boundary)
 for(int m=0; m<nev; m++)
   phijj[m][]=PHIJ(:,m);
