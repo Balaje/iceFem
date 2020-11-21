@@ -7,6 +7,8 @@ bool debug=true;
 
 include "macros.idp"
 
+real timeTaken;
+
 SolutionDir="1_SIMPLE5/";
 
 macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
@@ -29,16 +31,20 @@ setMeshCav(midx, midy, endy);
 refineMesh;//Refine Mesh.
 splitMesh(isSplit);//Split Mesh for domain decomposition
 real endtime=mpiWtime();
+real difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0)
-  cout<<"Proc "<<mpirank<<"\t\t\t Mesh construction Time "<<endtime-starttime<<" s"<<endl;
+  cout<<"Time taken for Meshing = "<<timeTaken<<" s"<<endl;
 
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
-real eigenStartTime=mpiWtime();
+starttime=mpiWtime();
 readEigen;
-real eigenEndTime=mpiWtime();
+endtime=mpiWtime();
+difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0)
-  cout<<"Proc "<<mpirank<<"\t\t\t Time to solve Eigenvalue "<<eigenEndTime-eigenStartTime<<" s"<<endl;
+  cout<<"Time to solve Eigenvalue = "<<timeTaken<<" s"<<endl;
 //readEigen;
 
 
@@ -77,7 +83,7 @@ WhBdy<complex>[int] phijj(nev);//Define array of boundary functions.
 int parti, rem, start, stop, partisize;
 buildParti;
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
-real potStartTime=mpiWtime();
+starttime=mpiWtime();
 for(int m=start; m<=stop; m++)
   {
     func fh=0;
@@ -90,9 +96,11 @@ for(int m=start; m<=stop; m++)
     PHIJProc(:,m-start)=phijj[m][];    
   }
 mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
-real potEndTime=mpiWtime();
+endtime=mpiWtime();
+difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0)
-  cout<<"Proc "<<mpirank<<"\t\t\t Solving potentials took "<<potEndTime-potStartTime<<" s"<<endl;
+  cout<<"Time taken to solve potentials = "<<timeTaken<<" s"<<endl;
 //Unpack and set to phij locally in all procs (Only boundary)
 for(int m=0; m<nev; m++)
   phijj[m][]=PHIJ(:,m);
@@ -101,10 +109,13 @@ K.resize(nev,nev);
 B.resize(nev,nev);
 AB.resize(nev,nev);
 F.resize(nev);
-real cpu1=mpiWtime();
+starttime=mpiWtime();
 buildReducedSystemOptim;
+endtime=mpiWtime();
+difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0)
-  cout<<"No of vertices: "<<MaThEmpty.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
+  cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
 
 //Solve the reduced system;
 solveReducedSystem;
@@ -133,12 +144,20 @@ if(mpirank==0){
   complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
   cout.precision(16);
   cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
-  cout<<"Total Time = "<<mpiWtime()-cpu<<endl;
 
   //Write data to MATLAB
   //iter could be used to index the solution.
+  /*
   int[int] Order=[1,1];
   savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
   savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
+  */
  }
+
+starttime=cpu;
+endtime=mpiWtime();
+difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
+if(mpirank==0)
+  cout<<"Total time = "<<timeTaken<<" s"<<endl;
