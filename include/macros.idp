@@ -55,7 +55,7 @@ complex [int] F(nev);
 
 macro setProblem()
 {
-  real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);  
+  real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
   nev=getARGV("-nev",16);
   real E, nu;
   real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
@@ -492,18 +492,6 @@ macro solveEigenEB()
   mu=EBroots(nev,LL);
 }//This is a marco to compute the eigenmodes of the Euler Bernoulli equation
 
-macro integral1d(a,b,npts,eta,value)
-{
-  real deltax=(b-a)/(npts);
-  real[int] wts(npts),pts(npts);
-  wts(1:npts-2)=2;
-  wts(0)=1; wts(npts-1)=0;
-  pts=a:deltax:b;
-  value=wts'*pts;
-  value*=deltax;
-  value/=3;
-}//EOM Integral1d"
-
 
 matrix<complex> STIMA,BMASSMA;
 matrix<complex> LHS;
@@ -577,6 +565,27 @@ macro getLaplaceMatEBdbc(m,rad){
   RHS[]=lh(0,Wh);
 }//Same as above but for EB DBC.
 
+int[int] rcounts(mpisize), dspls(mpisize);
+macro buildParti(){  
+  parti = nev/mpisize;
+  rem = nev%mpisize;
+  if(mpirank < rem){
+    start=mpirank*(parti+1);
+    stop=start+parti;
+  }
+  else{
+    start=mpirank*parti+rem;
+    stop=start+(parti-1);
+  }
+  partisize=stop-start+1;
+  int[int] dsplsProc(mpisize), rcountsProc(mpisize);
+  rcountsProc[mpirank]=((stop-start)+1)*WhBdy.ndof;
+  dsplsProc[mpirank]=start*WhBdy.ndof;
+  mpiAllReduce(dsplsProc,dspls,mpiCommWorld,mpiSUM);
+  mpiAllReduce(rcountsProc,rcounts,mpiCommWorld,mpiSUM);
+}//EOM to build partition
+
+
 macro buildReducedSystem(VX,VY,phi0,phij)
 {
   B.resize(nev,nev);
@@ -624,20 +633,20 @@ macro buildReducedSystemEB(mu, phi0, phij, alpha, beta, gamma)
 
 matrix<complex> HHmat;
 complex[int] xi(nev);
-macro solveReducedSystem(){  
-  xi.resize(nev);  
-  if(mpirank==0){    
-    matrix<complex> Kmat, Bmat, ABmat;    
+macro solveReducedSystem(){
+  xi.resize(nev);
+  if(mpirank==0){
+    matrix<complex> Kmat, Bmat, ABmat;
     Kmat = K;
     Bmat=B;
-    ABmat=AB;    
+    ABmat=AB;
     HHmat=Kmat+Bmat+ABmat;
-    set(HHmat,solver=UMFPACK,eps=1e-20);    
-    xi=HHmat^-1*F;    
-    ofstream file1(SolutionDir+"/2_ModesMatrix/lambdaj"+iter+".dat");    
+    set(HHmat,solver=UMFPACK,eps=1e-20);
+    xi=HHmat^-1*F;
+    ofstream file1(SolutionDir+"/2_ModesMatrix/lambdaj"+iter+".dat");
     file1.precision(8);
     for(int m=0; m<nev; m++)
-      file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;    
+      file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
   }
   broadcast(processor(0),xi);
 }//Macro to solve the reduced system

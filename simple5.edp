@@ -67,29 +67,18 @@ LHS=STIMA+(MQ);
 set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
 phi0=phih;//Store in phi0;
-
 //Interpolate to boundary.
 WhBdy<complex> phi00=phi0;
 
+
 //Solve for radiation potential.
-int parti = nev/mpisize;
-
 Wh<complex>[int] phij(nev);
-//Define array of boundary functions.
-WhBdy<complex>[int] phijj(nev);
-
-
-F.resize(nev);
-B.resize(nev,nev);
-K.resize(nev,nev);
-AB.resize(nev,nev);
-
-
-complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,nev);
-complex[int] phiVecm(phih.n), cc(NModes+1), pk1(NModes+1);
-
+WhBdy<complex>[int] phijj(nev);//Define array of boundary functions.
+int parti, rem, start, stop, partisize;
+buildParti;
+complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 real potStartTime=mpiWtime();
-for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
+for(int m=start; m<=stop; m++)
   {
     func fh=0;
     getLaplaceMat(VX[m],VY[m]);
@@ -97,24 +86,23 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
     phij[m]=phih; //Leave the bulk as it is. This will not be used in constructing the matrices.
-
-    //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
-    phijj[m]=phih;
-    PHIJProc(:,m)=phijj[m][];
+    phijj[m]=phih; //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
+    PHIJProc(:,m-start)=phijj[m][];    
   }
-complex[int,int] PHIJSub=PHIJProc(0:WhBdy.ndof-1,mpirank*parti:mpirank*parti+parti-1);
-mpiAllgather(PHIJSub,PHIJ,mpiCommWorld);
+mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
 real potEndTime=mpiWtime();
 if(mpirank==0)
   cout<<"Proc "<<mpirank<<"\t\t\t Solving potentials took "<<potEndTime-potStartTime<<" s"<<endl;
-
 //Unpack and set to phij locally in all procs (Only boundary)
 for(int m=0; m<nev; m++)
   phijj[m][]=PHIJ(:,m);
 
+K.resize(nev,nev);
+B.resize(nev,nev);
+AB.resize(nev,nev);
+F.resize(nev);
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
-//buildReducedSystem(VX,VY,phi0,phij);
 if(mpirank==0)
   cout<<"No of vertices: "<<MaThEmpty.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<"\t s"<<endl;
 
@@ -122,9 +110,9 @@ if(mpirank==0)
 solveReducedSystem;
 
 //Compute the solution.
-Vh <complex> etax, etay, etaxProc, etayProc;
+Vh<complex> etax, etay, etaxProc, etayProc;
 Wh<complex> phi, phiProc;
-for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
+for(int m=start; m<=stop; m++)
   {
     phiProc = phiProc + xi[m]*phij[m];
     etaxProc = etaxProc + xi[m]*VX[m];
@@ -148,9 +136,9 @@ if(mpirank==0){
   cout<<"Total Time = "<<mpiWtime()-cpu<<endl;
 
   //Write data to MATLAB
-  //iter could be used to index the solution.  
+  //iter could be used to index the solution.
   int[int] Order=[1,1];
   savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-  savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);  
+  savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
  }

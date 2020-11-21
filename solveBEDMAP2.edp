@@ -80,21 +80,13 @@ LHS=STIMA+(MQ)+(-BMASSMA);
 set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
-
 WhBdy<complex> phi00=phi0;
 
-int parti = nev/mpisize;
 Wh<complex>[int] phij(nev);
 WhBdy<complex>[int] phijj(nev);
-
-F.resize(nev);
-B.resize(nev,nev);
-K.resize(nev,nev);
-AB.resize(nev,nev);
-
-complex[int,int] PHIJ(nev,WhBdy.ndof),PHIJProc(nev,WhBdy.ndof);
-complex[int] phiVecm(Wh.ndof), cc(NModes+1), pk1(NModes+1);
-
+int parti, rem, start, stop, partisize;
+buildParti;
+complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 real cpuComm=mpiWtime();
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
@@ -105,16 +97,19 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
     phijj[m]=phih;
-    PHIJProc(m,:)=phijj[m][];
+    PHIJProc(:,m-start)=phijj[m][];   
   }
-mpiAllReduce(PHIJProc,PHIJ,mpiCommWorld,mpiSUM);
+mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
 if(mpirank==0)
   cout<<"P: "<<mpirank<<" \t \t \t Solving time: "<<mpiWtime()-cpuComm<<endl;
-
 //Unpack and set to phij locally in all procs
 for(int m=0; m<nev; m++)
   phijj[m][]=PHIJ(m,:);
 
+F.resize(nev);
+B.resize(nev,nev);
+K.resize(nev,nev);
+AB.resize(nev,nev);
 real cpu1=mpiWtime();
 buildReducedSystemOptim;
 if(mpirank==0)
@@ -126,7 +121,7 @@ solveReducedSystem;
 //Compute the solution.
 Vh <complex> etax, etay, etaxProc, etayProc;
 Wh<complex> phi, phiProc;
-for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
+for(int m=start; m<=stop; m++)
   {
     phiProc = phiProc + xi[m]*phij[m];
     etaxProc = etaxProc + xi[m]*VX[m];
