@@ -93,14 +93,15 @@ for(int m=start; m<=stop; m++)
     phih[]=LHS^-1*RHS[];
     phij[m]=phih; //Leave the bulk as it is. This will not be used in constructing the matrices.
     phijj[m]=phih; //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
-    PHIJProc(:,m-start)=phijj[m][];    
+    PHIJProc(:,m-start)=phijj[m][];
   }
+mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiSUM);
 if(mpirank==0)
   cout<<"Time taken to solve potentials = "<<timeTaken/mpisize<<" s"<<endl;
-mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
+
 //Unpack and set to phij locally in all procs (Only boundary)
 for(int m=0; m<nev; m++)
   phijj[m][]=PHIJ(:,m);
@@ -114,8 +115,10 @@ buildReducedSystemOptim;
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
-if(mpirank==0)
+if(mpirank==0){
   cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
+  writeReducedSystem;
+ }
 
 //Solve the reduced system;
 solveReducedSystem;
@@ -147,12 +150,11 @@ if(mpirank==0){
 
   //Write data to MATLAB
   //iter could be used to index the solution.
-  /*
+
   int[int] Order=[1,1];
   savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
   savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
-  */
  }
 
 starttime=cpu;

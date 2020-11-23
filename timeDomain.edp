@@ -44,7 +44,7 @@ iceBEDMAP2(nborders,0);
 
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
-solveEigen;
+readEigen;
 if(mpirank==0)
   cout<<"Solved Eigenvalue problem"<<endl;
 

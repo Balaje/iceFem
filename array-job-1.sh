@@ -10,4 +10,5 @@ module load freefem
 cd $PBS_O_WORKDIR
 export FF_INCLUDEPATH="$PBS_O_WORKDIR/include"
 mpirun -np $PBS_ARRAY_INDEX FreeFem++-mpi -v 0 simple5.edp -isSplit 1 -iter $(( $PBS_ARRAY_INDEX+1 )) -isUniRef 1 -hsize 0.005 -nev 64 -N 12
+#mpirun -np $PBS_ARRAY_INDEX FreeFem++-mpi -v 0 solveBEDMAP2.edp -isSplit 1 -iter $(( $PBS_ARRAY_INDEX+1 )) -hsize 0.01 -nborders 6 -isMesh 0 -nev 32
 exit 0

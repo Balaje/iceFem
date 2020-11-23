@@ -20,6 +20,8 @@ macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
                  2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
                  muhat*(dy(u)+dx(v))]//EOM (Macro to define the stress tensor)"
 
+real timeTaken;
+
 NModes=5;
 SolutionDir="1_BEDMAP2/";
 real cpu=mpiWtime();
@@ -32,12 +34,15 @@ macro writeSolution(var, filename){
 }//Tiny macro to write files
 
 //Construct/Load the meshes.
+real starttime=mpiWtime();
 iceBEDMAP2(nborders,isMesh);
 if(isMesh){
   refineMesh; //refine the meshes and overwrite the original meshes.
  }
 splitMesh(isSplit);
-
+real endtime=mpiWtime();
+real difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(nborders!=4)
   dd=0.;
 
@@ -60,12 +65,13 @@ if(mpirank==0)
 //Solve EigenValue problem
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
-real timeEigen=mpiWtime();
+starttime=mpiWtime();
 readEigen;
-if(mpirank==0){
-  cout<<"P: "<<mpirank<<" Time to read = "<<mpiWtime()-timeEigen<<endl;
-  cout<<"Read EigenValue Problem ... "<<endl;
- }
+endtime=mpiWtime();
+difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
+if(mpirank==0)
+  cout<<"Time to solve Eigenvalue = "<<timeTaken<<" s"<<endl;
 
 if(mpirank==0){
   cout<<"Number of ice    boundary DOFs = "<<ThEmptyIce.nv<<endl;
@@ -87,7 +93,7 @@ WhBdy<complex>[int] phijj(nev);
 int parti, rem, start, stop, partisize;
 buildParti;
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
-real cpuComm=mpiWtime();
+starttime=mpiWtime();
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
     func fh=0;
@@ -97,11 +103,15 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     phih[]=LHS^-1*RHS[];
     phij[m]=phih;
     phijj[m]=phih;
-    PHIJProc(:,m-start)=phijj[m][];   
+    PHIJProc(:,m-start)=phijj[m][];
   }
 mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
+endtime=mpiWtime();
+difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiSUM);
 if(mpirank==0)
-  cout<<"P: "<<mpirank<<" \t \t \t Solving time: "<<mpiWtime()-cpuComm<<endl;
+  cout<<"Time taken to solve potentials = "<<timeTaken/mpisize<<" s"<<endl;
+
 //Unpack and set to phij locally in all procs
 for(int m=0; m<nev; m++)
   phijj[m][]=PHIJ(m,:);
@@ -110,10 +120,15 @@ F.resize(nev);
 B.resize(nev,nev);
 K.resize(nev,nev);
 AB.resize(nev,nev);
-real cpu1=mpiWtime();
+starttime=mpiWtime();
 buildReducedSystemOptim;
-if(mpirank==0)
-  cout<<"No of Vertices: "<<MaThEmpty.nv<<"\t Time in processor "<<mpirank<<" = "<<mpiWtime()-cpu1<<" s"<<endl;
+endtime=mpiWtime();
+difTime=endtime-starttime;
+mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
+if(mpirank==0){
+  cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
+  writeReducedSystem;
+ }
 
 //Solve the reduced system.
 solveReducedSystem;

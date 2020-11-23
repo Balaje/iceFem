@@ -430,6 +430,7 @@ mesh MaThEmpty=emptymesh(ThIce);
 mesh ThEmptyIce=emptymesh(ThIce);
 mesh ThEmptyCav=emptymesh(ThCavity);
 fespace WhBdy(ThEmptyCav,P1);
+searchMethod = 2;
 macro splitMesh(isSplit)
 {
   if(isSplit){
