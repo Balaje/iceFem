@@ -114,7 +114,7 @@ if(mpirank==0)
 
 //Unpack and set to phij locally in all procs
 for(int m=0; m<nev; m++)
-  phijj[m][]=PHIJ(m,:);
+  phijj[m][]=PHIJ(:,m);
 
 F.resize(nev);
 B.resize(nev,nev);
