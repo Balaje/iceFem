@@ -47,16 +47,9 @@ mpirun -np 4 FreeFem++-mpi -ne -v 0 simple5.edp -L 10000 -H 800 -h 200 -N 4 -Tr 
 The parameter ``hsize`` is used in uniform refinement of the ice and cavity meshes and is used by the macro ```refineMesh```. A better method will be added in future releases. Splitting is employed to parallelise the computation of the reduced system. For a set of space-dimensional parameters for example, length, thickness of the ice shelf, splitting can be done once. This is achieved using the macro,
 
 ``` shell
-splitMeshSave;
+splitMesh(isSplit);
 ```
-
-This sets up a set of interpolation matrices that will be used to construct the reduced system and will be saved in a folder named ```MESHES_SPLIT```. The split mesh data is loaded via the macro,
-
-```shell
-splitMeshLoad;
-```
-
-The following data for the reflection coefficient is obtained.
+where ```isSplit``` is a global variable that indicates whether the splitting is active or not. The splitting macro will split the mesh and distribute the sub-meshes among the processors. The following data for the reflection coefficient is obtained.
 
 | Reflection Coefficient, R | abs(R) |
 ----- | ---- |
