@@ -80,7 +80,6 @@ WhBdy<complex> phi00=phi0;
 //Solve for radiation potential.
 Wh<complex>[int] phij(nev);
 WhBdy<complex>[int] phijj(nev);//Define array of boundary functions.
-int parti, rem, start, stop, partisize;
 buildParti;
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 starttime=mpiWtime();
@@ -95,7 +94,8 @@ for(int m=start; m<=stop; m++)
     phijj[m]=phih; //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
     PHIJProc(:,m-start)=phijj[m][];
   }
-mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
+int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
+mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiSUM);
