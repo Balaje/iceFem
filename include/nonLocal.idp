@@ -1,68 +1,61 @@
 //Module to construct the nonlocal boundary conditions.
 func matrix<complex> getQphi(mesh &ThCavity, int NModes, complex[int] k, complex[int] kd, real HH, real dd, complex Ap, int bInd)
 {
-  complex [int] f(NModes+1), g(NModes+1);
-  complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
-  int nbv = ThCavity.nv;
-  // Get all the matrices
-  complex [int,int] D(nbv,NModes+1);
-  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);  
-  //-----------------------------------------------------------------------
-  /*
-    This block is to find out the Q matrix so that the Neumann condition can be
-    written as M*Q, where M is the boundary mass matrix
-  */
-  fespace Wh(ThCavity,P1); 
-  complex [int,int] pp(NModes+1,nbv);
-  pp = 0;
-  for(int m=0; m<NModes+1; m++)
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    int nbv = ThCavity.nv;
+    // Get all the matrices    
+    int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt);
+    //-----------------------------------------------------------------------
+    /*
+      This block is to find out the Q matrix so that the Neumann condition can be
+      written as M*Q, where M is the boundary mass matrix
+    */
+    fespace Wh(ThCavity,P1);
+    complex [int,int] pp(NModes+1,nbv), ppt(nbv,NModes+1);
+    pp = 0;
+    ppt = 0;
+    for(int m=0; m<NModes+1; m++)
     {
-      func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
-      varf boundaryip(unused,vh) = int1d(ThCavity,bInd,qforder=10)(eigenfunc*vh);
-      Wh <complex> ph;
-      ph[] = boundaryip(0,Wh);
-      pp(m,:) = ph[];
-    }  
-  complex [int,int] MMinv = MM^-1;
-  complex [int,int] MMtinv = MMt^-1;
-  complex [int,int] TT = (MMtinv*A);
-  complex [int,int] T = TT*MMinv;
-  complex [int,int] tP = T*pp;
-  matrix<complex> DD=D, ttP=tP;;
-  //complex [int,int] Qp = D*tP;
-  matrix<complex> Qp=DD*ttP;
-  matrix<complex> Q = Qp;  
-  /*
-    Obtain the 1d Mass Matrix on the boundary
-    - Again straightforward because of FreeFEM++.
-  */
-  Wh <complex> uh,vh;
-  varf mh(uh,vh) = int1d(ThCavity,bInd,qforder=10)(uh*vh);  
-  matrix<complex> MMatrix= mh(Wh,Wh);  
-  matrix<complex> MQ=MMatrix*Q;    
-  return MQ;
+        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        varf boundaryip(unused,vh) = int1d(ThCavity,bInd,qforder=10)(eigenfunc*vh);
+        Wh <complex> ph;
+        ph[] = boundaryip(0,Wh);
+        pp(m,:) = ph[];
+        ppt(:,m) = ph[];
+    }
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    complex [int,int] tP = T*pp;
+    matrix<complex> ttP=tP;
+    matrix<complex> pt=ppt;
+
+    matrix<complex> MQ=pt*ttP;
+
+    return MQ;
 }
 
 
 func complex[int] getChi(mesh &ThCavity, int NModes, complex[int] k, complex[int] kd, real HH, real dd, complex Ap)
-{  
-  complex [int] f(NModes+1), g(NModes+1);
-  complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
-  int nbv = ThCavity.nv;
-  complex [int,int] D(nbv,NModes+1);
-  // Get all the matrices
-  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);
-  
-  //Obtain the right hand side function \chi(y);
-  complex [int,int] MMinv = MM^-1;
-  complex [int,int] MMtinv = MMt^-1;
-  complex [int,int] TT = (MMtinv*A);
-  complex [int,int] T = TT*MMinv;
-  complex [int] Mg = MMtinv*g;
-  complex [int] Tf = T*f,ctilde(NModes+1);
-  ctilde = Mg - Tf;
+{
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    int nbv = ThCavity.nv;
+    // Get all the matrices
+    int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt);
 
-  return ctilde;
+    //Obtain the right hand side function \chi(y);
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    complex [int] Mg = MMtinv*g;
+    complex [int] Tf = T*f,ctilde(NModes+1);
+    ctilde = Mg - Tf;
+
+    return ctilde;
 }
 
 /*

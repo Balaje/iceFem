@@ -16,10 +16,10 @@ func complex innerproduct(complex k, complex kappa, real H, real d)
 }
 
 // Get the elementary matrices associated with the innerproduct.
-func int getMat(mesh &ThCavity, complex[int] k, complex[int] kd, real HH, real dd, complex Ap, int NModes, complex [int,int] &A, complex [int] &f, complex [int] &g, complex [int,int] &MM, complex [int,int] &MMt, complex [int, int] &D)
+func int getMat(mesh &ThCavity, complex[int] k, complex[int] kd, real HH, real dd, complex Ap, int NModes, complex [int,int] &A, complex [int] &f, complex [int] &g, complex [int,int] &MM, complex [int,int] &MMt)
 {
   // Initialize the matrices to 0
-  A = 0.; MM = 0.; D = 0.; MMt = 0.; f = 0.; g = 0.;
+  A = 0.; MM = 0.; MMt = 0.; f = 0.; g = 0.;
 
   // Compute the matrices A,M,M^T and vectors f,g
   func phih0 = cos(k[0]*(y+HH))/cos(k[0]*HH);
@@ -40,29 +40,6 @@ func int getMat(mesh &ThCavity, complex[int] k, complex[int] kd, real HH, real d
         }
     }  
   g(0) = -Ap*A(0,0);
-
-  // Find the matrix D.
-  int nbv = ThCavity.nv;
-  int nbe=ThCavity.nbe; //No of boundary elements
-  real [int] interfacepoints(0); //Initialize as an empty array
-  int [int] interfacenodes(0); //Initialize as an empty array
-  int counter = 0;
-  for(int m=0; m<nbv; m++)
-    {
-      if(ThCavity(m).x == 0)
-        {
-          interfacepoints.resize(interfacepoints.n + 1);
-          interfacenodes.resize(interfacenodes.n + 1);
-          interfacepoints(counter) = ThCavity(m).y;          
-          interfacenodes(counter) = m;
-          counter += 1;
-        }
-    }  
-  counter = 0;
-  // D is the DOF of the eigenfunctions at the interface.
-  for(int m=0; m<interfacepoints.n; m++)
-    for(int n=0; n<NModes+1; n++)
-      D(interfacenodes[m],n) = cos(kd[n]*(interfacepoints[m] + HH))/cos(kd[n]*(HH-dd));
 
   return 0;
 }

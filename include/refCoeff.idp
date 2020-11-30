@@ -13,10 +13,9 @@ func complex getRefCoeff(mesh &ThCavity, int NModes, complex [int] kd, complex[i
 
   complex [int] f(NModes+1), g(NModes+1);
   complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
-  int nbv = ThCavity.nv;
-  complex [int,int] D(nbv,NModes+1);
+  int nbv = ThCavity.nv;  
   //Get all the matrices
-  int flag = getMat(ThCavity, k, kd, HH, dd , Ap, NModes, A, f, g, MM, MMt, D);
+  int flag = getMat(ThCavity, k, kd, HH, dd , Ap, NModes, A, f, g, MM, MMt);
 
   //Obtain the right hand side function \chi(y);
   complex [int,int] MMinv = MM^-1;
@@ -52,9 +51,8 @@ func complex getRefModes(mesh &ThCavity, int NModes, complex [int] kd, complex [
   complex [int] f(NModes+1), g(NModes+1);
   complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
   int nbv = ThCavity.nv;
-
-  complex [int,int] D(nbv,NModes+1);
-  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt, D);
+  
+  int flag = getMat(ThCavity, k, kd, HH, dd, Ap, NModes, A, f, g, MM, MMt);
 
   //Obtain the matrices for the
   complex [int,int] MMinv = MM^-1;
