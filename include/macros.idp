@@ -2,15 +2,9 @@
 load "lapack"
 load "medit"
 load "iovtk"
-
 include "getARGV.idp"
+include "functions.idp"
 
-include "dispersionFreeSurface.idp"
-include "getMatrices.idp"
-include "spline.idp"
-include "nonLocal.idp"
-include "refCoeff.idp"
-include "getProperties.idp"
 
 //Domain decomposition module.
 macro dimension 2//EOM"

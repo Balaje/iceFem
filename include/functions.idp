@@ -1,0 +1,132 @@
+//Routine to construct piecewise cubic spline using real-shelf data
+func real splineRecon(real[int,int] coefs, real[int] breaks, real t, int npieces)
+{
+    real V=0;
+    real a,b,c,d;
+    for(int m=0; m<npieces; m++)
+    {
+        a=coefs(m,0); b=coefs(m,1); c=coefs(m,2); d=coefs(m,3);
+        if(t>=breaks[m] && t<=breaks[m+1])
+            V=a*(t-breaks[m])^3+b*(t-breaks[m])^2+c*(t-breaks[m])+d;
+    }
+    return V;
+}
+
+//3-point cubic spline.
+func real splineCurve(real t, real x1, real y1, real x2, real y2, real x3, real y3){
+    real a1 = (x1*(y2-y3)+x2*(y3-y1) + x3*(y1-y2))/(2*(x1-x2)^2*(x1-x3)*(x2-x3)), b1 = (x1^2*(y3-y2)-x1*(x2*(-3*y1+y2+2*y3)+3*x3*(y1-y2))+x2^2*(y3-y1)+x2*x3*(y2-y1)+2*x3^2*(y1-y2))/(2*(x1-x2)*(x1-x3)*(x2-x3));
+    real a2 = (x2-x1)/(x2-x3)*a1, b2 = (2*x1^2*(y2-y3)+x2*(x1*(y3-y2)+x3*(2*y1+y2-3*y3))+3*x1*x3*(y3-y2)+x2^2*(y3-y1)+x3^2*(y2-y1))/(2*(x1-x2)*(x1-x3)*(x2-x3));
+    real f1 = (a1*(t-x1)^3 + b1*(t-x1) + y1), f2 = (a2*(t-x3)^3 + b2*(t-x3) + y3);
+
+    return (f1)*(t>=x1 && t<=x2) + (f2)*(t>=x2 && t<=x3);
+}
+
+func complex oneroot(complex alpha, complex guess)
+{
+    complex ans1 = guess + 1;
+    complex out = guess;
+    complex f, difff;
+    while (abs(ans1-out) > 1e-9)
+    {
+        ans1 = out;
+        f = ans1*tanh(ans1) - alpha;
+        difff = tanh(ans1) + ans1*(1/cosh(ans1))^2;
+        out = ans1 - f/difff;
+    }
+    return out;
+}
+func complex homotopy(complex alpha, int N1)
+{
+    complex mroot;
+    if(N1==0)
+        mroot = oneroot(1,1);
+    else
+        mroot = oneroot(1,1i*N1*pi);
+
+    real step = 0.043;
+    //This function is used only in homotopy() - To generate the alphastep vector
+    func real[int] genalphastep(int start, real last, real step)
+    {
+        int length = floor((last-start)/step);
+        real[int] alphastep(length+2);
+        for (int m=0; m<length+2; m++)
+            alphastep[m] = start  + m*step;
+        alphastep[length+1] = abs(last);
+        return alphastep;
+    }
+    //End of Function
+    real [int] alphastep = genalphastep(1, abs(alpha), -step*(abs(alpha)<1) + step*(abs(alpha)>=1));
+    for (int m=1; m<alphastep.n; m++)
+        mroot = oneroot(alphastep[m], mroot);
+
+    real [int] argstep = genalphastep(0, arg(alpha), -(pi/30.)*(arg(alpha)<0) + (pi/30.)*(arg(alpha)>=0));
+    argstep[(argstep.n)-1] = arg(alpha);
+    complex [int] newalphastep(argstep.n);
+    for (int m=1; m<argstep.n; m++)
+    {
+        newalphastep[m] = abs(alpha)*exp(1i*argstep[m]);
+        mroot = oneroot(newalphastep[m], mroot);
+    }
+
+    return mroot;
+}
+func complex[int] dispersionfreesurface(complex alph, int N1, real H)
+{
+    // Scale alpha = alpha*h;
+    complex alpha = alph*H;
+    complex [int] mroots(N1+1);
+    int count;
+    if (N1==0)
+    {
+        count = 0;
+        mroots[count] = homotopy(alpha,count);
+    }
+    else
+    {
+        count = 0;
+        mroots[count] = homotopy(alpha,count);
+        count = count + 1;
+        while (0<=1)
+        {
+            mroots[count] = homotopy(alpha,count);
+            if(abs( mroots[count] - (1i*(count)*pi+alpha/(1i*(count)*pi)) ) < 0.01)
+            {
+                while (0<=1)
+                {
+                    mroots[count] = oneroot(alpha, 1i*(count)*pi + alpha/(1i*(count)*pi));
+                    if(abs( mroots[count] - (1i*(count)*pi + alpha/(1i*(count)*pi)) ) < 1e-15)
+                    {
+                        for(int m=0; m<N1-count; m++)
+                            mroots[count+m+1] = 1i*(count+m)*pi + alpha/(1i*(count+m)*pi);
+                        count = N1;
+                        break;
+                    }
+                    if(count==N1)
+                        break;
+                    count = count + 1;
+                }
+            }
+            if(count==N1)
+                break;
+            count = count + 1;
+        }
+    }
+    mroots = -(1i/H)*mroots;
+    mroots[0] = -mroots[0];
+    return mroots;
+}
+
+func real[int] getProps(real &E, real &nu, real &rhoi, real &rhow, real &ag, real &Ad)
+{
+  E = 11*10^9;
+  nu = 0.33;
+  rhoi = 922.5;
+  rhow = 1025;
+  ag= 9.8;
+  Ad = 1;
+
+  real[int] elasCons(2);
+  elasCons=[E/(2*(1+nu)), E*nu/((1+nu)*(1-2*nu))];
+
+  return elasCons;
+}
