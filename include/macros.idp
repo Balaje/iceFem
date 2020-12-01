@@ -494,6 +494,76 @@ macro solveEigenEB()
     mu=EBroots(nev,LL);
 }//This is a marco to compute the eigenmodes of the Euler Bernoulli equation
 
+macro getMat(A, f, g, MM, MMt){
+    func complex innerproduct(complex k, complex kappa, real H, real d)
+    {
+        if(abs(k-kappa) >= 1e-7)
+            return ( (kappa*sin(kappa*(H-d))*cos(k*(H-d)) - k*cos(kappa*(H-d))*sin(k*(H-d)))/(kappa^2-k^2) );
+        else
+            return ( (H-d)/2 + sin(2*k*(H-d))/(4*k)  );
+    }
+    A = 0.; MM = 0.; MMt = 0.; f = 0.; g = 0.;
+    func phih0 = cos(k[0]*(y+HH))/cos(k[0]*HH);
+    for(int m=0; m<NModes+1; m++)
+    {
+        func phidm = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        func phim = cos(k[m]*(y+HH))/cos(k[m]*(HH));
+        A(m,m) = k[m]*0.5*(cos(k[m]*HH)*sin(k[m]*HH) + k[m]*HH)/(k[m]*(cos(k[m]*HH))^2);
+        f(m) = Ap*innerproduct(k[0], kd[m], HH, dd)/(cos(kd[m]*(HH-dd))*cos(k[0]*(HH)));
+        for(int n=0; n<NModes+1; n++)
+        {
+            func phidn = cos(kd[n]*(y+HH))/cos(kd[n]*(HH-dd));
+            func phin = cos(k[n]*(y+HH))/cos(k[n]*HH);
+            MM(m,n) = innerproduct(k[n], kd[m], HH, dd)/(cos(kd[m]*(HH-dd))*cos(k[n]*(HH)));
+            MMt(n,m) = MM(m,n);
+        }
+    }
+    g(0) = -Ap*A(0,0);
+}//EOM"
+
+matrix<complex> MQ;
+macro getQphi(bInd){
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    int nbv = ThCavity.nv;
+    getMat(A, f, g, MM, MMt);
+    complex [int,int] pp(NModes+1,nbv), ppt(nbv,NModes+1);
+    pp = 0;
+    ppt = 0;
+    for(int m=0; m<NModes+1; m++)
+    {
+        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        varf boundaryip(unused,vh) = int1d(ThCavity,bInd,qforder=10)(eigenfunc*vh);
+        Wh <complex> ph;
+        ph[] = boundaryip(0,Wh);
+        pp(m,:) = ph[];
+        ppt(:,m) = ph[];
+    }
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    complex [int,int] tP = T*pp;
+    matrix<complex> ttP=tP;
+    matrix<complex> pt=ppt;
+    MQ=pt*ttP;
+}//EOM to compute Qphi"
+
+complex[int] ctilde(NModes+1);
+macro getChi(){
+    ctilde.resize(NModes+1);
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    int nbv = ThCavity.nv;
+    getMat(A, f, g, MM, MMt);
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    complex [int] Mg = MMtinv*g;
+    complex [int] Tf = T*f;
+    ctilde = Mg - Tf;                         
+}//EOM to compute ctilde"
 
 matrix<complex> STIMA,BMASSMA;
 matrix<complex> LHS;
@@ -924,4 +994,54 @@ macro buildReducedSystemPotential()
     mpiGatherv(FProc,F,processor(0),rcounts1,dspls1);
     rcounts1=rcounts*nev; dspls1=dspls*nev;
     mpiGatherv(KProc,K,processor(0),rcounts1,dspls1);
+}//EOM"
+
+macro getRefCoeff(bInd,phi,Ref){    
+    complex[int] aa(NModes+1), bb(NModes+1);
+    for(int m=0; m<NModes+1; m++)
+    {
+        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        aa(m) = int1d(ThCavity,bInd,qforder=10)(phi*eigenfunc);
+    }
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    int nbv = ThCavity.nv;    
+    getMat(A, f, g, MM, MMt);    
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    complex [int] Mg = MMtinv*g;
+    complex [int] Tf = T*f,ctilde(NModes+1);
+
+    bb = T*aa; bb = bb+Mg; bb = bb-Tf;
+    c = MMt*bb; c = c - g;
+    complex[int,int] AA=A^-1;
+    c = AA*c;
+    Ref = c[0]/Ap;    
+}//EOM"
+
+
+macro getRefModes(bInd,phi,Ref){
+complex [int] aa(NModes+1), bb(NModes+1);
+  for(int m=0; m<NModes+1; m++)
+    {
+      func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+      aa[m] = int1d(ThCavity,4,qforder=10)(phi*eigenfunc);
+    }
+  complex [int] c1(NModes+1);
+  complex [int] f(NModes+1), g(NModes+1);
+  complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+  int nbv = ThCavity.nv;  
+  getMat(A, f, g, MM, MMt);  
+  complex [int,int] MMinv = MM^-1;
+  complex [int,int] MMtinv = MMt^-1;
+  complex [int,int] TT = (MMtinv*A);
+  complex [int,int] T = TT*MMinv;
+  bb = T*aa;
+  c1 = MMt*bb;
+  complex[int,int] AA=A^-1;
+  c1 = c1 - pk;
+  c = AA*c1;
+  Ref = c[0]/Ap;
 }//EOM"
