@@ -5,6 +5,10 @@ verbosity=0.;
 real cpu=mpiWtime();
 bool debug=true;
 
+//Domain decomposition module.
+macro dimension 2//EOM"
+macro fspace 2//EOM"
+
 include "macros.idp"
 
 real timeTaken;
@@ -50,7 +54,8 @@ if(mpirank==0)
 
 //  2) Get the Non-local boundary condition
 Wh<complex> chi1;
-getQphi(4);
+matrix<complex> MQ;
+getQphi(4,MQ);
 getChi;
 for(int m=0; m<NModes+1; m++)
   chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
@@ -66,7 +71,7 @@ if(mpirank==0){
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
 func fh=chi1;//Store in fh, the right-hand side function on the ocean-cavity interface.
-getLaplaceMat(0,0);
+getLaplaceMat(0,0,0);
 LHS=STIMA+(MQ);
 set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
@@ -84,7 +89,7 @@ starttime=mpiWtime();
 for(int m=start; m<=stop; m++)
   {
     func fh=0;
-    getLaplaceMat(VX[m],VY[m]);
+    getLaplaceMat(VX[m],VY[m],0);
     LHS=STIMA+(MQ);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
