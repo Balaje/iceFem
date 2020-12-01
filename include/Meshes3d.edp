@@ -1,0 +1,77 @@
+//Mesh the Wigley Hull and the water domain.
+//Save the meshes to be used.
+load "tetgen"
+load "gmsh"
+load "msh3"
+load "medit"
+
+real L=100, d=2.25;
+real B=10;
+
+int N1 = 20;
+int N2 = 5;
+//Draw the mesh1
+mesh Th2 = square(N1,N2,[-L/2+L*x,-d*y]);
+//medit("tt",Th2);
+plot(Th2);
+
+int[int] lb1=[0,1];
+int[int] lb2=[0,2];
+int[int] lb3=[0,3];
+int[int] lb4=[0,4];
+int[int] lb5=[0,5];
+
+//--- Construct all the surface mesh for the ship
+meshS M11 = movemesh23(Th2,transfo=[x,y,0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],label=lb3,orientation=1);//WetSurface-3
+meshS M12 = movemesh23(Th2,transfo=[x,y,-0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],label=lb3,orientation=-1);//WetSurface-3
+meshS M13 = movemesh23(Th2,transfo=[x,d+y,0.5*B*(1-4*x^2/L^2)],label=lb1,orientation=1);//DrySurface
+meshS M14 = movemesh23(Th2,transfo=[x,d+y,-0.5*B*(1-4*x^2/L^2)],label=lb1,orientation=-1);//DrySurface
+meshS Th=M11+M12+M13+M14;
+//Top surface
+border C01(t=-L/2,L/2){x=t; y=0.5*B*(1-4*t^2/L^2);};
+border C02(t=-L/2,L/2){x=t; y=-0.5*B*(1-4*t^2/L^2);};
+border C03(t=-L/2,L/2){x=t; y=0;};
+mesh M51 = buildmesh(C01(-N1)+C03(N1));
+mesh M52 = buildmesh(C02(N1)+C03(-N1));
+mesh M151 = M51+M52;
+meshS M15 = movemesh23(M151,transfo=[x,d,y],label=lb1,orientation=-1);
+//plot(M11,M12,M13,M14,M15,wait=0);
+//Glue all the surface meshes
+Th = Th+M15;//Surface Mesh
+mesh3 ThD = tetg(Th); //3D Mesh using tetg
+savemesh(ThD,"boat.mesh");
+//plot(ThD,wait=1);
+
+//-- Construct all the mesh for the fluid.
+//Assumptions
+//1) Mesh M11 and M12 form 2 surfaces.
+//2) Top surface of the fluid has 2 parabolae given by C01 and C02
+//3) Let fluid border be from |3L/4| to |L/2|
+//General Square mesh.
+N1=15;
+N2=7;
+mesh ThNew2 = square(N1,N2,[-L/2+L*x,-d*y]);
+meshS MNew11 = movemesh23(ThNew2,transfo=[x,y,0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],label=lb5,orientation=1);//WetSurfaceBC-5
+meshS MNew12 = movemesh23(ThNew2,transfo=[x,y,-0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],label=lb5,orientation=-1);//WetSurfaceBC-5
+
+real LL1=0.8*L;
+real H1=LL1;
+border T1(t=-H1,H1){x=LL1; y=t;};
+border T2(t=H1,-H1){x=-LL1; y=t;};
+border T3(t=-LL1,LL1){x=t; y=H1;};
+border T4(t=-LL1,LL1){x=t; y=-H1;};
+mesh TSq = buildmesh(T4(N1)+T1(N1)+T3(-N1)+T2(N1)+C01(N1)+C02(-N1));
+mesh TSq1 = buildmesh(T4(N1)+T1(N1)+T3(-N1)+T2(N1));
+
+meshS Top = movemesh23(TSq,transfo=[x,0,y],label=lb5,orientation=1);//FreeSurface-5
+meshS TSide = movemesh23(TSq1,transfo=[x,y-H1,z+H1],label=lb1,orientation=-1);//NoFlow-1
+meshS TSide1 = movemesh23(TSq1,transfo=[-LL1,x-H1,y],label=lb4,orientation=1);//NonLocal-4
+meshS TSide2 = movemesh23(TSq1,transfo=[LL1,x-H1,y],label=lb4,orientation=-1);//NonLocal-4
+meshS TSide3 = movemesh23(TSq1,transfo=[x,-2*LL1,y],label=lb1,orientation=-1);//NoFlow-1
+meshS Tbottom = movemesh23(TSq1,transfo=[x,y-H1,z-H1],label=lb1,orientation=1);//NoFlow-4
+
+//Th = MNew11+MNew12;
+Th=MNew11+MNew12+Top+TSide+TSide1+TSide2+TSide3+Tbottom;;
+plot(Th,wait=1);
+mesh3 ThF = tetg(Th,switch="paAq1.0QYY");
+savemesh(ThF,"water.mesh");

@@ -1,0 +1,18 @@
+//Simple example to solve 3d problem.
+
+verbosity=0;
+macro dimension 3//EOM"
+macro fspace 2//EOM"
+include "macros.idp"
+
+SolutionDir="1_SIMPLE3D/";
+
+setProblem;
+setMeshIceCav3d;
+
+solveDispersion;
+
+Xh[int][VX,VY,VZ](nev);
+real[int] ev(nev);
+solveEigen;
+writeEigen(1,1);

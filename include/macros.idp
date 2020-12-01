@@ -7,7 +7,6 @@ include "functions.idp"
 
 
 include "macro_ddm.idp"
-macro minimalMesh()square(2,2)//EOM
 include "ffddm_parameters.idp"
 include "ffddm_partitioning.idp"
 
@@ -16,15 +15,15 @@ macro init(u) u//EOM
 
 string SolutionDir;
 
-meshN ThIce=square(10,10);
-meshN ThCavity=square(10,10);
-
 //List of useful set of macros.
 IFMACRO(dimension,2)
 macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
 macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
 macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
 cout<<"Dimension : 2"<<endl;
+macro minimalMesh()square(2,2)//EOM
+    meshN ThIce=minimalMesh;
+meshN ThCavity=minimalMesh;
 IFMACRO(fspace,1)
 fespace Vh(ThIce,P1);
 fespace Xh(ThIce,[P1,P1]);
@@ -37,11 +36,14 @@ fespace Wh(ThCavity,P2);
 ENDIFMACRO
 ENDIFMACRO
 
-IFMACRO(dimension,3)
-    macro grad(u) [dx(u),dy(u),dz(u)]//EOM" //Gradient
-    macro div(u,v,w)(dx(u)+dy(v)+dz(w))//EOM" //Divergence of a vector field
-    macro epsilon(u,v,w)[dx(u), dy(v), dz(w), (dy(u)+dx(v))/sqrt(2.), (dz(w)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
+IFMACRO(dimension,3)    
+    macro grad(u) [dx(u),dy(u),dz(u)]//EOM" //Gradient    
+    macro epsilon(u,v,w)[dx(u),dy(v),dz(w),1/sqrt(2.)*(dy(u)+dx(v)),1/sqrt(2.)*(dz(u)+dx(w)),1/sqrt(2.)*(dz(v)+dy(w))]//Eom"
+    macro div(u,v,w)(dx(u)+dy(v)+dz(w))//Eom"    
     cout<<"Dimension : 3"<<endl;
+macro minimalMesh()cube(1,1,1)//EOM
+    meshN ThIce=minimalMesh;
+meshN ThCavity=minimalMesh;
 IFMACRO(fspace,1)
 fespace Vh(ThIce,P1);
 fespace Xh(ThIce,[P1,P1,P1]);
@@ -53,6 +55,7 @@ fespace Xh(ThIce,[P2,P2,P2]);
 fespace Wh(ThCavity,P2);
 ENDIFMACRO
 ENDIFMACRO
+
 
 real lambdahat, muhat, rhoi;
 real rhow, Ad;
@@ -349,13 +352,33 @@ macro setMeshCav(midx, midy, endy)
     ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(-LL/tth*N2)+C04(N2));
 }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
+
+
+//MACROS to import sample 3D meshes
+macro setMeshIceCav3d()
+{
+    IFMACRO(dimension,2)
+        cout<<"Dimension should be 3 to use 3d meshes"<<endl;
+    exit(0);
+    ENDIFMACRO
+        int N1 = getARGV("-N",3);
+    int N2 = getARGV("-N",3);
+    ThIce = readmesh3("MESHES/boat.mesh");
+    ThCavity = readmesh3("MESHES/water.mesh");
+    if(mpirank==0){
+        cout<<"Number of Ice Vertices = "<<ThIce.nv<<endl;
+        cout<<"Number of Cavity Vertices = "<<ThCavity.nv<<endl;        
+    }
+}//EOM"
+
+
 //Solve for the in--vacuo mode.
 //Set the boundary 2-for clamped condition.
 macro solveEigen()
 {
     IFMACRO(dimension,2)
         if(mpirank==0){
-            Xh [u,v],[uu,vv];
+            Xh [u,v],[uu,vv];            
             varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
             varf b([u,v],[uu,vv]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv));
             matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
@@ -365,12 +388,12 @@ macro solveEigen()
     ENDIFMACRO
         IFMACRO(dimension,3)
         if(mpirank==0){
-            Xh [u,v,w],[uu,vv,ww];
+            Xh [u,v,w],[uu,vv,ww];            
             varf a([u,v,w],[uu,vv,ww]) = intN(ThIce)(lambdahat*div(u,v,w)*div(uu,vv,ww) + 2*muhat*epsilon(u,v,w)'*epsilon(uu,vv,ww)) + on(2,u=0,v=0,w=0);
             varf b([u,v,w],[uu,vv,ww]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv + w*ww));
-            matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
-            matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
-            int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
+            matrix stima = a(Xh,Xh,solver=sparsesolver);
+            matrix massma = b(Xh,Xh,solver=sparsesolver);            
+            int kkk = EigenValue(stima,massma,value=ev,vector=VX,tol=1e-10);
         }
     ENDIFMACRO
         for(int m=0; m<nev; m++)
@@ -386,15 +409,28 @@ macro writeEigen(isVtk, isDat)
         fileEigen<<ev[m]<<endl;;
         if(isVtk)
         {
-            Vh modeX=VX[m],modeY=VY[m];
+            Vh modeX=VX[m],modeY=VY[m];            
+            IFMACRO(dimension,2)     
             savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
+            ENDIFMACRO
+                
+            IFMACRO(dimension,3)
+            int[int] Order1=[1,1,1];
+            Vh modeZ=VZ[m];
+            meshN Modem=movemesh(ThIce,[x+400*VX[m],y+400*VY[m],z+400*VZ[m]]);
+            savemesh(Modem,SolutionDir+"2_Modes/Modes"+m+".mesh");
+            ENDIFMACRO
         }
         if(isDat)
         {
             ofstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
             fileX<<VX[m][];
             ofstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
-            fileY<<VY[m][];
+            fileY<<VY[m][];            
+            IFMACRO(dimension,3)
+            ofstream fileZ(SolutionDir+"2_Modes/ModesZ"+m+".dat");
+            fileZ<<VZ[m][];
+            ENDIFMACRO
         }
     }
 }//Macro to write the Eigenfunctions to a file.
@@ -468,7 +504,16 @@ macro refineMesh(){
     broadcast(processor(1),ThCavity);
 }//EOM" (Macro to refine mesh).
 
-bool isSplit = getARGV("-isSplit",0);
+IFMACRO(dimension,3)
+meshN MaThEmpty=ThIce;
+meshN ThEmptyIce=ThIce;
+meshN ThEmptyCav=ThCavity;
+fespace VhBdy(MaThEmpty,P1);
+fespace WhBdy(ThEmptyCav,P1);
+ENDIFMACRO
+
+IFMACRO(dimension,2)
+    bool isSplit = getARGV("-isSplit",0);
 meshN MaThEmpty=emptymesh(ThIce);
 meshN ThEmptyIce=emptymesh(ThIce);
 meshN ThEmptyCav=emptymesh(ThCavity);
@@ -496,6 +541,7 @@ macro splitMesh(isSplit)
         ThEmptyCav=emptymesh(ThCavity);
     }
 }//Macro to SPLIT MESH
+ENDIFMACRO
 
 real[int] mu(nev);
 macro solveEigenEB()
@@ -546,7 +592,6 @@ macro getMat(A, f, g, MM, MMt){
             return ( (H-d)/2 + sin(2*k*(H-d))/(4*k)  );
     }
     A = 0.; MM = 0.; MMt = 0.; f = 0.; g = 0.;
-    func phih0 = cos(k[0]*(y+HH))/cos(k[0]*HH);
     for(int m=0; m<NModes+1; m++)
     {
         A(m,m) = k[m]*0.5*(cos(k[m]*HH)*sin(k[m]*HH) + k[m]*HH)/(k[m]*(cos(k[m]*HH))^2);
@@ -576,6 +621,9 @@ macro getQphi(bInd,MQ){
     {
         IFMACRO(dimension,2)
             func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        ENDIFMACRO
+            IFMACRO(dimension,3)
+            func eigenfunc = cos(kd[m]*(z+HH))/cos(kd[m]*(HH-dd))*cos(kd[m]*y);
         ENDIFMACRO
 
             varf boundaryip(unused,vh) = intN1(ThCavity,bInd,qforder=10)(eigenfunc*vh);
