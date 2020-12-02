@@ -23,10 +23,10 @@ int[int] lb4=[0,4];
 int[int] lb5=[0,5];
 
 //--- Construct all the surface mesh for the ship
-meshS M11 = movemesh23(Th2,transfo=[x,y,0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],label=lb3,orientation=1);//WetSurface-3
-meshS M12 = movemesh23(Th2,transfo=[x,y,-0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],label=lb3,orientation=-1);//WetSurface-3
-meshS M13 = movemesh23(Th2,transfo=[x,d+y,0.5*B*(1-4*x^2/L^2)],label=lb1,orientation=1);//DrySurface-1
-meshS M14 = movemesh23(Th2,transfo=[x,d+y,-0.5*B*(1-4*x^2/L^2)],label=lb1,orientation=-1);//DrySurface-1
+meshS M11 = movemesh23(Th2,transfo=[x,y,0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],orientation=1,region=lb3);//WetSurface-3
+meshS M12 = movemesh23(Th2,transfo=[x,y,-0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],orientation=-1,region=lb3);//WetSurface-3
+meshS M13 = movemesh23(Th2,transfo=[x,d+y,0.5*B*(1-4*x^2/L^2)],orientation=1,region=lb1);//DrySurface-1
+meshS M14 = movemesh23(Th2,transfo=[x,d+y,-0.5*B*(1-4*x^2/L^2)],orientation=-1,region=lb1);//DrySurface-1
 meshS Th=M11+M12+M13+M14;
 //Top surface
 border C01(t=-L/2,L/2){x=t; y=0.5*B*(1-4*t^2/L^2);};
@@ -35,7 +35,7 @@ border C03(t=-L/2,L/2){x=t; y=0;};
 mesh M51 = buildmesh(C01(-N1)+C03(N1));
 mesh M52 = buildmesh(C02(N1)+C03(-N1));
 mesh M151 = M51+M52;
-meshS M15 = movemesh23(M151,transfo=[x,d,y],label=lb1,orientation=-1);//DrySurface-3
+meshS M15 = movemesh23(M151,transfo=[x,d,y],orientation=-1,region=lb1);//DrySurface-3
 //plot(M11,M12,M13,M14,M15,wait=0);
 //Glue all the surface meshes
 Th = Th+M15;//Surface Mesh
@@ -52,8 +52,8 @@ savemesh(ThD,"boat.mesh");
 N1/=2;
 N2/=2;
 mesh ThNew2 = square(N1,N2,[-L/2+L*x,-d*y]);
-meshS MNew11 = movemesh23(ThNew2,transfo=[x,y,0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],label=lb3,orientation=1);//WetSurface-3
-meshS MNew12 = movemesh23(ThNew2,transfo=[x,y,-0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],label=lb3,orientation=-1);//WetSurface-3
+meshS MNew11 = movemesh23(ThNew2,transfo=[x,y,0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],region=lb3,orientation=1);//WetSurface-3
+meshS MNew12 = movemesh23(ThNew2,transfo=[x,y,-0.5*B*(1-4*x^2/L^2)*(1-y^2/d^2)],region=lb3,orientation=-1);//WetSurface-3
 
 real LL1=0.8*L;
 real H1=LL1;
@@ -64,12 +64,12 @@ border T4(t=-LL1,LL1){x=t; y=-H1;};
 mesh TSq = buildmesh(T4(N1)+T1(N1)+T3(-N1)+T2(N1)+C01(N1)+C02(-N1));
 mesh TSq1 = buildmesh(T4(N1)+T1(N1)+T3(-N1)+T2(N1));
 
-meshS Top = movemesh23(TSq,transfo=[x,0,y],label=lb2,orientation=1);//FreeSurface-2
-meshS TSide = movemesh23(TSq1,transfo=[x,y-H1,z+H1],label=lb1,orientation=-1);//NoFlow-1
-meshS TSide1 = movemesh23(TSq1,transfo=[-LL1,x-H1,y],label=lb5,orientation=1);//NonLocal-5 (Inlet)
-meshS TSide2 = movemesh23(TSq1,transfo=[LL1,x-H1,y],label=lb4,orientation=-1);//NonLocal-4 (Outlet)
-meshS TSide3 = movemesh23(TSq1,transfo=[x,-2*LL1,y],label=lb1,orientation=-1);//NoFlow-1
-meshS Tbottom = movemesh23(TSq1,transfo=[x,y-H1,z-H1],label=lb1,orientation=1);//NoFlow-1 
+meshS Top = movemesh23(TSq,transfo=[x,0,y],region=lb2,orientation=1);//FreeSurface-2
+meshS TSide = movemesh23(TSq1,transfo=[x,y-H1,z+H1],region=lb1,orientation=-1);//NoFlow-1
+meshS TSide1 = movemesh23(TSq1,transfo=[-LL1,x-H1,y],region=lb4,orientation=1);//NonLocal-4 (Inlet)
+meshS TSide2 = movemesh23(TSq1,transfo=[LL1,x-H1,y],region=lb5,orientation=-1);//NonLocal-5 (Outlet)
+meshS TSide3 = movemesh23(TSq1,transfo=[x,-2*LL1,y],region=lb1,orientation=-1);//NoFlow-1
+meshS Tbottom = movemesh23(TSq1,transfo=[x,y-H1,z-H1],region=lb1,orientation=1);//NoFlow-1 
 
 Th=MNew11+MNew12+Top+TSide+TSide1+TSide2+TSide3+Tbottom;
 plot(Th,wait=1);

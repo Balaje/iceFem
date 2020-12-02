@@ -7,11 +7,15 @@ include "macros.idp"
 
 SolutionDir="1_SIMPLE3D/";
 
-setProblem;
 setMeshIceCav3d;
+complex alpha=omega^2/10;
+//cout<<alpha<<endl;
+k=dispersionfreesurface(alpha,NModes,HH);
+k[0]=-k[0];
+kd=k;
+dd=0;
 
-solveDispersion;
-
+//---- Find the eigenvalues of the dispersion relation.
 Xh[int][VX,VY,VZ](nev);
 real[int] ev(nev);
 solveEigen;
@@ -20,11 +24,12 @@ writeEigen(1,1);
 
 Wh<complex> chi1;
 matrix<complex> MQ1, MQ2;
-getQphi(4,MQ1); //Inlet
 getQphi(5,MQ2); //Outlet
+getQphi(4,MQ1); //Inlet
 getChi;
-for(int m=0; m<NModes+1; m++)
-  chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+for(int m=0; m<NModes+1; m++)    
+    chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*HH);
+
 if(mpirank==0)
     cout<<"Done Non-local boundary condition"<<endl;
 
@@ -37,3 +42,4 @@ phih[]=LHS^-1*RHS[];
 phi0=phih;
 if(mpirank==0)
     cout<<"Done diffraction potential "<<endl;
+savevtk("sol.vtu",ThCavity,real(phi0),dataname="RePhi");

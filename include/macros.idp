@@ -36,10 +36,10 @@ fespace Wh(ThCavity,P2);
 ENDIFMACRO
 ENDIFMACRO
 
-IFMACRO(dimension,3)    
-    macro grad(u) [dx(u),dy(u),dz(u)]//EOM" //Gradient    
+IFMACRO(dimension,3)
+    macro grad(u) [dx(u),dy(u),dz(u)]//EOM" //Gradient
     macro epsilon(u,v,w)[dx(u),dy(v),dz(w),1/sqrt(2.)*(dy(u)+dx(v)),1/sqrt(2.)*(dz(u)+dx(w)),1/sqrt(2.)*(dz(v)+dy(w))]//Eom"
-    macro div(u,v,w)(dx(u)+dy(v)+dz(w))//Eom"    
+    macro div(u,v,w)(dx(u)+dy(v)+dz(w))//Eom"
     cout<<"Dimension : 3"<<endl;
 macro minimalMesh()cube(1,1,1)//EOM
     meshN ThIce=minimalMesh;
@@ -142,7 +142,7 @@ macro iceBEDMAP2(nborders, isBuild)
     real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
     real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
     complex t = Tr+1i*Ti;
-    real EI = E*th^3/(12*(1-nu^2));
+    Real EI = E*th^3/(12*(1-nu^2));
     Lc = (EI/(rhow*ag))^(1./4.);
     tc = sqrt(rhow*Lc^6/(EI*H));
     omega = 2*pi/t;
@@ -310,7 +310,7 @@ macro setMeshIce(brx, midx, midy)
     border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
     border I02(t=iy3,icetopleft) {x=LL; y=t; label=2;};
     border I03(t=LL,0) {x=t; y=icetopleft-0*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=1;};
-    border I04(t=icetopleft,icebottomleft) {x=0; y=t; label=1;};    
+    border I04(t=icetopleft,icebottomleft) {x=0; y=t; label=1;};
     ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(LL/tth*N1));
 }//This is a macro for creating the ice mesh using 3 point cubic spline.
 
@@ -356,6 +356,22 @@ macro setMeshCav(midx, midy, endy)
 //MACROS to import sample 3D meshes
 macro setMeshIceCav3d()
 {
+    LL=100;
+    real BB=10, d=2.25;
+    HH=0.8*LL;
+    real bb=0.8*HH;
+    real E,nu;
+    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
+    real mu1 = elasCons[0];
+    real lambda = elasCons[1];
+    muhat=mu1;
+    lambdahat=lambda;
+    gammahat = rhow;
+    deltahat = rhow*ag;
+    real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
+    complex t = Tr+1i*Ti;
+    omega = 2*pi/t;
+    Ap=(ag/(1i*omega))*Ad;
     IFMACRO(dimension,2)
         cout<<"Dimension should be 3 to use 3d meshes"<<endl;
     exit(0);
@@ -366,7 +382,7 @@ macro setMeshIceCav3d()
     ThCavity = readmesh3("MESHES/water.mesh");
     if(mpirank==0){
         cout<<"Number of Ice Vertices = "<<ThIce.nv<<endl;
-        cout<<"Number of Cavity Vertices = "<<ThCavity.nv<<endl;        
+        cout<<"Number of Cavity Vertices = "<<ThCavity.nv<<endl;
     }
 }//EOM"
 
@@ -377,7 +393,7 @@ macro solveEigen()
 {
     IFMACRO(dimension,2)
         if(mpirank==0){
-            Xh [u,v],[uu,vv];            
+            Xh [u,v],[uu,vv];
             varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
             varf b([u,v],[uu,vv]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv));
             matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
@@ -387,11 +403,11 @@ macro solveEigen()
     ENDIFMACRO
         IFMACRO(dimension,3)
         if(mpirank==0){
-            Xh [u,v,w],[uu,vv,ww];            
+            Xh [u,v,w],[uu,vv,ww];
             varf a([u,v,w],[uu,vv,ww]) = intN(ThIce)(lambdahat*div(u,v,w)*div(uu,vv,ww) + 2*muhat*epsilon(u,v,w)'*epsilon(uu,vv,ww)) + on(2,u=0,v=0,w=0);
             varf b([u,v,w],[uu,vv,ww]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv + w*ww));
             matrix stima = a(Xh,Xh,solver=sparsesolver);
-            matrix massma = b(Xh,Xh,solver=sparsesolver);            
+            matrix massma = b(Xh,Xh,solver=sparsesolver);
             int kkk = EigenValue(stima,massma,value=ev,vector=VX,tol=1e-10);
         }
     ENDIFMACRO
@@ -408,29 +424,28 @@ macro writeEigen(isVtk, isDat)
         fileEigen<<ev[m]<<endl;;
         if(isVtk)
         {
-            Vh modeX=VX[m],modeY=VY[m];            
-            IFMACRO(dimension,2)     
-            savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
+            Vh modeX=VX[m],modeY=VY[m];
+            IFMACRO(dimension,2)
+                savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
             ENDIFMACRO
-                
+
             IFMACRO(dimension,3)
-            int[int] Order1=[1,1,1];
+                int[int] Order1=[1,1,1];
             Vh modeZ=VZ[m];
-            meshN Modem=movemesh(ThIce,[x+400*VX[m],y+400*VY[m],z+400*VZ[m]]);
-            savemesh(Modem,SolutionDir+"2_Modes/Modes"+m+".mesh");
+            savevtk(SolutionDir+"2_Modes/Modes"+m+".vtu",ThIce,[modeX,modeY,modeZ],dataname="ReMode",order=Order1);            
             ENDIFMACRO
-        }
+                }
         if(isDat)
         {
             ofstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
             fileX<<VX[m][];
             ofstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
-            fileY<<VY[m][];            
+            fileY<<VY[m][];
             IFMACRO(dimension,3)
-            ofstream fileZ(SolutionDir+"2_Modes/ModesZ"+m+".dat");
+                ofstream fileZ(SolutionDir+"2_Modes/ModesZ"+m+".dat");
             fileZ<<VZ[m][];
             ENDIFMACRO
-        }
+                }
     }
 }//Macro to write the Eigenfunctions to a file.
 
@@ -622,7 +637,7 @@ macro getQphi(bInd,MQ){
             func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
         ENDIFMACRO
             IFMACRO(dimension,3)
-            func eigenfunc = cos(kd[m]*(z+HH))/cos(kd[m]*(HH-dd))*cos(kd[m]*y);
+            func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));            
         ENDIFMACRO
 
             varf boundaryip(unused,vh) = intN1(ThCavity,bInd,qforder=10)(eigenfunc*vh);
@@ -643,17 +658,17 @@ macro getQphi(bInd,MQ){
 
 complex[int] ctilde(NModes+1);
 macro getChi(){
-    ctilde.resize(NModes+1);
+    ctilde.resize(NModes+1);    
     complex [int] f(NModes+1), g(NModes+1);
     complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
-    getMat(A, f, g, MM, MMt);
+    getMat(A, f, g, MM, MMt);    
     complex [int,int] MMinv = MM^-1;
     complex [int,int] MMtinv = MMt^-1;
     complex [int,int] TT = (MMtinv*A);
     complex [int,int] T = TT*MMinv;
     complex [int] Mg = MMtinv*g;
     complex [int] Tf = T*f;
-    ctilde = Mg - Tf;
+    ctilde = Mg - Tf;   
 }//EOM to compute ctilde"
 
 matrix<complex> STIMA,BMASSMA;
@@ -849,10 +864,10 @@ macro constructEBdisp()
 }//Macro to construct the EB solution.
 
 
-macro writeToMATLAB(uh,Th,solfilename,meshfilename)
+macro writeToMATLAB(uh,Th,meshfilename)
 {
-    savemesh(Th,meshfilename);
-    ofstream file(solfilename);
+    savemesh(Th,meshfilename+".mesh");
+    ofstream file(meshfilename);
     file.precision(16);
     file<<"2 1 1 "<<uh.n<<" 2 \n";
     for(int m=0; m<uh[].n; m++)
