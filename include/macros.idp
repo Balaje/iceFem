@@ -307,12 +307,11 @@ macro setMeshIce(brx, midx, midy)
     real crackwidth=widthFrac*LL;
     real crackloc=getARGV("-notchLoc",0.5)*LL;
 
-    border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=1;};
+    border I01(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
     border I02(t=iy3,icetopleft) {x=LL; y=t; label=2;};
-    border I03(t=LL,0) {x=t; y=icetopleft-0*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
-    border I04i(t=icetopleft,0) {x=0; y=t; label=4;};
-    border I04ii(t=0,icebottomleft){x=0; y=t; label=5;};
-    ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04i(LL/tth*N1)+I04ii(LL/tth*N1));
+    border I03(t=LL,0) {x=t; y=icetopleft-0*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=1;};
+    border I04(t=icetopleft,icebottomleft) {x=0; y=t; label=1;};    
+    ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(LL/tth*N1));
 }//This is a macro for creating the ice mesh using 3 point cubic spline.
 
 isUniformCav=getARGV("-isUniCav",1);
@@ -346,7 +345,7 @@ macro setMeshCav(midx, midy, endy)
 
 
     border C01(t=0,LL){x = t; y = splineCurve(t,x1,uy1,x2,y2,x3,y3); label=1;};
-    border C02(t=y3,iy3) {x=LL; y=t; label=2;};
+    border C02(t=y3,iy3) {x=LL; y=t; label=1;};
     border C03(t=0,LL) {x=t; y=splineCurve(t,ix1,iy1,ix2,iy2,ix3,iy3)+1*crackheight*exp(-(t-crackloc)^2/(2*crackwidth^2)); label=3;};
     border C04(t=icebottomleft,uy1) {x=0; y=t; label=4;};
     ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(-LL/tth*N2)+C04(N2));
@@ -665,12 +664,12 @@ macro getLaplaceMat(a,b,c){
     Wh<complex> psih;
     varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih));
     IFMACRO(dimension,2)
-        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(fh*psih*N.x)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
+        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
     ENDIFMACRO
         IFMACRO(dimension,3)
-        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(fh*psih*N.x)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
+        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
     ENDIFMACRO
-        varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih*N.x);
+        varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih);
     STIMA=ah(Wh,Wh);
     BMASSMA=bMh(Wh,Wh);
     RHS[]=lh(0,Wh);
@@ -683,13 +682,13 @@ macro getLaplaceMatBEDMAP2(a,b,c){
     Wh<complex> psih;
     varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih));
     IFMACRO(dimension,2)
-        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(fh*psih*N.x) + intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
+        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih) + intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
     ENDIFMACRO
         IFMACRO(dimension,3)
-        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(fh*psih*N.x) + intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
+        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih) + intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
     ENDIFMACRO
-        varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih*N.x);
-    varf bFS(phih,psih) = intN1(ThCavity,5,qforder=10)(alpha*phih*psih*N.y);
+        varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih);
+    varf bFS(phih,psih) = intN1(ThCavity,5,qforder=10)(alpha*phih*psih);
     STIMA=ah(Wh,Wh);
     BMASSMA=bFS(Wh,Wh);
     RHS[]=lh(0,Wh);
@@ -772,10 +771,10 @@ macro buildReducedSystem(VX,VY,phi0,phij)
     {
 
         IFMACRO(dimension,2)
-            F[m] = -(1i*omega*gammahat)*(intN1(ThIce,1,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y) ));
+            F[m] = -(1i*omega*gammahat)*(intN1(ThIce,3,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y) ));
         ENDIFMACRO
             IFMACRO(dimension,3)
-            F[m] = -(1i*omega*gammahat)*(intN1(ThIce,1,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y + VZ[m]*N.z) ));
+            F[m] = -(1i*omega*gammahat)*(intN1(ThIce,3,qforder=10)( phi0*(VX[m]*N.x + VY[m]*N.y + VZ[m]*N.z) ));
         ENDIFMACRO
 
             for(int n=0; n<nev; n++)
@@ -783,10 +782,10 @@ macro buildReducedSystem(VX,VY,phi0,phij)
                 B(m,n) = (rhoi*ev[m]-rhoi*omega^2)*intN(ThIce)(VX[m]*VX[n] + VY[m]*VY[n]);
 
                 IFMACRO(dimension,2)
-                    K(n,m) = intN1(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
+                    K(n,m) = intN1(ThIce,3,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
                 ENDIFMACRO
                     IFMACRO(dimension,3)
-                    K(n,m) = intN1(ThIce,1,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y+Vz[n]*N.z));
+                    K(n,m) = intN1(ThIce,3,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y+Vz[n]*N.z));
                 ENDIFMACRO
 
                     AB(n,m) = 0;
@@ -877,11 +876,11 @@ macro buildReducedSystemOptim(){
 
         fespace MMh(MaThEmpty,P1);
         MMh AA,BB;
-        varf ipx(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.x);
-        varf ipy(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.y);
+        varf ipx(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.x);
+        varf ipy(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.y);
 
         IFMACRO(dimension,3)
-            varf ipz(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.z);
+            varf ipz(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.z);
         ENDIFMACRO
 
             MMh<complex> phi0Ice, phijIce;
@@ -994,8 +993,8 @@ macro buildReducedSystemOptim(){
 
             fespace MMh(MaThEmpty,P1);
             MMh AA,BB;
-            varf ipx(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.x);
-            varf ipy(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.y);
+            varf ipx(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.x);
+            varf ipy(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.y);
 
             MMh<complex> phi0Ice, phijIce;
             matrix massMax=ipx(MMh,MMh);
@@ -1007,7 +1006,7 @@ macro buildReducedSystemOptim(){
 
             IFMACRO(dimension,3)
                 real[int,int] VZaTh(MaThEmpty.nv,nev);
-            varf ipz(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.z);
+            varf ipz(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.z);
             matrix massMaz=ipz(MMh,MMh);
             ENDIFMACRO
 
@@ -1136,8 +1135,8 @@ macro buildReducedSystemPotential()
     real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev);
     fespace MMh(MaThEmpty,P1);
     MMh AA,BB;
-    varf ipx(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.x);
-    varf ipy(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.y);
+    varf ipx(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.x);
+    varf ipy(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.y);
 
     complex[int,int] KProc(nev,partisize), KProcX(nev,partisize), KProcY(nev,partisize);
     real tmpre, tmpim;
@@ -1148,7 +1147,7 @@ macro buildReducedSystemPotential()
 
     IFMACRO(dimension,3)
         real[int,int] VZaTh(MaThEmpty.nv,nev), Tzz(MaThEmpty.nv,nev);
-    varf ipz(AA,BB)=intN1(MaThEmpty,1,qforder=10)(AA*BB*N.z);
+    varf ipz(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.z);
     matrix massMaz=ipz(AA,BB);
     complex[int,int] KProcZ(nev,partisize);
     complex[int] FProcZ(partisize);

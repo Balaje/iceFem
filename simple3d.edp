@@ -2,7 +2,7 @@
 
 verbosity=0;
 macro dimension 3//EOM"
-macro fspace 2//EOM"
+macro fspace 1//EOM"
 include "macros.idp"
 
 SolutionDir="1_SIMPLE3D/";
@@ -16,3 +16,24 @@ Xh[int][VX,VY,VZ](nev);
 real[int] ev(nev);
 solveEigen;
 writeEigen(1,1);
+
+
+Wh<complex> chi1;
+matrix<complex> MQ1, MQ2;
+getQphi(4,MQ1); //Inlet
+getQphi(5,MQ2); //Outlet
+getChi;
+for(int m=0; m<NModes+1; m++)
+  chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+if(mpirank==0)
+    cout<<"Done Non-local boundary condition"<<endl;
+
+Wh<complex> phi0;
+func fh=chi1;
+getLaplaceMat(0,0,0);
+LHS=STIMA+(MQ1)+(-MQ2)+(-BMASSMA);
+set(LHS,solver=sparsesolver);
+phih[]=LHS^-1*RHS[];
+phi0=phih;
+if(mpirank==0)
+    cout<<"Done diffraction potential "<<endl;
