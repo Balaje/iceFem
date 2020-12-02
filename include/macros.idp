@@ -684,7 +684,7 @@ macro getLaplaceMat(a,b,c){
         IFMACRO(dimension,3)
         varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
     ENDIFMACRO
-        varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih);
+        varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
     STIMA=ah(Wh,Wh);
     BMASSMA=bMh(Wh,Wh);
     RHS[]=lh(0,Wh);
@@ -702,7 +702,7 @@ macro getLaplaceMatBEDMAP2(a,b,c){
         IFMACRO(dimension,3)
         varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih) + intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
     ENDIFMACRO
-        varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih);
+        varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
     varf bFS(phih,psih) = intN1(ThCavity,5,qforder=10)(alpha*phih*psih);
     STIMA=ah(Wh,Wh);
     BMASSMA=bFS(Wh,Wh);

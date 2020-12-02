@@ -14,6 +14,9 @@ k=dispersionfreesurface(alpha,NModes,HH);
 k[0]=-k[0];
 kd=k;
 dd=0;
+//Set characteristic length = 1, time = 1 for dimensional problems
+Lc=1; 
+tc=1;
 
 //---- Find the eigenvalues of the dispersion relation.
 Xh[int][VX,VY,VZ](nev);
@@ -27,7 +30,7 @@ matrix<complex> MQ1, MQ2;
 getQphi(5,MQ2); //Outlet
 getQphi(4,MQ1); //Inlet
 getChi;
-for(int m=0; m<NModes+1; m++)    
+for(int m=0; m<NModes+1; m++)
     chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*HH);
 
 if(mpirank==0)
@@ -36,10 +39,28 @@ if(mpirank==0)
 Wh<complex> phi0;
 func fh=chi1;
 getLaplaceMat(0,0,0);
+BMASSMA=alpha*BMASSMA;
 LHS=STIMA+(MQ1)+(-MQ2)+(-BMASSMA);
 set(LHS,solver=sparsesolver);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
 if(mpirank==0)
     cout<<"Done diffraction potential "<<endl;
+
 savevtk("sol.vtu",ThCavity,real(phi0),dataname="RePhi");
+
+Wh<complex>[int] phij(nev);
+buildParti;
+for(int m=start; m<=stop; m++)
+ {
+     func fh=0;
+     getLaplaceMat(VX[m],VY[m],VZ[m]);
+     BMASSMA=alpha*BMASSMA;
+     LHS=STIMA+(MQ1)+(-MQ2)+(-BMASSMA);
+     set(LHS,solver=sparsesolver);
+     phih[]=LHS^-1*RHS[];
+     phij[m]=phih; 
+     savevtk(SolutionDir+"2_Potential/solRad"+m+".vtu",ThCavity,real(phij[m]),dataname="RePhi");
+     if(mpirank==0)
+         cout<<"Done radiation potential "<<m<<endl;
+ }
