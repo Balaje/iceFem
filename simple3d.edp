@@ -8,15 +8,13 @@ include "macros.idp"
 SolutionDir="1_SIMPLE3D/";
 
 setMeshIceCav3d;
+
 complex alpha=omega^2/10;
 //cout<<alpha<<endl;
 k=dispersionfreesurface(alpha,NModes,HH);
 k[0]=-k[0];
 kd=k;
 dd=0;
-//Set characteristic length = 1, time = 1 for dimensional problems
-Lc=1; 
-tc=1;
 
 //---- Find the eigenvalues of the dispersion relation.
 Xh[int][VX,VY,VZ](nev);
@@ -36,6 +34,8 @@ for(int m=0; m<NModes+1; m++)
 if(mpirank==0)
     cout<<"Done Non-local boundary condition"<<endl;
 
+splitMesh(isSplit);
+
 Wh<complex> phi0;
 func fh=chi1;
 getLaplaceMat(0,0,0);
@@ -44,13 +44,16 @@ LHS=STIMA+(MQ1)+(-MQ2)+(-BMASSMA);
 set(LHS,solver=sparsesolver);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
+WhBdy<complex> phi00=phi0;
 if(mpirank==0)
     cout<<"Done diffraction potential "<<endl;
 
-savevtk("sol.vtu",ThCavity,real(phi0),dataname="RePhi");
+savevtk(SolutionDir+"2_Potential/solDif.vtu",ThCavity,real(phi0),dataname="RePhi");
 
 Wh<complex>[int] phij(nev);
+WhBdy<complex>[int] phijj(nev);
 buildParti;
+complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 for(int m=start; m<=stop; m++)
  {
      func fh=0;
@@ -59,8 +62,45 @@ for(int m=start; m<=stop; m++)
      LHS=STIMA+(MQ1)+(-MQ2)+(-BMASSMA);
      set(LHS,solver=sparsesolver);
      phih[]=LHS^-1*RHS[];
-     phij[m]=phih; 
-     savevtk(SolutionDir+"2_Potential/solRad"+m+".vtu",ThCavity,real(phij[m]),dataname="RePhi");
+     phij[m]=phih;
+     phijj[m]=phih;
+     PHIJProc(:,m-start)=phijj[m][];
      if(mpirank==0)
          cout<<"Done radiation potential "<<m<<endl;
+ }
+
+int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
+mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
+for(int m=0; m<nev; m++)
+    phijj[m][]=PHIJ(:,m);
+
+K.resize(nev,nev);
+B.resize(nev,nev);
+AB.resize(nev,nev);
+F.resize(nev);
+buildReducedSystemOptim;
+
+solveReducedSystem;
+
+Vh<complex> etax, etay, etaz, etaxProc, etayProc, etazProc;
+Wh<complex> phi, phiProc;
+for(int m=start; m<=stop; m++)
+  {
+    phiProc = phiProc + xi[m]*phij[m];
+    etaxProc = etaxProc + xi[m]*VX[m];
+    etayProc = etayProc + xi[m]*VY[m];
+    etazProc = etazProc + xi[m]*VZ[m];
+  }
+mpiReduce(phiProc[],phi[],processor(0),mpiSUM);
+mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
+mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
+mpiReduce(etazProc[],etaz[],processor(0),mpiSUM);
+
+
+if(mpirank==0)
+ {
+     phi=phi+phi0;
+     int[int] Order=[1,1,1], Order1=[1,1];
+     savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay),real(etaz)],[imag(etax),imag(etay),imag(etaz)], dataname="ReDisp ImDisp",order=Order);
+     savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1);
  }

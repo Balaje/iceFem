@@ -39,7 +39,7 @@ meshS M15 = movemesh23(M151,transfo=[x,d,y],orientation=-1,region=lb1);//DrySurf
 //plot(M11,M12,M13,M14,M15,wait=0);
 //Glue all the surface meshes
 Th = Th+M15;//Surface Mesh
-mesh3 ThD = tetg(Th); //3D Mesh using tetg
+mesh3 ThD = tetg(Th,switch="paAq1.0QYY"); //3D Mesh using tetg
 savemesh(ThD,"boat.mesh");
 //plot(ThD,wait=1);
 
@@ -72,6 +72,6 @@ meshS TSide3 = movemesh23(TSq1,transfo=[x,-2*LL1,y],region=lb1,orientation=-1);/
 meshS Tbottom = movemesh23(TSq1,transfo=[x,y-H1,z-H1],region=lb1,orientation=1);//NoFlow-1 
 
 Th=MNew11+MNew12+Top+TSide+TSide1+TSide2+TSide3+Tbottom;
-plot(Th,wait=1);
-mesh3 ThF = tetg(Th,switch="paAq1.0QYY");
+mesh3 ThF = tetg(Th,switch="paAq1.0QYY"); //
+plot(ThF,wait=1);
 savemesh(ThF,"water.mesh");

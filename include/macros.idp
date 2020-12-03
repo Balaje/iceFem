@@ -57,10 +57,13 @@ ENDIFMACRO
 ENDIFMACRO
 
 
+real[int] elasCons(2);
 real lambdahat, muhat, rhoi;
 real rhow, Ad;
+real L, H, th;
 real Lc, tc;
-int NModes=3, nev=20;
+real E, nu;
+int NModes=3, nev=getARGV("-nev",16);
 real LL,HH,dd,tth, ag;
 real gammahat, deltahat, densRat;
 complex omega, Ap, tt;
@@ -71,18 +74,23 @@ complex [int] k(NModes+1), kd(NModes+1);
 complex [int,int] B(nev,nev), K(nev,nev), AB(nev,nev), Hmat(nev,nev);
 complex [int] F(nev);
 
-macro setProblem()
-{
-    real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
-    nev=getARGV("-nev",16);
-    real E, nu;
-    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
-    real d = rhoi/rhow*th;
-    real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
-    complex t = Tr+1i*Ti;
-    real EI = E*th^3/(12*(1-nu^2));
+macro getNonDimConstants()
+{    
+    elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);    
+    real EI = E*th^3/(12*(1-nu^2));    
     Lc = (EI/(rhow*ag))^(1./4.);
     tc = sqrt(rhow*Lc^6/(EI*H));
+}//EOM"
+
+macro setProblem()
+{
+    L = getARGV("-L",20000.);
+    H = getARGV("-H",500.);
+    th = getARGV("-h",200.);        
+    real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
+    complex t = Tr+1i*Ti;
+    getNonDimConstants;
+    real d = rhoi/rhow*th;
     omega = 2*pi/t;
     LL = L/Lc;
     HH = H/Lc;
@@ -134,17 +142,13 @@ macro iceBEDMAP2(nborders, isBuild)
     for(int m=0; m<npieces1+1; m++)
         file5>>breaksCav[m];
 
-    real L=abs(iceBegin-iceEnd);
-    real H=abs(splineRecon(coefsCav,breaksCav,cavBegin,npieces1));
-    real th=abs(splineRecon(coefsTop,breaksTop,iceBegin,npieces)-splineRecon(coefsBot,breaksBot,iceBegin,npieces));
-    real d=abs(splineRecon(coefsBot,breaksBot,iceBegin,npieces));
-    real E, nu;
-    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
+    L=abs(iceBegin-iceEnd);
+    H=abs(splineRecon(coefsCav,breaksCav,cavBegin,npieces1));
+    th=abs(splineRecon(coefsTop,breaksTop,iceBegin,npieces)-splineRecon(coefsBot,breaksBot,iceBegin,npieces));
+    d=abs(splineRecon(coefsBot,breaksBot,iceBegin,npieces));    
     real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
     complex t = Tr+1i*Ti;
-    Real EI = E*th^3/(12*(1-nu^2));
-    Lc = (EI/(rhow*ag))^(1./4.);
-    tc = sqrt(rhow*Lc^6/(EI*H));
+    getNonDimConstants;
     omega = 2*pi/t;
     LL = L/Lc;
     HH = H/Lc;
@@ -356,18 +360,18 @@ macro setMeshCav(midx, midy, endy)
 //MACROS to import sample 3D meshes
 macro setMeshIceCav3d()
 {
-    LL=100;
-    real BB=10, d=2.25;
-    HH=0.8*LL;
-    real bb=0.8*HH;
-    real E,nu;
-    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
-    real mu1 = elasCons[0];
-    real lambda = elasCons[1];
-    muhat=mu1;
-    lambdahat=lambda;
-    gammahat = rhow;
-    deltahat = rhow*ag;
+    L=100;
+    real BB=10, th=2.25;
+    H=0.8*L;    
+    getNonDimConstants;
+    LL=L/Lc;
+    dd=0;
+    HH=H/Lc;
+    real mu1=elasCons[0], lambda=elasCons[1];
+    muhat=mu1/Lc^2;
+    lambdahat=lambda/Lc^2;
+    gammahat = rhow/Lc;
+    deltahat = rhow*ag/Lc;
     real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
     complex t = Tr+1i*Ti;
     omega = 2*pi/t;
@@ -380,6 +384,8 @@ macro setMeshIceCav3d()
     int N2 = getARGV("-N",3);
     ThIce = readmesh3("MESHES/boat.mesh");
     ThCavity = readmesh3("MESHES/water.mesh");
+    ThIce = movemesh(ThIce,[x/Lc,y/Lc,z/Lc]);
+    ThCavity = movemesh(ThCavity,[x/Lc,y/Lc,z/Lc]);
     if(mpirank==0){
         cout<<"Number of Ice Vertices = "<<ThIce.nv<<endl;
         cout<<"Number of Cavity Vertices = "<<ThCavity.nv<<endl;
@@ -429,10 +435,10 @@ macro writeEigen(isVtk, isDat)
                 savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
             ENDIFMACRO
 
-            IFMACRO(dimension,3)
+                IFMACRO(dimension,3)
                 int[int] Order1=[1,1,1];
             Vh modeZ=VZ[m];
-            savevtk(SolutionDir+"2_Modes/Modes"+m+".vtu",ThIce,[modeX,modeY,modeZ],dataname="ReMode",order=Order1);            
+            savevtk(SolutionDir+"2_Modes/Modes"+m+".vtu",ThIce,[modeX,modeY,modeZ],dataname="ReMode",order=Order1);
             ENDIFMACRO
                 }
         if(isDat)
@@ -518,16 +524,45 @@ macro refineMesh(){
     broadcast(processor(1),ThCavity);
 }//EOM" (Macro to refine mesh).
 
+
 IFMACRO(dimension,3)
+bool isSplit = getARGV("-isSplit",0);
+int[int] lbls=[3];
 meshN MaThEmpty=ThIce;
 meshN ThEmptyIce=ThIce;
 meshN ThEmptyCav=ThCavity;
 fespace VhBdy(MaThEmpty,P1);
 fespace WhBdy(ThEmptyCav,P1);
+macro splitMesh(isSplit)
+{
+    if(isSplit){
+        ffddmbuildDmesh(M,ThIce,mpiCommWorld);
+        ffddmbuildDfespace(Fe,M,real,def,init,P1);
+        MaThEmpty=MaTh[mpirank];
+        if(mpirank==0)
+            cout<<"Splitting on ... "<<endl;
+        ThEmptyIce=ThIce;
+        ThEmptyCav=ThCavity;
+    }
+    else
+    {
+        if(mpirank==0)
+            cout<<"Splitting off ... "<<endl;
+        MaThEmpty=ThIce;
+        ThEmptyIce=ThIce;
+        ThEmptyCav=ThCavity;
+    }
+    if(mpirank==0){
+        cout<<"Number of ice    boundary DOFs = "<<ThEmptyIce.nv<<endl;
+        cout<<"Number of cavity boundary DOFs = "<<ThEmptyCav.nv<<endl;
+    }
+    cout<<"Number of boundary DOFs in Processor "<<mpirank<<" = "<<MaThEmpty.nv<<endl;
+}//EOM" Split Mesh
 ENDIFMACRO
+//
 
 IFMACRO(dimension,2)
-    bool isSplit = getARGV("-isSplit",0);
+bool isSplit = getARGV("-isSplit",0);
 meshN MaThEmpty=emptymesh(ThIce);
 meshN ThEmptyIce=emptymesh(ThIce);
 meshN ThEmptyCav=emptymesh(ThCavity);
@@ -637,7 +672,7 @@ macro getQphi(bInd,MQ){
             func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
         ENDIFMACRO
             IFMACRO(dimension,3)
-            func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));            
+            func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
         ENDIFMACRO
 
             varf boundaryip(unused,vh) = intN1(ThCavity,bInd,qforder=10)(eigenfunc*vh);
@@ -658,17 +693,17 @@ macro getQphi(bInd,MQ){
 
 complex[int] ctilde(NModes+1);
 macro getChi(){
-    ctilde.resize(NModes+1);    
+    ctilde.resize(NModes+1);
     complex [int] f(NModes+1), g(NModes+1);
     complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
-    getMat(A, f, g, MM, MMt);    
+    getMat(A, f, g, MM, MMt);
     complex [int,int] MMinv = MM^-1;
     complex [int,int] MMtinv = MMt^-1;
     complex [int,int] TT = (MMtinv*A);
     complex [int,int] T = TT*MMinv;
     complex [int] Mg = MMtinv*g;
     complex [int] Tf = T*f;
-    ctilde = Mg - Tf;   
+    ctilde = Mg - Tf;
 }//EOM to compute ctilde"
 
 matrix<complex> STIMA,BMASSMA;
@@ -989,8 +1024,8 @@ macro buildReducedSystemOptim(){
         mpiReduce(KProc,K,processor(0),mpiSUM);
 
         IFMACRO(dimension,3)
-            FProc=FProcX+FProcY+FProcZ;
-        KProc=KProcX+KProcY+KProcZ;
+            FProc+=FProcZ;
+        KProc+=KProcZ;
         mpiReduce(FProc,F,processor(0),mpiSUM);
         mpiReduce(KProc,K,processor(0),mpiSUM);
         ENDIFMACRO
@@ -1101,8 +1136,8 @@ macro buildReducedSystemOptim(){
             KProc=KProcX+KProcY;
 
             IFMACRO(dimension,3)
-                FProc=FProcX+FProcY+FProcZ;
-            KProc=KProcX+KProcY+KProcZ;
+                FProc+=FProcZ;
+            KProc+=KProcZ;
             ENDIFMACRO
 
                 K=KProc;
@@ -1252,7 +1287,7 @@ macro buildReducedSystemPotential()
 }//EOM"
 
 macro getRefCoeff(bInd,phi,Ref){
-    complex[int] aa(NModes+1), bb(NModes+1);
+    complex[int] aa(NModes+1), bb(NModes+1), c(NModes+1);
     for(int m=0; m<NModes+1; m++)
     {
         func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));

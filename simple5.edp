@@ -60,14 +60,6 @@ getChi;
 for(int m=0; m<NModes+1; m++)
   chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
-//Get the emptymesh and the solution on the boundary.
-
-
-if(mpirank==0){
-  cout<<"Number of ice    boundary DOFs = "<<ThEmptyIce.nv<<endl;
-  cout<<"Number of cavity boundary DOFs = "<<ThEmptyCav.nv<<endl;
- }
-
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
 func fh=chi1;//Store in fh, the right-hand side function on the ocean-cavity interface.
@@ -144,8 +136,7 @@ if(mpirank==0){
   //Compute the reflection coefficient.
   cout<<"\n\n\n";
   cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;
-  phi=phi+phi0;
-  complex[int] phiVec(phi.n), c(NModes+1);
+  phi=phi+phi0;  
   complex Ref;
   getRefCoeff(4,phi,Ref);
   cout.precision(16);
