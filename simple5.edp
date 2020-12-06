@@ -7,7 +7,7 @@ bool debug=true;
 
 //Domain decomposition module.
 macro dimension 2//EOM"
-macro fspace 2//EOM"
+macro fspace 1//EOM"
 
 include "macros.idp"
 
