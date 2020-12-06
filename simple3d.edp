@@ -11,16 +11,18 @@ setProblem;
 setMeshIce(0,0,0);
 setMeshCav(0,0,0);
 solveDispersion;
+
+
 /*
 setMeshIceCav3d;
-
-complex alpha=omega^2/10;
+alpha=omega^2/10;
 //cout<<alpha<<endl;
 k=dispersionfreesurface(alpha,NModes,HH);
 k[0]=-k[0];
 kd=k;
 dd=0;
 */
+
 
 //---- Find the eigenvalues of the dispersion relation.
 Xh[int][VX,VY,VZ](nev);

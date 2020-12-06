@@ -57,12 +57,9 @@ ENDIFMACRO
 ENDIFMACRO
 
 
-real[int] elasCons(2);
 real lambdahat, muhat, rhoi;
 real rhow, Ad;
-real L, H, th, d;
 real Lc, tc;
-real E, nu;
 int NModes=3, nev=getARGV("-nev",16);
 real LL,HH,dd,tth, ag;
 real gammahat, deltahat, densRat;
@@ -74,22 +71,16 @@ complex [int] k(NModes+1), kd(NModes+1);
 complex [int,int] B(nev,nev), K(nev,nev), AB(nev,nev), Hmat(nev,nev);
 complex [int] F(nev);
 
-macro getNonDimConstants()
-{    
-    elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);    
-    real EI = E*th^3/(12*(1-nu^2));    
-    Lc = (EI/(rhow*ag))^(1./4.);
-    tc = sqrt(rhow*Lc^6/(EI*H));
-}//EOM"
-
 macro setProblem()
 {
-    L = getARGV("-L",20000.);
-    H = getARGV("-H",500.);
-    th = getARGV("-h",200.);        
+    real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);        
     real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
     complex t = Tr+1i*Ti;
-    getNonDimConstants;
+    real E, nu;
+    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);    
+    real EI = E*th^3/(12*(1-nu^2));
+    Lc = (EI/(rhow*ag))^(1./4.);
+    tc = sqrt(rhow*Lc^6/(EI*H));
     real d = rhoi/rhow*th;
     omega = 2*pi/t;
     LL = L/Lc;
@@ -98,7 +89,7 @@ macro setProblem()
     tth = th/Lc;
     tt = t/tc;
     complex ndOmega = 2*pi/tt;
-    complex alpha = HH*ndOmega^2;
+    alpha = HH*ndOmega^2;
     Ap = ag/(1i*omega)*Ad;
     real mu1 = elasCons[0], lambda = elasCons[1];
     muhat = mu1/Lc^2;
@@ -142,13 +133,17 @@ macro iceBEDMAP2(nborders, isBuild)
     for(int m=0; m<npieces1+1; m++)
         file5>>breaksCav[m];
 
-    L=abs(iceBegin-iceEnd);
-    H=abs(splineRecon(coefsCav,breaksCav,cavBegin,npieces1));
-    th=abs(splineRecon(coefsTop,breaksTop,iceBegin,npieces)-splineRecon(coefsBot,breaksBot,iceBegin,npieces));
-    d=abs(splineRecon(coefsBot,breaksBot,iceBegin,npieces));    
+    real L=abs(iceBegin-iceEnd);
+    real H=abs(splineRecon(coefsCav,breaksCav,cavBegin,npieces1));
+    real th=abs(splineRecon(coefsTop,breaksTop,iceBegin,npieces)-splineRecon(coefsBot,breaksBot,iceBegin,npieces));
+    real d=abs(splineRecon(coefsBot,breaksBot,iceBegin,npieces));    
     real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
     complex t = Tr+1i*Ti;
-    getNonDimConstants;
+    real E, nu;
+    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);    
+    real EI = E*th^3/(12*(1-nu^2));
+    Lc = (EI/(rhow*ag))^(1./4.);
+    tc = sqrt(rhow*Lc^6/(EI*H));    
     omega = 2*pi/t;
     LL = L/Lc;
     HH = H/Lc;
@@ -283,7 +278,8 @@ macro setMeshIce(brx, midx, midy)
     int N1 = getARGV("-N",3);
     IFMACRO(dimension,3)    
     int[int] lb1=[3,2,1,1,1,1];    
-    ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth-dd)*y,tth*z],label=lb1);    
+    ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth-dd)*y,tth*z],label=lb1);
+    savemesh(ThIce,"iceMesh.mesh");
     ENDIFMACRO
 
     IFMACRO(dimension,2)    
@@ -324,7 +320,8 @@ macro setMeshCav(midx, midy, endy)
     int N2 = getARGV("-N",3);
     IFMACRO(dimension,3)    
     int[int] lb2=[1,1,3,4,1,1];
-    ThCavity=cube(LL/tth*N2,N2,N2,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb2);     
+    ThCavity=cube(LL/tth*N2,N2,N2,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb2);
+    savemesh(ThCavity,"cavMesh.mesh");
     ENDIFMACRO
 
     IFMACRO(dimension,2)
@@ -359,10 +356,14 @@ macro setMeshCav(midx, midy, endy)
 //MACROS to import sample 3D meshes
 macro setMeshIceCav3d()
 {
-    L=100;
+    real L=100;
     real BB=10, th=2.25;
-    H=0.8*L;    
-    getNonDimConstants;
+    real H=0.8*L;    
+    real E, nu;
+    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);    
+    real EI = E*th^3/(12*(1-nu^2));
+    Lc = (EI/(rhow*ag))^(1./4.);
+    tc = sqrt(rhow*Lc^6/(EI*H));    
     LL=L/Lc;
     dd=0;
     HH=H/Lc;
@@ -379,7 +380,7 @@ macro setMeshIceCav3d()
         cout<<"Dimension should be 3 to use 3d meshes"<<endl;
     exit(0);
     ENDIFMACRO
-        int N1 = getARGV("-N",3);
+    int N1 = getARGV("-N",3);
     int N2 = getARGV("-N",3);
     ThIce = readmesh3("MESHES/boat.mesh");
     ThCavity = readmesh3("MESHES/water.mesh");
@@ -400,7 +401,7 @@ macro solveEigen()
         if(mpirank==0){
             Xh [u,v],[uu,vv];
             varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
-            varf b([u,v],[uu,vv]) = intN(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv));
+            varf b([u,v],[uu,vv]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv));
             matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
             matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
             int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
@@ -409,8 +410,8 @@ macro solveEigen()
         IFMACRO(dimension,3)
         if(mpirank==0){
             Xh [u,v,w],[uu,vv,ww];
-            varf a([u,v,w],[uu,vv,ww]) = intN(ThIce)(lambdahat*div(u,v,w)*div(uu,vv,ww) + 2*muhat*epsilon(u,v,w)'*epsilon(uu,vv,ww)) + on(2,u=0,v=0,w=0);
-            varf b([u,v,w],[uu,vv,ww]) = intN(ThIce,qft=qf1pTlump)(rhoi*(u*uu + v*vv + w*ww));
+            varf a([u,v,w],[uu,vv,ww]) = intN(ThIce,qforder=1)(lambdahat*div(u,v,w)*div(uu,vv,ww) + 2*muhat*epsilon(u,v,w)'*epsilon(uu,vv,ww)) + on(2,u=0,v=0,w=0);
+            varf b([u,v,w],[uu,vv,ww]) = intN(ThIce,qforder=1)((u*uu + v*vv + w*ww));
             matrix stima = a(Xh,Xh,solver=sparsesolver);
             matrix massma = b(Xh,Xh,solver=sparsesolver);
             int kkk = EigenValue(stima,massma,value=ev,vector=VX,tol=1e-10);
@@ -426,7 +427,7 @@ macro writeEigen(isVtk, isDat)
     ofstream fileEigen(SolutionDir+"/2_Modes/eval.dat");
     for(int m=0; m<nev; m++)
     {
-        fileEigen<<ev[m]<<endl;;
+        fileEigen<<ev[m]<<endl;
         if(isVtk)
         {
             Vh modeX=VX[m],modeY=VY[m];
@@ -715,7 +716,7 @@ macro getLaplaceMat(a,b,c){
     IFMACRO(dimension,2)
         varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
     ENDIFMACRO
-        IFMACRO(dimension,3)
+    IFMACRO(dimension,3)
         varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
     ENDIFMACRO
         varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
@@ -921,7 +922,7 @@ macro buildReducedSystemOptim(){
             matrix massMaz=ipz(MMh,MMh);
         ENDIFMACRO
 
-            phi0Ice=phi00;
+        phi0Ice=phi00;
         phi0aTh=phi0Ice[];
         phi0aTh=phi0aTh*(-1i*omega*gammahat);
 
@@ -973,7 +974,7 @@ macro buildReducedSystemOptim(){
             FProcZ(m)=tmpre+1i*tmpim;
             ENDIFMACRO
 
-                B(m,m)=(rhoi*ev[m]-rhoi*omega^2);
+                B(m,m)=(ev[m]-rhoi*omega^2);
 
             for(int n=0; n<nev; n++)
             {
@@ -1087,7 +1088,7 @@ macro buildReducedSystemOptim(){
                 FProcZ(m)=tmpre+1i*tmpim;
                 ENDIFMACRO
 
-                    B(m,m)=(rhoi*ev[m]-rhoi*omega^2);
+                    B(m,m)=(ev[m]-rhoi*omega^2);
 
                 for(int n=0; n<nev; n++)
                 {
