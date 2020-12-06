@@ -7,6 +7,11 @@ include "macros.idp"
 
 SolutionDir="1_SIMPLE3D/";
 
+setProblem;
+setMeshIce(0,0,0);
+setMeshCav(0,0,0);
+solveDispersion;
+/*
 setMeshIceCav3d;
 
 complex alpha=omega^2/10;
@@ -15,6 +20,7 @@ k=dispersionfreesurface(alpha,NModes,HH);
 k[0]=-k[0];
 kd=k;
 dd=0;
+*/
 
 //---- Find the eigenvalues of the dispersion relation.
 Xh[int][VX,VY,VZ](nev);
@@ -103,4 +109,11 @@ if(mpirank==0)
      int[int] Order=[1,1,1], Order1=[1,1];
      savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay),real(etaz)],[imag(etax),imag(etay),imag(etaz)], dataname="ReDisp ImDisp",order=Order);
      savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1);
+ }
+
+complex Ref;
+getRefCoeff(4,phi,Ref);
+if(mpirank==0){
+    cout.precision(8);
+    cout<<"Reflection Coefficient = "<<Ref<<endl;    
  }

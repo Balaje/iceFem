@@ -6,6 +6,9 @@
 
 verbosity=0;
 
+macro dimension 2//EOM"
+macro fspace 2//EOM"
+
 include "macros.idp"
 
 macro extractFS(fefunc, febdymesh, filename){
@@ -73,15 +76,11 @@ mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0)
   cout<<"Time to solve Eigenvalue = "<<timeTaken<<" s"<<endl;
 
-if(mpirank==0){
-  cout<<"Number of ice    boundary DOFs = "<<ThEmptyIce.nv<<endl;
-  cout<<"Number of cavity boundary DOFs = "<<ThEmptyCav.nv<<endl;
- }
-
 //Solve for the Diffraction potential
 Wh<complex> phi0;
 func fh=chi1;
-getLaplaceMatBEDMAP2(0,0);
+getLaplaceMat(0,0,0);
+BMASSMA=alpha*BMASSMA;
 LHS=STIMA+(MQ)+(-BMASSMA);
 set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
@@ -97,7 +96,8 @@ starttime=mpiWtime();
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
   {
     func fh=0;
-    getLaplaceMatBEDMAP2(VX[m],VY[m]);
+    getLaplaceMat(VX[m],VY[m],0);
+    BMASSMA=alpha*BMASSMA;
     LHS=STIMA+(MQ)+(-BMASSMA);
     set(LHS,solver=UMFPACK,eps=1e-20);
     phih[]=LHS^-1*RHS[];
@@ -152,21 +152,14 @@ if(mpirank==0){
   cout<<"\n\n\n";
   cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;
   phi=phi0+phi;
-
-  //Write the reflection coefficient to a file.
-  complex[int] phiVec(phi.n), c(NModes+1);
-  phiVec = phi[]; //Get the vector form of the finite element function.
-  complex Ref = getRefCoeff(ThCavity, NModes, kd, k, phiVec, HH, dd, Ap, c); //From "refCoeff.idp"
+  complex Ref;
+  getRefCoeff(4,phi,Ref);
   cout.precision(16);
-  cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
-  ofstream file("1_BEDMAP2/2_RefCoeff/RefCoeff"+iter+".dat");
-  file.precision(16);
-  file<<real(Ref)<<"\t"<<imag(Ref)<<endl;
+  cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;  
 
   //Write data to MATLAB
   //iter could be used to index the solution.
 
-  Vh ux=real(etax), uy=real(etay);
   int[int] Order=[1,1];
   savevtk("1_BEDMAP2/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
   savevtk("1_BEDMAP2/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
