@@ -38,15 +38,25 @@ mpirun -np 4 FreeFem++-mpi -ne -v 0 simple5.edp -L [LENGTH] -H [DEPTH OF CAVITY]
                                  -notchLoc [LOC_FRAC_LENGTH]
 ```
 
+To specify the dimension of the problem and the polynomial order of approximation, define the following macros in the code
+
+```cpp
+macro dimension 3//EOM" (dim=3)
+macro fspace 1//EOM" (fespace=P1)
+```
+
+to solve a 3D problem using linear tetrahedral elements. Note that FreeFem offers support only for triangles/tetrahedrons. The non-local boundary condition has been extended to accommodate  more general cases.
+
+
 **Example: Run**
 
 ```shell
-mpirun -np 4 FreeFem++-mpi -ne -v 0 simple5.edp -L 10000 -H 800 -h 200 -N 4 -Tr 200 -Ti 0 -iter 0 -hsize 0.01 -isSplit 1  
+mpirun -np 4 FreeFem++-mpi -ne -v 0 simple5.edp -L 10000 -H 800 -h 200 -N 4 -Tr 200 -Ti 0 -iter 0 -hsize 0.01 -isSplit 1
 ```
 
 The parameter ``hsize`` is used in uniform refinement of the ice and cavity meshes and is used by the macro ```refineMesh```. A better method will be added in future releases. Splitting is employed to parallelise the computation of the reduced system. For a set of space-dimensional parameters for example, length, thickness of the ice shelf, splitting can be done once. This is achieved using the macro,
 
-``` shell
+``` cpp
 splitMesh(isSplit);
 ```
 where ```isSplit``` is a global variable that indicates whether the splitting is active or not. The splitting macro will split the mesh and distribute the sub-meshes among the processors. The following data for the reflection coefficient is obtained.
@@ -124,25 +134,19 @@ T | Reflection Coefficient, R | abs(R) |
 50 s| (-0.6399984548546397,-0.7683761954820765) | 0.9999999999999183 |
 5000 s | (-0.864578758274102,-0.502497333987288) | 0.9999999999615601 |
 
-## Convergence of the reflection coefficients
-It may be useful to compute the convergence of the reflection coefficients for various mesh sizes. Table below shows the convergence results for the reflection coefficients along with the computation time using 4 processors. Note that the computation time may vary since I may have added the time taken by the routine to split the mesh while running the results below.
+## 3D Problems
 
-T | No of Vertices (Ice) | Reflection Coefficient, R | abs(R) | Computation time (in s)|
---- | --- | --- | ---- | --- |
-5000 s | 74256 | (0.7788184783832949,0.6272493744418549) | 1.000000000004485 | 182.92829 |
- (-) | 135159 | 0.7788618386563695,0.6271955327529088 | 1.000000000010193 | 309.2567 |
-50 s | 74256 | (0.233145889676898,0.9724417690159223) | 1.000000000000024 | 220.0760 |
- (-) | 135159 | (0.1882588341259381,0.9821194486286965) | 1.000000000000596 | 429.2906 |
+3D problems are much more challenging to solve that 2D problems. The eigenmode decomposition of the ice-shelf typically consists of lower order vibration modes in the third direction. The modal decomposition often yield these vibration modes in an arbitrary order and thus simple solutions to the frequency domain problems are often harder to approximate. Hence, more analysis (including validation) is required to study these problems in detail. Nevertheless, preliminary support has been extended to 3D cases as well.
 
+All the macros should work if the correct dimension has been specified and the correct meshes are being used. Example meshes are available in ```Meshes/*.mesh```.
 
+| Floating boat | 3D ice-shelf |
+| --- | --- |
+| ![BEDMAP 1](./Images/boatCav1.png) | ![BEDMAP 2](./Images/iceCav2.png) |
 
+The first example is that of a floating boat. A detailed description of the geometry and the solution method can be found in this link here. The inlet and the outlet faces are prescribed by the user by specifying the appropriate labels. In this case, there is exactly one inlet (front plane, outward from the plane of the paper) and one outlet boundary (back, into the plane of the paper). No normal flow is prescribed on the sides and the bottom. The top surface is assigned as a free-surface.
 
-## Coming soon
-Will support 3D models in the future. Some examples currently in the works are shown below.
+The second example is that of a classic ice--shelf vibration problem. The example here shows the vibration of a uniform ice-shelf of length 20 km and 200 m thick placed over a cavity of depth 500 m. The shelf is subjected to an incident wave forcing of 4000 s. The gray surface shows the 2D elasticity solution obtained using the same code. As mentioned earlier, there is a little bit of in-plane displacement along the third direction due to the contribution of the in-plane modes. Nevertheless, a good qualitative agreement is observed for the lower modes (which is a start!). This repository will be updated as more studies are conducted.
 
- | ![3D_1](./Images/Displacement.png) | ![3D_2](./Images/Velocity.png) |
- | ---------------------------------- | ------------------------------ |
-
-More coming soon.
-
-Contact: Balaje K,  Email: [balaje6@gmail.com](mailto:balaje6@gmail.com)
+Contact:
+- Balaje K,  [balaje6@gmail.com](mailto:balaje6@gmail.com)
