@@ -278,8 +278,7 @@ macro setMeshIce(brx, midx, midy)
     int N1 = getARGV("-N",3);
     IFMACRO(dimension,3)    
     int[int] lb1=[3,2,1,1,1,1];    
-    ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth-dd)*y,tth*z],label=lb1);
-    savemesh(ThIce,"iceMesh.mesh");
+    ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth)*y,tth*z],label=lb1);    
     ENDIFMACRO
 
     IFMACRO(dimension,2)    
@@ -320,8 +319,7 @@ macro setMeshCav(midx, midy, endy)
     int N2 = getARGV("-N",3);
     IFMACRO(dimension,3)    
     int[int] lb2=[1,1,3,4,1,1];
-    ThCavity=cube(LL/tth*N2,N2,N2,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb2);
-    savemesh(ThCavity,"cavMesh.mesh");
+    ThCavity=cube(LL/tth*N2,N2,N2,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb2);    
     ENDIFMACRO
 
     IFMACRO(dimension,2)
@@ -408,7 +406,7 @@ macro solveEigen()
         }
     ENDIFMACRO
         IFMACRO(dimension,3)
-        if(mpirank==0){
+        if(mpirank==0){            
             Xh [u,v,w],[uu,vv,ww];
             varf a([u,v,w],[uu,vv,ww]) = intN(ThIce,qforder=1)(lambdahat*div(u,v,w)*div(uu,vv,ww) + 2*muhat*epsilon(u,v,w)'*epsilon(uu,vv,ww)) + on(2,u=0,v=0,w=0);
             varf b([u,v,w],[uu,vv,ww]) = intN(ThIce,qforder=1)((u*uu + v*vv + w*ww));
