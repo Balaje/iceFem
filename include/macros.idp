@@ -1133,11 +1133,11 @@ macro buildReducedSystemOptim(){
 macro writeReducedSystem()
 {
     complex[int] RefmProc(nev), Refm(nev);
-    ofstream file1("1_SIMPLE5/2_ModesMatrix/ReH"+iter+".dat");
-    ofstream file2("1_SIMPLE5/2_ModesMatrix/ImH"+iter+".dat");
-    ofstream file3("1_SIMPLE5/2_ModesMatrix/ReF"+iter+".dat");
-    ofstream file4("1_SIMPLE5/2_ModesMatrix/ImF"+iter+".dat");
-    ofstream file5("1_SIMPLE5/2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");
+    ofstream file1(SolutionDir+"2_ModesMatrix/ReH"+iter+".dat");
+    ofstream file2(SolutionDir+"2_ModesMatrix/ImH"+iter+".dat");
+    ofstream file3(SolutionDir+"2_ModesMatrix/ReF"+iter+".dat");
+    ofstream file4(SolutionDir+"2_ModesMatrix/ImF"+iter+".dat");
+    ofstream file5(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");    
     file1.precision(16);
     file2.precision(16);
     file3.precision(16);
