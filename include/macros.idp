@@ -1296,10 +1296,10 @@ macro getRefModes(bInd,phi,Ref){
     for(int m=0; m<NModes+1; m++)
     {
         func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
-        aa[m] = intN1(ThCavity,4,qforder=10)(phi*eigenfunc);
+        aa[m] = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
     }
     complex [int] c1(NModes+1);
-    complex [int] f(NModes+1), g(NModes+1);
+    complex [int] f(NModes+1), g(NModes+1), c(NModes+1);
     complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
     int nbv = ThCavity.nv;
     getMat(A, f, g, MM, MMt);
@@ -1309,8 +1309,7 @@ macro getRefModes(bInd,phi,Ref){
     complex [int,int] T = TT*MMinv;
     bb = T*aa;
     c1 = MMt*bb;
-    complex[int,int] AA=A^-1;
-    c1 = c1 - pk;
+    complex[int,int] AA=A^-1; 
     c = AA*c1;
     Ref = c[0]/Ap;
 }//EOM"
