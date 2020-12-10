@@ -1,4 +1,4 @@
-function V = interpolateRefCoeff(omega,omegaNew,Nev,filePath)
+function V = interpolateRefCoeff(omega,omegaNew,Nev,filePath,TorC)
 %% Interpolate the Diffraction Potential over the new-frequency space.
 omegalist=omega(:);
 omegaNewlist = omegaNew(:);
@@ -6,8 +6,8 @@ omegaNewlist = omegaNew(:);
 rd = zeros(length(omegalist),1); %Diffraction RefCoeffs
 rr = zeros(length(omegalist),Nev); %Radiation RefCoeffs
 for m=1:length(omegalist)
-    rcDiff = load([filePath,'/RefCoeff_Dif/refC',num2str(m),'.dat']);
-    rcRad = load([filePath,'/RefCoeff_Rad/refC_',num2str(m),'.dat']);
+    rcDiff = load([filePath,'/RefCoeff_Dif/ref',TorC,num2str(m),'.dat']);
+    rcRad = load([filePath,'/RefCoeff_Rad/ref',TorC,'_',num2str(m),'.dat']);
     
     rd(m) = rcDiff(1)+1i*rcDiff(2);
     rr(m,:) = (rcRad(:,1)+1i*rcRad(:,2)).';
