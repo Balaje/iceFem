@@ -112,7 +112,6 @@ difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0){
   cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
-  writeReducedSystem;
  }
 
 //Solve the reduced system;

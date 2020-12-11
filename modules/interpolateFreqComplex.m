@@ -23,12 +23,12 @@ HNew = zeros(Nev^2,length(omegaNew(:)));
 FNew = zeros(Nev,length(omegaNew(:)));
 
 for m=1:Nev^2
-    ReH = reshape(H(m,:), [length(omega),length(omega)]);   
+    ReH = reshape(H(m,:), [size(omega,1),size(omega,2)]);    
     HH = interp2(real(omega),imag(omega), ReH, real(omegaNew),imag(omegaNew),'cubic');    
     HNew(m,:) = HH(:);
     
     if(m <= Nev)
-        ReF = reshape(F(m,:), [length(omega),length(omega)]);        
+        ReF = reshape(F(m,:), [size(omega,1),size(omega,2)]);        
         FF = interp2(real(omega),imag(omega), ReF, real(omegaNew),imag(omegaNew),'cubic');
         FNew(m,:) = FF(:);
     end

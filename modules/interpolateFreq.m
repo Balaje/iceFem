@@ -30,26 +30,27 @@ for m=1:Nev^2
     ReH = real(H(m,:));
     ImH = imag(H(m,:));
     
-    ReHnew = interp1(omega, ReH, omegaNew);
-    ImHnew = interp1(omega, ImH, omegaNew);
+    ReHnew = interp1(omega, ReH, omegaNew, 'pchip');
+    ImHnew = interp1(omega, ImH, omegaNew, 'pchip');
     HNew(m,:) = ReHnew(:) + 1i*ImHnew(:);
     
     if(m <= Nev && isSolve)
         ReF = real(F(m,:));
         ImF = imag(F(m,:));
-        ReFnew = interp1(omega, ReF, omegaNew);
-        ImFnew = interp1(omega, ImF, omegaNew);
+        ReFnew = interp1(omega, ReF, omegaNew, 'pchip');
+        ImFnew = interp1(omega, ImF, omegaNew, 'pchip');
         FNew(m,:) = ReFnew(:) + 1i*ImFnew(:);
     end
     
 %     figure(1);
 %     subplot(1,2,1);
 %     plot(omega,abs(F(m,:)),'+-');
-%     hold on
+%     hold off
 %     subplot(1,2,2);
 %     plot(omegaNew,abs(FNew(m,:)),'+-');    
 %     hold on
 %     pause();
+%     hold off
 end
 
 detH=zeros(length(omegaNew),1);

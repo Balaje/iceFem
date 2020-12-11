@@ -7,7 +7,7 @@ rd = zeros(length(omegalist),1); %Diffraction RefCoeffs
 rr = zeros(length(omegalist),Nev); %Radiation RefCoeffs
 for m=1:length(omegalist)
     rcDiff = load([filePath,'/RefCoeff_Dif/ref',TorC,num2str(m),'.dat']);
-    rcRad = load([filePath,'/RefCoeff_Rad/ref',TorC,'_',num2str(m),'.dat']);
+    rcRad = load([filePath,'/RefCoeff_Rad/ref',TorC,num2str(m),'.dat']);
     
     rd(m) = rcDiff(1)+1i*rcDiff(2);
     rr(m,:) = (rcRad(:,1)+1i*rcRad(:,2)).';
@@ -27,10 +27,10 @@ for m=1:Nev
 end
 
 %% Write the interpolated reflection coefficients to a file.
-dlmwrite([filePath,'/Interpolated_R/refCDifRe.dat'],real(rdNew));
-dlmwrite([filePath,'/Interpolated_R/refCDifIm.dat'],imag(rdNew));
-dlmwrite([filePath,'/Interpolated_R/refCRadRe.dat'],real(rcNew));
-dlmwrite([filePath,'/Interpolated_R/refCRadIm.dat'],imag(rcNew));
+dlmwrite([filePath,'/Interpolated_R/ref',TorC,'DifRe.dat'],real(rdNew));
+dlmwrite([filePath,'/Interpolated_R/ref',TorC,'DifIm.dat'],imag(rdNew));
+dlmwrite([filePath,'/Interpolated_R/ref',TorC,'RadRe.dat'],real(rcNew));
+dlmwrite([filePath,'/Interpolated_R/ref',TorC,'RadIm.dat'],imag(rcNew));
 
 
 V = 0;
