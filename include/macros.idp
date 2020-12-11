@@ -22,7 +22,7 @@ macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
 macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
 cout<<"Dimension : 2"<<endl;
 macro minimalMesh()square(2,2)//EOM
-meshN ThIce=minimalMesh;
+    meshN ThIce=minimalMesh;
 meshN ThCavity=minimalMesh;
 IFMACRO(fspace,1)
 fespace Vh(ThIce,P1);
@@ -42,7 +42,7 @@ macro epsilon(u,v,w)[dx(u),dy(v),dz(w),1/sqrt(2.)*(dy(u)+dx(v)),1/sqrt(2.)*(dz(u
 macro div(u,v,w)(dx(u)+dy(v)+dz(w))//Eom"
 cout<<"Dimension : 3"<<endl;
 macro minimalMesh()cube(1,1,1)//EOM
-meshN ThIce=minimalMesh;
+    meshN ThIce=minimalMesh;
 meshN ThCavity=minimalMesh;
 IFMACRO(fspace,1)
 fespace Vh(ThIce,P1);
@@ -73,11 +73,11 @@ complex [int] F(nev);
 
 macro setProblem()
 {
-    real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);        
+    real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
     real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
     complex t = Tr+1i*Ti;
     real E, nu;
-    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);    
+    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
     real EI = E*th^3/(12*(1-nu^2));
     Lc = (EI/(rhow*ag))^(1./4.);
     tc = sqrt(rhow*Lc^6/(EI*H));
@@ -106,7 +106,7 @@ macro iceBEDMAP2(nborders, isBuild)
         cout<<"dimension should be 2 to use BEDMAP2 "<<endl;
     exit(0);
     ENDIFMACRO
-    nev=getARGV("-nev",16);
+        nev=getARGV("-nev",16);
     ifstream file("./Meshes/BEDMAP2/iceDat.dat");
     ifstream file1("./Meshes/BEDMAP2/iceCavInt_Breaks.dat");
     ifstream file2("./Meshes/BEDMAP2/iceCavInt_Coeffs.dat");
@@ -136,14 +136,14 @@ macro iceBEDMAP2(nborders, isBuild)
     real L=abs(iceBegin-iceEnd);
     real H=abs(splineRecon(coefsCav,breaksCav,cavBegin,npieces1));
     real th=abs(splineRecon(coefsTop,breaksTop,iceBegin,npieces)-splineRecon(coefsBot,breaksBot,iceBegin,npieces));
-    real d=abs(splineRecon(coefsBot,breaksBot,iceBegin,npieces));    
+    real d=abs(splineRecon(coefsBot,breaksBot,iceBegin,npieces));
     real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
     complex t = Tr+1i*Ti;
     real E, nu;
-    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);    
+    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
     real EI = E*th^3/(12*(1-nu^2));
     Lc = (EI/(rhow*ag))^(1./4.);
-    tc = sqrt(rhow*Lc^6/(EI*H));    
+    tc = sqrt(rhow*Lc^6/(EI*H));
     omega = 2*pi/t;
     LL = L/Lc;
     HH = H/Lc;
@@ -276,28 +276,28 @@ isUniformIce=getARGV("-isUniIce",1);
 macro setMeshIce(brx, midx, midy)
 {
     int N1 = getARGV("-N",3);
-    IFMACRO(dimension,3)    
-    int[int] lb1=[3,2,1,1,1,1];    
-    ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth)*y,tth*z],label=lb1);    
+    IFMACRO(dimension,3)
+        int[int] lb1=[3,2,1,1,1,1];
+    ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth)*y,tth*z],label=lb1);
     ENDIFMACRO
 
-    IFMACRO(dimension,2)    
-    if(isUniformIce==true)
-    {
-        icetopleft = (1-rhoi/rhow)*tth;
-        icebottomleft = -(rhoi/rhow)*tth;
-        icebottomright = -(rhoi/rhow)*tth;
-        ix2 = 3.7*LL/4;
-        iy2 = -(rhoi/rhow)*tth;
-    }
-    else
-    {
-        icetopleft = (1-rhoi/rhow)*tth;
-        icebottomleft = -(rhoi/rhow)*tth;
-        icebottomright = -3.*tth;
-        ix2 = midx;
-        iy2 = midy;
-    }
+        IFMACRO(dimension,2)
+        if(isUniformIce==true)
+        {
+            icetopleft = (1-rhoi/rhow)*tth;
+            icebottomleft = -(rhoi/rhow)*tth;
+            icebottomright = -(rhoi/rhow)*tth;
+            ix2 = 3.7*LL/4;
+            iy2 = -(rhoi/rhow)*tth;
+        }
+        else
+        {
+            icetopleft = (1-rhoi/rhow)*tth;
+            icebottomleft = -(rhoi/rhow)*tth;
+            icebottomright = -3.*tth;
+            ix2 = midx;
+            iy2 = midy;
+        }
     ix1 = 0; iy1 = icebottomleft;
     ix3 = LL; iy3 = icebottomright;
     real widthFrac=getARGV("-notchWidth",0.005);
@@ -311,19 +311,19 @@ macro setMeshIce(brx, midx, midy)
     border I04(t=icetopleft,icebottomleft) {x=0; y=t; label=1;};
     ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(LL/tth*N1));
     ENDIFMACRO
-}//This is a macro for creating the ice mesh using 3 point cubic spline.
+        }//This is a macro for creating the ice mesh using 3 point cubic spline.
 
 isUniformCav=getARGV("-isUniCav",1);
 macro setMeshCav(midx, midy, endy)
 {
     int N2 = getARGV("-N",3);
-    IFMACRO(dimension,3)    
-    int[int] lb2=[1,1,3,4,1,1];
-    ThCavity=cube(LL/tth*N2,N2,N2,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb2);    
+    IFMACRO(dimension,3)
+        int[int] lb2=[1,1,3,4,1,1];
+    ThCavity=cube(LL/tth*N2,N2,N2,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb2);
     ENDIFMACRO
 
-    IFMACRO(dimension,2)
-    real x1,x2,x3,uy1,y2,y3;
+        IFMACRO(dimension,2)
+        real x1,x2,x3,uy1,y2,y3;
     if(isUniformCav)
     {
         x1=0.; uy1=-HH;
@@ -347,7 +347,7 @@ macro setMeshCav(midx, midy, endy)
     border C04(t=icebottomleft,uy1) {x=0; y=t; label=4;};
     ThCavity = buildmesh(C01(LL/tth*N2)+C02(N2)+C03(-LL/tth*N2)+C04(N2));
     ENDIFMACRO
-}//This is a macro for creating the cavity Mesh using 3 point cubic spline.
+        }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
 
 
@@ -356,12 +356,12 @@ macro setMeshIceCav3d()
 {
     real L=100;
     real BB=10, th=2.25;
-    real H=0.8*L;    
+    real H=0.8*L;
     real E, nu;
-    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);    
+    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
     real EI = E*th^3/(12*(1-nu^2));
     Lc = (EI/(rhow*ag))^(1./4.);
-    tc = sqrt(rhow*Lc^6/(EI*H));    
+    tc = sqrt(rhow*Lc^6/(EI*H));
     LL=L/Lc;
     dd=0;
     HH=H/Lc;
@@ -378,7 +378,7 @@ macro setMeshIceCav3d()
         cout<<"Dimension should be 3 to use 3d meshes"<<endl;
     exit(0);
     ENDIFMACRO
-    int N1 = getARGV("-N",3);
+        int N1 = getARGV("-N",3);
     int N2 = getARGV("-N",3);
     ThIce = readmesh3("MESHES/boat.mesh");
     ThCavity = readmesh3("MESHES/water.mesh");
@@ -406,7 +406,7 @@ macro solveEigen()
         }
     ENDIFMACRO
         IFMACRO(dimension,3)
-        if(mpirank==0){            
+        if(mpirank==0){
             Xh [u,v,w],[uu,vv,ww];
             varf a([u,v,w],[uu,vv,ww]) = intN(ThIce,qforder=1)(lambdahat*div(u,v,w)*div(uu,vv,ww) + 2*muhat*epsilon(u,v,w)'*epsilon(uu,vv,ww)) + on(2,u=0,v=0,w=0);
             varf b([u,v,w],[uu,vv,ww]) = intN(ThIce,qforder=1)((u*uu + v*vv + w*ww));
@@ -562,6 +562,7 @@ ENDIFMACRO
 IFMACRO(dimension,2)
 bool isSplit = getARGV("-isSplit",0);
 meshN MaThEmpty=emptymesh(ThIce);
+meshN MaTh1=ThIce;
 meshN ThEmptyIce=emptymesh(ThIce);
 meshN ThEmptyCav=emptymesh(ThCavity);
 fespace VhBdy(MaThEmpty,P1);
@@ -573,6 +574,7 @@ macro splitMesh(isSplit)
         ffddmbuildDmesh(M,ThIce,mpiCommWorld);
         ffddmbuildDfespace(Fe,M,real,def,init,P1);
         MaThEmpty=emptymesh(MaTh[mpirank]);
+        MaTh1=MaTh[mpirank];
         fespace MMh(MaThEmpty,P1);
         if(mpirank==0)
             cout<<"Splitting on ..."<<endl;
@@ -586,6 +588,7 @@ macro splitMesh(isSplit)
         MaThEmpty=emptymesh(ThIce);
         ThEmptyIce=emptymesh(ThIce);
         ThEmptyCav=emptymesh(ThCavity);
+        MaTh1=ThIce;
     }
 }//Macro to SPLIT MESH
 ENDIFMACRO
@@ -714,7 +717,7 @@ macro getLaplaceMat(a,b,c){
     IFMACRO(dimension,2)
         varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
     ENDIFMACRO
-    IFMACRO(dimension,3)
+        IFMACRO(dimension,3)
         varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
     ENDIFMACRO
         varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
@@ -891,262 +894,177 @@ macro writeToMATLAB(uh,Th,meshfilename)
 
 //Macro to build the reduced system (optimized for split mesh)
 macro buildReducedSystemOptim(){
-    if(isSplit){
-        complex[int] FProc(nev);
-        complex[int,int] BProc(nev,nev), KProc(nev,nev);
-        real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
+    complex[int] FProc(nev);
+    complex[int,int] BProc(nev,nev), KProc(nev,nev), BProcX(nev,nev), BProcY(nev,nev);
+    real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
+    real[int,int] VX2aTh(MaTh1.nv,nev), VY2aTh(MaTh1.nv,nev);
 
-        IFMACRO(dimension,3)
-            real[int,int] VZaTh(MaThEmpty.nv,nev);
-        ENDIFMACRO
+    IFMACRO(dimension,3)
+        real[int,int] VZaTh(MaThEmpty.nv,nev), VZ2aTh(MaTh1.nv,nev);
+    ENDIFMACRO
 
-            complex[int] phi0aTh(MaThEmpty.nv);
-        complex[int,int] phiMaTh(MaThEmpty.nv,nev);
+    complex[int] phi0aTh(MaThEmpty.nv);
+    complex[int,int] phiMaTh(MaThEmpty.nv,nev);
 
-        fespace MMh(MaThEmpty,P1);
-        MMh AA,BB;
-        varf ipx(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.x);
-        varf ipy(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.y);
+    fespace MMh(MaThEmpty,P1);
+    fespace M2h(MaTh1,P1);
+    MMh AA,BB;
+    M2h CC,DD;
+    varf ipx(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.x);
+    varf ipy(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.y);
+    varf ip(CC,DD)=intN(MaTh1)(CC*DD);
 
-        IFMACRO(dimension,3)
-            varf ipz(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.z);
-        ENDIFMACRO
+    IFMACRO(dimension,3)
+        varf ipz(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.z);
+    ENDIFMACRO
 
-            MMh<complex> phi0Ice, phijIce;
-        matrix massMax=ipx(MMh,MMh);
-        matrix massMay=ipy(MMh,MMh);
+    MMh<complex> phi0Ice, phijIce;
+    matrix massMax=ipx(MMh,MMh);
+    matrix massMay=ipy(MMh,MMh);
+    matrix massMa=ip(M2h,M2h);
 
-        IFMACRO(dimension,3)
-            matrix massMaz=ipz(MMh,MMh);
-        ENDIFMACRO
+    IFMACRO(dimension,3)
+        matrix massMaz=ipz(MMh,MMh);
+    ENDIFMACRO
 
         phi0Ice=phi00;
-        phi0aTh=phi0Ice[];
-        phi0aTh=phi0aTh*(-1i*omega*gammahat);
+    phi0aTh=phi0Ice[];
+    phi0aTh=phi0aTh*(-1i*omega*gammahat);
 
-        for(int m=0; m<nev; m++)
-        {
-            MMh vxx=VX[m],vyy=VY[m];
-
-            IFMACRO(dimension,3)
-                MMh vzz=VZ[m];
-            VZaTh(:,m)=vzz[];
-            ENDIFMACRO
-
-                VXaTh(:,m)=vxx[];
-            VYaTh(:,m)=vyy[];
-
-            VY1aTh(:,m)=deltahat*VYaTh(:,m);
-            phijIce=phijj[m];
-            phiMaTh(:,m)=phijIce[];
-            phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
-        }
-
-        real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev);
-        complex[int,int] KProcX(nev,nev), KProcY(nev,nev);
-        complex[int] FProcX(nev), FProcY(nev);
+    for(int m=0; m<nev; m++)
+    {
+        MMh vxx=VX[m],vyy=VY[m];
+        M2h vx2=VX[m],vy2=VY[m];
 
         IFMACRO(dimension,3)
-            real[int,int] Tzz(MaThEmpty.nv,nev);
-        complex[int,int] KProcZ(nev,nev);
-        complex[int] FProcZ(nev);
+            M2h vz2=VZ[m];
+            MMh vzz=VZ[m];
+        VZaTh(:,m)=vzz[];
+        VZ2aTh(:,m)=vz2[];
         ENDIFMACRO
 
-            real tmpre, tmpim;
-        for(int m=0; m<nev; m++)
-        {
-            Txx(:,m)=massMax*VXaTh(:,m);
-            Tyy(:,m)=massMay*VYaTh(:,m);
+        VXaTh(:,m)=vxx[];
+        VYaTh(:,m)=vyy[];
+        
+        VX2aTh(:,m)=vx2[];
+        VY2aTh(:,m)=vy2[];
 
-            tmpre=phi0aTh.re'*Txx(:,m);
-            tmpim=phi0aTh.im'*Txx(:,m);
-            FProcX(m)=tmpre+1i*tmpim;
-            tmpre=phi0aTh.re'*Tyy(:,m);
-            tmpim=phi0aTh.im'*Tyy(:,m);
-            FProcY(m)=tmpre+1i*tmpim;
+        VY1aTh(:,m)=deltahat*VYaTh(:,m);
+        phijIce=phijj[m];
+        phiMaTh(:,m)=phijIce[];
+        phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
+    }
 
-            IFMACRO(dimension,3)
-                Tzz(:,m)=massMaz*VZaTh(:,m);
-            tmpre=phi0aTh.re'*Tzz(:,m);
-            tmpim=phi0aTh.im'*Tzz(:,m);
-            FProcZ(m)=tmpre+1i*tmpim;
-            ENDIFMACRO
+    real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev), TX(MaTh1.nv,nev), TY(MaTh1.nv,nev);
+    complex[int,int] KProcX(nev,nev), KProcY(nev,nev);
+    complex[int] FProcX(nev), FProcY(nev);
 
-                B(m,m)=(ev[m]-rhoi*omega^2);
+    IFMACRO(dimension,3)
+        real[int,int] Tzz(MaThEmpty.nv,nev), TZ(MaTh1.nv,nev);
+    complex[int,int] KProcZ(nev,nev), BProcZ(nev,nev);
+    complex[int] FProcZ(nev);
+    ENDIFMACRO
 
-            for(int n=0; n<nev; n++)
-            {
-                tmpre=VY1aTh(:,n)'*Txx(:,m);
-                tmpre=-1*tmpre;
-                tmpre+=phiMaTh(:,n).re'*Txx(:,m);
-                tmpim=phiMaTh(:,n).im'*Txx(:,m);
-                KProcX(m,n)=tmpre+1i*tmpim;
+    real tmpre, tmpim;
+    for(int m=0; m<nev; m++)
+    {
+        Txx(:,m)=massMax*VXaTh(:,m);
+        Tyy(:,m)=massMay*VYaTh(:,m);
 
-                tmpre=VY1aTh(:,n)'*Tyy(:,m);
-                tmpre=-1*tmpre;
-                tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
-                tmpim=phiMaTh(:,n).im'*Tyy(:,m);
-                KProcY(m,n)=tmpre+1i*tmpim;
+        TX(:,m)=massMa*VX2aTh(:,m);
+        TY(:,m)=massMa*VY2aTh(:,m);
 
-                IFMACRO(dimension,3)
-                    tmpre=VY1aTh(:,n)'*Tzz(:,m);
-                tmpre=-1*tmpre;
-                tmpre+=phiMaTh(:,n).re'*Tzz(:,m);
-                tmpim=phiMaTh(:,n).im'*Tzz(:,m);
-                KProcZ(m,n)=tmpre+1i*tmpim;
-                ENDIFMACRO
-                    }
-        }
-        FProc=FProcX+FProcY;
-        KProc=KProcX+KProcY;
-        mpiReduce(FProc,F,processor(0),mpiSUM);
-        mpiReduce(KProc,K,processor(0),mpiSUM);
+        tmpre=phi0aTh.re'*Txx(:,m);
+        tmpim=phi0aTh.im'*Txx(:,m);
+        FProcX(m)=tmpre+1i*tmpim;
+        tmpre=phi0aTh.re'*Tyy(:,m);
+        tmpim=phi0aTh.im'*Tyy(:,m);
+        FProcY(m)=tmpre+1i*tmpim;
 
         IFMACRO(dimension,3)
-            FProc+=FProcZ;
-        KProc+=KProcZ;
+        TZ(:,m)=massMa*VZ2aTh(:,m);    
+        Tzz(:,m)=massMaz*VZaTh(:,m);
+        tmpre=phi0aTh.re'*Tzz(:,m);
+        tmpim=phi0aTh.im'*Tzz(:,m);
+        FProcZ(m)=tmpre+1i*tmpim;
+        ENDIFMACRO        
+
+        for(int n=0; n<nev; n++)
+        {
+            BProcX(m,n)=VX2aTh(:,n)'*TX(:,m);
+            BProcY(m,n)=VY2aTh(:,n)'*TY(:,m);
+            
+            tmpre=VY1aTh(:,n)'*Txx(:,m);
+            tmpre=-1*tmpre;
+            tmpre+=phiMaTh(:,n).re'*Txx(:,m);
+            tmpim=phiMaTh(:,n).im'*Txx(:,m);
+            KProcX(m,n)=tmpre+1i*tmpim;
+
+            tmpre=VY1aTh(:,n)'*Tyy(:,m);
+            tmpre=-1*tmpre;
+            tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
+            tmpim=phiMaTh(:,n).im'*Tyy(:,m);
+            KProcY(m,n)=tmpre+1i*tmpim;
+
+            IFMACRO(dimension,3)
+            BProcZ(m,n)=VZ2aTh(:,n)'*TZ(:,m);
+            tmpre=VY1aTh(:,n)'*Tzz(:,m);
+            tmpre=-1*tmpre;
+            tmpre+=phiMaTh(:,n).re'*Tzz(:,m);
+            tmpim=phiMaTh(:,n).im'*Tzz(:,m);
+            KProcZ(m,n)=tmpre+1i*tmpim;
+            ENDIFMACRO
+        }
+
+        BProcX(:,m)=(ev[m]-rhoi*omega^2)*BProcX(:,m);
+        BProcY(:,m)=(ev[m]-rhoi*omega^2)*BProcY(:,m);
+        IFMACRO(dimension,3)
+            BProcZ(:,m)=(ev[m]-rhoi*omega^2)*BProcZ(m,:);
+        ENDIFMACRO
+    }
+    FProc=FProcX+FProcY;
+    KProc=KProcX+KProcY;
+    BProc=BProcX+BProcY;
+    IFMACRO(dimension,3)
+    FProc+=FProcZ;
+    KProc+=KProcZ;
+    BProc+=BProcZ;
+    ENDIFMACRO
+    if(isSplit){
+        mpiReduce(BProc,B,processor(0),mpiSUM);
         mpiReduce(FProc,F,processor(0),mpiSUM);
         mpiReduce(KProc,K,processor(0),mpiSUM);
-        ENDIFMACRO
-            }
+    }
     else
     {
-        if(mpirank==0){
-            complex[int] FProc(nev);
-            complex[int,int] BProc(nev,nev), KProc(nev,nev);
-            real[int,int] VXaTh(MaThEmpty.nv,nev), VYaTh(MaThEmpty.nv,nev), VY1aTh(MaThEmpty.nv,nev);
-
-
-            complex[int] phi0aTh(MaThEmpty.nv);
-            complex[int,int] phiMaTh(MaThEmpty.nv,nev);
-
-            fespace MMh(MaThEmpty,P1);
-            MMh AA,BB;
-            varf ipx(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.x);
-            varf ipy(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.y);
-
-            MMh<complex> phi0Ice, phijIce;
-            matrix massMax=ipx(MMh,MMh);
-            matrix massMay=ipy(MMh,MMh);
-
-            phi0Ice=phi00;
-            phi0aTh=phi0Ice[];
-            phi0aTh=phi0aTh*(-1i*omega*gammahat);
-
-            IFMACRO(dimension,3)
-                real[int,int] VZaTh(MaThEmpty.nv,nev);
-            varf ipz(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.z);
-            matrix massMaz=ipz(MMh,MMh);
-            ENDIFMACRO
-
-                for(int m=0; m<nev; m++)
-                {
-                    MMh vxx=VX[m],vyy=VY[m];
-                    VXaTh(:,m)=vxx[];
-                    VYaTh(:,m)=vyy[];
-
-                    VY1aTh(:,m)=deltahat*VYaTh(:,m);
-                    phijIce=phijj[m];
-                    phiMaTh(:,m)=phijIce[];
-                    phiMaTh(:,m)=phiMaTh(:,m)*(1i*omega*gammahat);
-
-                    IFMACRO(dimension,3)
-                        MMh vzz=VZ[m];
-                    VZaTh(:,m)=vzz[];
-                    ENDIFMACRO
-                        }
-
-            real[int,int] Txx(MaThEmpty.nv,nev), Tyy(MaThEmpty.nv,nev);
-            complex[int,int] KProcX(nev,nev), KProcY(nev,nev);
-            complex[int] FProcX(nev), FProcY(nev);
-
-            IFMACRO(dimension,3)
-                real[int,int] Tzz(MaThEmpty.nv,nev);
-            complex[int,int] KProcZ(nev,nev);
-            complex[int] FProcZ(nev);
-            ENDIFMACRO
-
-                real tmpre, tmpim;
-            for(int m=0; m<nev; m++)
-            {
-                Txx(:,m)=massMax*VXaTh(:,m);
-                Tyy(:,m)=massMay*VYaTh(:,m);
-
-                tmpre=phi0aTh.re'*Txx(:,m);
-                tmpim=phi0aTh.im'*Txx(:,m);
-                FProcX(m)=tmpre+1i*tmpim;
-                tmpre=phi0aTh.re'*Tyy(:,m);
-                tmpim=phi0aTh.im'*Tyy(:,m);
-                FProcY(m)=tmpre+1i*tmpim;
-
-                IFMACRO(dimension,3)
-                    Tzz(:,m)=massMaz*VZaTh(:,m);
-                tmpre=phi0aTh.re'*Tzz(:,m);
-                tmpim=phi0aTh.im'*Tzz(:,m);
-                FProcZ(m)=tmpre+1i*tmpim;
-                ENDIFMACRO
-
-                    B(m,m)=(ev[m]-rhoi*omega^2);
-
-                for(int n=0; n<nev; n++)
-                {
-                    tmpre=VY1aTh(:,n)'*Txx(:,m);
-                    tmpre=-1*tmpre;
-                    tmpre+=phiMaTh(:,n).re'*Txx(:,m);
-                    tmpim=phiMaTh(:,n).im'*Txx(:,m);
-                    KProcX(m,n)=tmpre+1i*tmpim;
-
-                    tmpre=VY1aTh(:,n)'*Tyy(:,m);
-                    tmpre=-1*tmpre;
-                    tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
-                    tmpim=phiMaTh(:,n).im'*Tyy(:,m);
-                    KProcY(m,n)=tmpre+1i*tmpim;
-
-                    IFMACRO(dimension,3)
-                        tmpre=VY1aTh(:,n)'*Tzz(:,m);
-                    tmpre=-1*tmpre;
-                    tmpre+=phiMaTh(:,n).re'*Tzz(:,m);
-                    tmpim=phiMaTh(:,n).im'*Tzz(:,m);
-                    KProcZ(m,n)=tmpre+1i*tmpim;
-                    ENDIFMACRO
-                        }
-            }
-            FProc=FProcX+FProcY;
-            KProc=KProcX+KProcY;
-
-            IFMACRO(dimension,3)
-                FProc+=FProcZ;
-            KProc+=KProcZ;
-            ENDIFMACRO
-
-                K=KProc;
-            F=FProc;
-
-        }
-        broadcast(processor(0),K);
-        broadcast(processor(0),F);
-        broadcast(processor(0),B);
+        K=KProc;
+        F=FProc;
+        B=BProc;
     }
 
 }//EOM"
 
 macro writeReducedSystem()
 {
-    complex[int] RefmProc(nev), Refm(nev);
     ofstream file1(SolutionDir+"2_ModesMatrix/ReH"+iter+".dat");
     ofstream file2(SolutionDir+"2_ModesMatrix/ImH"+iter+".dat");
     ofstream file3(SolutionDir+"2_ModesMatrix/ReF"+iter+".dat");
     ofstream file4(SolutionDir+"2_ModesMatrix/ImF"+iter+".dat");
-    ofstream file5(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");    
+    ofstream file5(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");
+    ofstream file6(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refT"+iter+".dat");
     file1.precision(16);
     file2.precision(16);
     file3.precision(16);
     file4.precision(16);
+    file5.precision(16);
+    file6.precision(16);
+
     for(int m=0; m<nev; m++)
     {
         file3<<real(F[m])<<endl;
         file4<<imag(F[m])<<endl;
         file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
+        file6<<real(Reft[m])<<"\t"<<imag(Reft[m])<<endl;
         for(int n=0; n<nev; n++)
         {
             file1<<real(B(m,n)+K(m,n))<<endl;
@@ -1309,7 +1227,7 @@ macro getRefModes(bInd,phi,Ref){
     complex [int,int] T = TT*MMinv;
     bb = T*aa;
     c1 = MMt*bb;
-    complex[int,int] AA=A^-1; 
+    complex[int,int] AA=A^-1;
     c = AA*c1;
     Ref = c[0]/Ap;
 }//EOM"
