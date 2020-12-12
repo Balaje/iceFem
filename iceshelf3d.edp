@@ -22,7 +22,6 @@ k[0]=-k[0];
 kd=k;
 dd=0;
 
-
 //---- Find the eigenvalues of the dispersion relation.
 Xh[int][VX,VY,VZ](nev);
 real[int] ev(nev);
@@ -36,7 +35,7 @@ getQphi(5,MQ2); //Outlet
 getQphi(4,MQ1); //Inlet
 getChi;
 for(int m=0; m<NModes+1; m++)
-    chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*HH);
+    chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
 if(mpirank==0)
     cout<<"Done Non-local boundary condition"<<endl;
@@ -52,6 +51,18 @@ set(LHS,solver=sparsesolver);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
 WhBdy<complex> phi00=phi0;
+{
+    ofstream file1(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
+    complex Ref;
+    getRefCoeff(4,phi0,Ref);
+    file1<<real(Ref)<<"\t"<<imag(Ref)<<endl;
+}
+{
+    ofstream file1(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refT"+iter+".dat");
+    complex Ref;
+    getRefModes(5,phi0,Ref);
+    file1<<real(Ref)<<"\t"<<imag(Ref)<<endl;
+}
 if(mpirank==0)
     cout<<"Done diffraction potential "<<endl;
 
@@ -61,6 +72,7 @@ Wh<complex>[int] phij(nev);
 WhBdy<complex>[int] phijj(nev);
 buildParti;
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
+complex[int] Refm(nev), RefmProc(nev), Reft(nev), ReftProc(nev);
 for(int m=start; m<=stop; m++)
  {
      func fh=0;
@@ -72,12 +84,17 @@ for(int m=start; m<=stop; m++)
      phij[m]=phih;
      phijj[m]=phih;
      PHIJProc(:,m-start)=phijj[m][];
+     getRefModes(5,phih,ReftProc[m]);
+     getRefModes(4,phih,RefmProc[m]);
      if(mpirank==0)
          cout<<"Done radiation potential "<<m<<endl;
  }
 
 int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
 mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
+mpiAllReduce(RefmProc,Refm,mpiCommWorld,mpiSUM);
+mpiAllReduce(ReftProc,Reft,mpiCommWorld,mpiSUM);
+
 for(int m=0; m<nev; m++)
     phijj[m][]=PHIJ(:,m);
 
@@ -86,6 +103,10 @@ B.resize(nev,nev);
 AB.resize(nev,nev);
 F.resize(nev);
 buildReducedSystemOptim;
+
+if(mpirank==0){  
+    writeReducedSystem;
+}
 
 solveReducedSystem;
 
