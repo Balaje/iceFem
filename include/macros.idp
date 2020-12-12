@@ -415,8 +415,10 @@ macro solveEigen()
             int kkk = EigenValue(stima,massma,value=ev,vector=VX,tol=1e-10);
         }
     ENDIFMACRO
-        for(int m=0; m<nev; m++)
+        for(int m=0; m<nev; m++){            
             broadcast(processor(0),VX[m][]);
+        }
+    broadcast(processor(0),ev);
 }//This is a macro for solving the elasticity Eigenvalue problem.
 
 macro writeEigen(isVtk, isDat)
@@ -528,6 +530,7 @@ bool isSplit = getARGV("-isSplit",0);
 int[int] lbls=[3];
 meshN MaThEmpty=ThIce;
 meshN ThEmptyIce=ThIce;
+meshN MaTh1=ThIce;
 meshN ThEmptyCav=ThCavity;
 fespace VhBdy(MaThEmpty,P1);
 fespace WhBdy(ThEmptyCav,P1);
@@ -537,6 +540,7 @@ macro splitMesh(isSplit)
         ffddmbuildDmesh(M,ThIce,mpiCommWorld);
         ffddmbuildDfespace(Fe,M,real,def,init,P1);
         MaThEmpty=MaTh[mpirank];
+        MaTh1=MaTh[mpirank];
         if(mpirank==0)
             cout<<"Splitting on ... "<<endl;
         ThEmptyIce=ThIce;
@@ -549,6 +553,7 @@ macro splitMesh(isSplit)
         MaThEmpty=ThIce;
         ThEmptyIce=ThIce;
         ThEmptyCav=ThCavity;
+        MaTh1=ThIce;
     }
     if(mpirank==0){
         cout<<"Number of ice    boundary DOFs = "<<ThEmptyIce.nv<<endl;
@@ -1018,29 +1023,30 @@ macro buildReducedSystemOptim(){
 
         BProcX(:,m)=(ev[m]-rhoi*omega^2)*BProcX(:,m);
         BProcY(:,m)=(ev[m]-rhoi*omega^2)*BProcY(:,m);
+        
         IFMACRO(dimension,3)
             BProcZ(:,m)=(ev[m]-rhoi*omega^2)*BProcZ(m,:);
         ENDIFMACRO
     }
     FProc=FProcX+FProcY;
     KProc=KProcX+KProcY;
-    BProc=BProcX+BProcY;
+    BProc=BProcX+BProcY;    
     IFMACRO(dimension,3)
     FProc+=FProcZ;
     KProc+=KProcZ;
     BProc+=BProcZ;
     ENDIFMACRO
     if(isSplit){
-        mpiReduce(BProc,B,processor(0),mpiSUM);
-        mpiReduce(FProc,F,processor(0),mpiSUM);
-        mpiReduce(KProc,K,processor(0),mpiSUM);
+        mpiAllReduce(BProc,B,mpiCommWorld,mpiSUM);
+        mpiAllReduce(FProc,F,mpiCommWorld,mpiSUM);
+        mpiAllReduce(KProc,K,mpiCommWorld,mpiSUM);        
     }
     else
     {        
         K=KProc;
         F=FProc;
         B=BProc;                
-    }
+    }        
 
 }//EOM"
 

@@ -110,7 +110,7 @@ buildReducedSystemOptim;
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
-if(mpirank==0){
+if(mpirank==1){
     cout<<B.re<<endl;
     cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
  }

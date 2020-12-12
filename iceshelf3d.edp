@@ -7,13 +7,13 @@ include "macros.idp"
 
 SolutionDir="1_SIMPLE3D/";
 
-setProblem;
-setMeshIce(0,0,0);
-setMeshCav(0,0,0);
-solveDispersion;
-
-
 /*
+  setProblem;
+  setMeshIce(0,0,0);
+  setMeshCav(0,0,0);
+  solveDispersion;
+*/
+
 setMeshIceCav3d;
 alpha=omega^2/10;
 //cout<<alpha<<endl;
@@ -21,7 +21,6 @@ k=dispersionfreesurface(alpha,NModes,HH);
 k[0]=-k[0];
 kd=k;
 dd=0;
-*/
 
 
 //---- Find the eigenvalues of the dispersion relation.
@@ -48,7 +47,7 @@ Wh<complex> phi0;
 func fh=chi1;
 getLaplaceMat(0,0,0);
 BMASSMA=alpha*BMASSMA;
-LHS=STIMA+(MQ1)+(-MQ2)+(-BMASSMA);
+LHS=STIMA+(MQ1)+(MQ2)+(-BMASSMA);
 set(LHS,solver=sparsesolver);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
@@ -67,7 +66,7 @@ for(int m=start; m<=stop; m++)
      func fh=0;
      getLaplaceMat(VX[m],VY[m],VZ[m]);
      BMASSMA=alpha*BMASSMA;
-     LHS=STIMA+(MQ1)+(-MQ2)+(-BMASSMA);
+     LHS=STIMA+(MQ1)+(MQ2)+(-BMASSMA);
      set(LHS,solver=sparsesolver);
      phih[]=LHS^-1*RHS[];
      phij[m]=phih;
@@ -93,12 +92,12 @@ solveReducedSystem;
 Vh<complex> etax, etay, etaz, etaxProc, etayProc, etazProc;
 Wh<complex> phi, phiProc;
 for(int m=start; m<=stop; m++)
-  {
-    phiProc = phiProc + xi[m]*phij[m];
-    etaxProc = etaxProc + xi[m]*VX[m];
-    etayProc = etayProc + xi[m]*VY[m];
-    etazProc = etazProc + xi[m]*VZ[m];
-  }
+ {
+     phiProc = phiProc + xi[m]*phij[m];
+     etaxProc = etaxProc + xi[m]*VX[m];
+     etayProc = etayProc + xi[m]*VY[m];
+     etazProc = etazProc + xi[m]*VZ[m];
+ }
 mpiReduce(phiProc[],phi[],processor(0),mpiSUM);
 mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
 mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
@@ -111,11 +110,13 @@ if(mpirank==0)
      int[int] Order=[1,1,1], Order1=[1,1];
      savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay),real(etaz)],[imag(etax),imag(etay),imag(etaz)], dataname="ReDisp ImDisp",order=Order);
      savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1);
- }
 
-complex Ref;
-getRefCoeff(4,phi,Ref);
-if(mpirank==0){
-    cout.precision(8);
-    cout<<"Reflection Coefficient = "<<Ref<<endl;    
+     complex RefR;
+     getRefCoeff(4,phi,RefR);
+     complex RefT;
+     getRefModes(5,phi,RefT);
+
+     cout<<RefR<<"\t"<<RefT<<endl;
+     cout.precision(8);
+     cout<<"Reflection Coefficient = "<<(abs(RefR)^2+abs(RefT)^2)<<endl;
  }
