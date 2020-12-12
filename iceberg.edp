@@ -6,7 +6,7 @@ macro fspace 2//EOM"
 
 include "macros.idp"
 
-SolutionDir="2_ICEBERG/";
+SolutionDir="1_ICEBERG/";
 
 setProblem;
 
@@ -93,8 +93,6 @@ AB.resize(nev,nev);
 F.resize(nev);
 buildReducedSystemOptim;
 
-if(mpirank==0)
-    cout<<B.re<<endl;
 if(mpirank==0){    
     writeReducedSystem;
 }
