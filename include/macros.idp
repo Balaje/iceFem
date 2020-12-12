@@ -907,12 +907,12 @@ macro buildReducedSystemOptim(){
     complex[int,int] phiMaTh(MaThEmpty.nv,nev);
 
     fespace MMh(MaThEmpty,P1);
-    fespace M2h(MaTh1,P1);
+    fespace M2h(MaTh1,P1);    
     MMh AA,BB;
     M2h CC,DD;
     varf ipx(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.x);
     varf ipy(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.y);
-    varf ip(CC,DD)=intN(MaTh1)(CC*DD);
+    varf ipMass(CC,DD)=intN(MaTh1)(CC*DD);
 
     IFMACRO(dimension,3)
         varf ipz(AA,BB)=intN1(MaThEmpty,3,qforder=10)(AA*BB*N.z);
@@ -921,7 +921,7 @@ macro buildReducedSystemOptim(){
     MMh<complex> phi0Ice, phijIce;
     matrix massMax=ipx(MMh,MMh);
     matrix massMay=ipy(MMh,MMh);
-    matrix massMa=ip(M2h,M2h);
+    matrix massMa=ipMass(M2h,M2h);
 
     IFMACRO(dimension,3)
         matrix massMaz=ipz(MMh,MMh);
@@ -1036,10 +1036,10 @@ macro buildReducedSystemOptim(){
         mpiReduce(KProc,K,processor(0),mpiSUM);
     }
     else
-    {
+    {        
         K=KProc;
         F=FProc;
-        B=BProc;
+        B=BProc;                
     }
 
 }//EOM"

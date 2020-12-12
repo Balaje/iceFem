@@ -19,6 +19,7 @@ int N2=getARGV("-N2",4);
 lbl=[1,5,3,4];
 ThCavity=square(LL/(HH-dd)*N1,N1,[LL*x,-HH+(HH-dd)*y],label=lbl);
 
+splitMesh(isSplit);
 
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
@@ -93,7 +94,10 @@ F.resize(nev);
 buildReducedSystemOptim;
 
 if(mpirank==0)
+    cout<<B.re<<endl;
+if(mpirank==0){    
     writeReducedSystem;
+}
 
 solveReducedSystem;
 
