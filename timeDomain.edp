@@ -1,9 +1,11 @@
 //Program to derive the time-domain solution.
-verbosity=1;
+verbosity=0;
+macro dimension 2//EOM"
+macro fspace 2//EOM"
+
 include "macros.idp"
-include "MPIplot.idp"
-load "medit"
-string solDir="1_BEDMAP2/";
+string solDir="1_SIMPLE5/";
+
 
 macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
                  2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
@@ -37,19 +39,21 @@ macro readFile(rows,cols,filename,array){
       file>>array(m,n);
 }//Macro to read files.EOM"
 
-//Load the mesh
-int nborders=getARGV("-nborders",6);
-nev=64;
-iceBEDMAP2(nborders,0);
+//Set the problem and build the meshes
+setProblem;
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
+setMeshIce(botRight, midPX, midPY);
+real midx=LL/2., midy=-0.5*HH, endy=-HH;
+setMeshCav(midx, midy, endy);
+refineMesh;//Refine Mesh.
 
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
-readEigen;
+solveEigen;
 if(mpirank==0)
-  cout<<"Solved Eigenvalue problem"<<endl;
+  cout<<"Solved Eigenvalue Problem"<<endl;
 
 complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
-//real[int] tmp(Vh.ndof);
 for(int m=0; m<nev; m++)
   {
     Vh VX1=VX[m], VY1=VY[m];
@@ -57,6 +61,8 @@ for(int m=0; m<nev; m++)
     my(m,:).re=VY1[];
   }
 
+
+//Import the interpolated coefficients.
 int nfreq=getARGV("-nfreq",200);
 complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
 for(int m=0; m<nfreq; m++)
@@ -93,14 +99,15 @@ domega(omegaNew.n-1)=0;
 //Phase
 complex[int] randn(nfreq);
 randn=FAmp(2,:);
-
 //Find the complex solution.
 complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
 int parti=time.n/mpisize;
 
 mesh Th1=emptymesh(ThIce);
 fespace Vh1(Th1,P1);
-for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
+buildParti(time.n);
+real[int] RMSStrain(time.n), RMSStrainProc(partisize);
+for(int n=start; n<=stop; n++)
   {
     omegaVec=(-1i)*omegaNew;
     omegaVec*=time(n);
@@ -114,20 +121,17 @@ for(int n=mpirank*parti; n<mpirank*parti+parti; n++)
     u3y=UYT*omegaVec;    
 
     Vh<complex> etax=u3x, etay=u3y;
-    int[int] Order=[1,1];
-    savevtk(solDir+"/2_TimeDomain/sol1_"+n+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
-    savevtk(solDir+"/2_TimeDomain/sol2_"+n+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-    savevtk(solDir+"/ThCavity.vtk",ThCavity);
-
-    ofstream file(solDir+"/2_Stresses/stressAtBdy"+n+".dat");
-    for(int m=0; m<Th1.nv; m++){
-      if(Th1(m).label==1)
-	{
-	  Vh1 sigmaxx=real(Sigma(etax,etay)[0]), sigmayy=real(Sigma(etax,etay)[1]), sigmaxy=real(Sigma(etax,etay)[2]);
-	  file<<Th1(m).x<<"\t"<<Th1(m).y<<"\t"<<sigmaxx(Th1(m).x,Th1(m).y)<<"\t"<<sigmayy(Th1(m).x,Th1(m).y)<<"\t"<<sigmaxy(Th1(m).x,Th1(m).y)<<endl;	    
-	}
-    }
-
+    RMSStrainProc[n]=sqrt(abs(intN(ThIce)(epsilon(u3x,uy)'*epsilon(u3x,u3y))));
+	    
     if(mpirank==0)
       cout<<"Time t="<<n<<endl;
   }
+int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
+mpiAllgatherv(RMSStrainProc,RMSStrain,rcounts1,dspls1);
+
+//Write the time domain L2--average.
+{
+  ofstream file(SolutionDir+"RMSStrain.dat");
+  for(int m=0; m<time.n; m++)
+    file<<time[m]<<"\t"<<RMSStrain[m]<<endl;
+}

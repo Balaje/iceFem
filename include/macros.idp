@@ -778,9 +778,9 @@ macro getLaplaceMatEBdbc(m,rad){
 
 int[int] rcounts(mpisize), dspls(mpisize);
 int parti, rem, start, stop, partisize;
-macro buildParti(){
-    parti = nev/mpisize;
-    rem = nev%mpisize;
+macro buildParti(len){
+    parti = len/mpisize;
+    rem = len%mpisize;
     if(mpirank < rem){
         start=mpirank*(parti+1);
         stop=start+parti;

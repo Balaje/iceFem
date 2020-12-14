@@ -59,7 +59,7 @@ phi00=phi0;
 
 Wh<complex> [int] phij(nev);
 WhBdy<complex>[int] phijj(nev);
-buildParti;
+buildParti(nev);
 complex[int,int] PHIJ(WhBdy.ndof,nev), PHIJProc(WhBdy.ndof,partisize);
 complex[int] Refm(nev), RefmProc(nev), Reft(nev), ReftProc(nev);
 for(int m=start; m<=stop; m++)

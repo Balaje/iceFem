@@ -43,7 +43,7 @@ if(mpirank==0)
 Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
 real[int] ev(nev); //Define a real array for the eigenvalues.
 starttime=mpiWtime();
-readEigen;
+solveEigen;
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
@@ -74,8 +74,8 @@ WhBdy<complex> phi00=phi0;
 
 //Solve for radiation potential.
 Wh<complex>[int] phij(nev);
-WhBdy<complex>[int] phijj(nev);//Define array of boundary functions.
-buildParti;
+WhBdy<complex>[int] phijj(nev);//Define array of boundary functions
+buildParti(nev);
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 starttime=mpiWtime();
 for(int m=start; m<=stop; m++)
@@ -110,9 +110,10 @@ buildReducedSystemOptim;
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
-if(mpirank==1){
-    cout<<B.re<<endl;
-    cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
+if(mpirank==0){
+  complex[int] Refm(nev), Reft(nev);
+  writeReducedSystem;
+  cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
  }
 
 //Solve the reduced system;
@@ -145,10 +146,10 @@ if(mpirank==0){
   //Write data to MATLAB
   //iter could be used to index the solution.
 
-  int[int] Order=[1,1];
-  savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
-  savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-  savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
+  //  int[int] Order=[1,1];
+  //  savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+  //  savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
+  //  savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
  }
 
 starttime=cpu;
