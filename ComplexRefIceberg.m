@@ -9,15 +9,15 @@ omega=X+1i*Y;
 T=2*pi./omega;
 RC=zeros(npts^2,4);
 
-% count=1;
-% for m=1:npts
-%    for n=1:npts
-%        cmd=['/usr/local/bin/mpirun -np 2 /usr/local/ff++/mpich3/bin/FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 30 -Tr ',num2str(real(T(m,n))),' -Ti ',num2str(imag(T(m,n))), ...
-%            ' -L 3000 -H 2000 -h 200 -nev 8 -iter ',num2str(count)];       
-%        [a,b]=system(cmd);
-%        count=count+1;
-%    end
-% end
+count=1;
+for m=1:npts
+   for n=1:npts
+       cmd=['/usr/local/bin/mpirun -np 2 /usr/local/ff++/mpich3/bin/FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 80 -Tr ',num2str(real(T(m,n))),' -Ti ',num2str(imag(T(m,n))), ...
+           ' -L 1000 -H 5000 -h 200 -nev 8 -iter ',num2str(count)];       
+       [a,b]=system(cmd);
+       count=count+1;
+   end
+end
 
 for m=1:npts^2
     RC(m,:)=load(['1_ICEBERG/2_RefCoeff/rc',num2str(m),'.dat']);

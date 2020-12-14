@@ -53,23 +53,23 @@ end
 
 fig=figure(1);
 set(fig,'Position',[273   123   967   582]);
-subplot(3,1,1);
-plot(omega,abs(RC1));
-hold on
-plot(omegaNew,abs(RC))
-title('Check interpolation');
-xlabel('$\omega$');
-ylabel('$R(\omega)$');
-xlim([omegaNew(1),omegaNew(end)])
-
-subplot(3,1,2);
-plot(omegaNew,sqrt(abs(RT).^2+abs(RC).^2),'k');
-hold on
-plot(omegaNew,abs(RT),'r');
-plot(omegaNew,abs(RC),'b');
-xlabel('$\omega$');
-legend('1','$T(\omega)$','$R(\omega)$');
-xlim([omegaNew(1),omegaNew(end)])
+% subplot(3,1,1);
+% plot(omega,abs(RC1));
+% hold on
+% plot(omegaNew,abs(RC))
+% title('Check interpolation');
+% xlabel('$\omega$');
+% ylabel('$R(\omega)$');
+% xlim([omegaNew(1),omegaNew(end)])
+% 
+% subplot(3,1,2);
+% plot(omegaNew,sqrt(abs(RT).^2+abs(RC).^2),'k');
+% hold on
+% plot(omegaNew,abs(RT),'r');
+% plot(omegaNew,abs(RC),'b');
+% xlabel('$\omega$');
+% legend('1','$T(\omega)$','$R(\omega)$');
+% xlim([omegaNew(1),omegaNew(end)])
 
 subplot(3,1,3);
 for indx=1:4

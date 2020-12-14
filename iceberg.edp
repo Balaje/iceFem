@@ -17,7 +17,7 @@ int[int] lbl=[3,1,1,1];
 ThIce=square(LL/tth*N1,N1,[LL*x,-dd+tth*y],label=lbl);
 int N2=getARGV("-N2",4);
 lbl=[1,5,3,4];
-ThCavity=square(LL/(HH-dd)*N1,N1,[LL*x,-HH+(HH-dd)*y],label=lbl);
+ThCavity=square(LL/(HH-dd)*N2,N2,[LL*x,-HH+(HH-dd)*y],label=lbl);
 
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
