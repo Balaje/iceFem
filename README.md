@@ -148,5 +148,12 @@ The first example is that of a floating boat. A detailed description of the geom
 
 The second example is that of a classic ice--shelf vibration problem. The example here shows the vibration of a uniform ice-shelf of length 20 km and 200 m thick placed over a cavity of depth 500 m. The shelf is subjected to an incident wave forcing of 4000 s. The gray surface shows the 2D elasticity solution obtained using the same code. As mentioned earlier, there is a little bit of in-plane displacement along the third direction due to the contribution of the in-plane modes. Nevertheless, a good qualitative agreement is observed for the lower modes (which is a start!). This repository will be updated as more studies are conducted.
 
-Contact:
+## Acknowledgement
+This is joint work with my supervisors:
+
+- [Mike Meylan](https://www.newcastle.edu.au/profile/mike-meylan), University of Newcastle.
+- [Bishnu Lamichhane](https://www.newcastle.edu.au/profile/bishnu-lamichhane), University of Newcastle.
+- [Luke Bennetts](https://luke-bennetts.com/), University of Adelaide.
+
+## Contact:
 - Balaje K,  [balaje6@gmail.com](mailto:balaje6@gmail.com)
