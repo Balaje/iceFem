@@ -4,8 +4,7 @@ clear
 SolutionDir='2_ICEBERG/';
 
 %% From the finite element problems; (Sample Shell command to run the frequency domain solutions for iceberg.edp)
-% for i in $(seq 15 2.5 80); 
-% do mpirun -np 2 FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 30 -Tr $i -L 3000 -H 2000 -h 200 -nev 8 -iter $(echo $i/2.5-5 | bc) > /dev/null; echo "Done $i"; done
+% for i in $(seq 15 2.5 80); do mpirun -np 2 FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 30 -Tr $i -L 3000 -H 2000 -h 200 -nev 8 -iter $(echo $i/2.5-5 | bc) > /dev/null; echo "Done $i"; done
 npts=27;
 RC=zeros(npts,4);
 for m=1:npts
@@ -57,28 +56,28 @@ end
 
 fig=figure(1);
 set(fig,'Position',[273   123   967   582]);
-% subplot(3,1,1);
-% plot(omega,abs(RC1));
-% hold on
-% plot(omegaNew,abs(RC))
-% title('Check interpolation');
-% xlabel('$\omega$');
-% ylabel('$R(\omega)$');
-% xlim([omegaNew(1),omegaNew(end)])
-% 
-% subplot(3,1,2);
-% plot(omegaNew,sqrt(abs(RT).^2+abs(RC).^2),'k');
-% hold on
-% plot(omegaNew,abs(RT),'r');
-% plot(omegaNew,abs(RC),'b');
-% xlabel('$\omega$');
-% legend('1','$T(\omega)$','$R(\omega)$');
-% xlim([omegaNew(1),omegaNew(end)])
+subplot(3,1,1);
+plot(omega,abs(RC1),'+','linewidth',2);
+hold on
+plot(omegaNew,abs(RC),'linewidth',2)
+xlabel('$\omega$');
+ylabel('$R(\omega)$');
+legend('Coarse $\omega$ Space','Fine $\omega$ Space')
+xlim([omegaNew(1),omegaNew(end)])
+
+subplot(3,1,2);
+plot(omegaNew,sqrt(abs(RT).^2+abs(RC).^2),'k');
+hold on
+plot(omegaNew,abs(RT),'r','linewidth',2);
+plot(omegaNew,abs(RC),'b','linewidth',2);
+xlabel('$\omega$');
+legend('1','$T(\omega)$','$R(\omega)$');
+xlim([omegaNew(1),omegaNew(end)])
 
 subplot(3,1,3);
 for indx=1:4
     L=LAM(:,indx);
-    plot(omegaNew,abs(L),'DisplayName',['$|\lambda_{',num2str(indx),'}|$']);    
+    plot(omegaNew,abs(L),'DisplayName',['$|\lambda_{',num2str(indx),'}|$'],'linewidth',2);    
     hold on
 end
 legend show
