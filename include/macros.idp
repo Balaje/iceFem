@@ -99,6 +99,8 @@ macro setProblem()
     densRat = rhoi/rhow;
 }//This is a macro for getting the parameters to set the problem
 
+macro setupWorkingDir(DirName) system("./include/genDir.sh "+DirName);//EOM"
+
 real iceBegin, iceEnd, cavBegin, cavEnd, cavTop;
 macro iceBEDMAP2(nborders, isBuild)
 {
