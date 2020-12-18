@@ -1,18 +1,32 @@
-%% This is a program to generate the cavity and shelf profile using the BEDMAP2 dataset.
-% 1) The cavity is assumed to be restricted to the length of the ice.
+%% Program to generate the water and ice-shelf meshes.
 
 clc
 clear
 close all
 
-
 %% Zoom in on to the Sulzberger Ice Shelf and generate the profiles.
-mapzoom('Vollmer Island','mapwidth',80,'inset','se')
-bedmap2 gl
+%mapzoom('Vollmer Island','mapwidth',180,'inset','se');
+%bedmap2 gl
 bedmap2('patchcoast');
 bedmap2('patchshelves','frame','on');
 scalebar
 [hice,hbed,hwater]=bedmap2_profile();
+
+% %% Generate the figure showing the bed and ice thickness 
+% [mylat,mylon]=psgrid('Vollmer Island',[180,580],0.1);
+% bed=bedmap2_interp(mylat,mylon,'bed','spline');
+% figure(100);
+% subplot(1,2,1);
+% surfps(mylat,mylon,bed)
+% scalebarps
+% axis tight
+% hold on
+% 
+% surface=bedmap2_interp(mylat,mylon,'surface','linear');
+% surfps(mylat,mylon,surface)
+% scalebarps
+% axis tight
+
 
 %% Extract the points and construct the spline
 iceCoord=hice.Vertices;
@@ -50,34 +64,11 @@ plot(iceCavInt(:,1),iceCavInt(:,2),'g.-');
 plot(bedPts(:,1),bedPts(:,2),'m.-');
 
 if(~ismember([1,1],ismember(iceCoord,[0,0]),'rows'))
-    xf=max(abs(iceCavInt(:,1)));
+    xf=max(abs(iceCoord(:,1)));
     iceCavInt(:,1)=xf-iceCavInt(:,1);
     iceTop(:,1)=xf-iceTop(:,1);
     bedPts(:,1)=xf-bedPts(:,1);
-    
-    % Find only the cavity part underneath the ice-shelf. i.e. x>0
-    bedPts=bedPts(find(bedPts(:,1)>0),:);
-    ppBed=spline(bedPts(:,1),bedPts(:,2));
-    bedPts=[bedPts(:,1), bedPts(:,2);
-        0, fnval(ppBed,0);];
-else
-    xf=min(abs(iceCavInt(:,1)));
-    iceCavInt(:,1)=iceCavInt(:,1)-xf;
-    iceTop(:,1)=iceTop(:,1)-xf;
-    bedPts(:,1)=bedPts(:,1)-xf;
-    
-    % Find only the cavity part underneath the ice-shelf. i.e. x>0
-    bedPts=bedPts(find(bedPts(:,1)>0),:);
-    ppBed=spline(bedPts(:,1),bedPts(:,2));
-    bedPts=[0, fnval(ppBed,0);
-        bedPts(:,1), bedPts(:,2)];
 end
-
-% Sort by ascending x
-%     iceCavInt=sort(iceCavInt,1);
-%     bedPts=sort(bedPts,1);
-%     iceTop=sort(iceTop,1);
-%
 
 subplot(2,1,2);
 plot(iceTop(:,1),iceTop(:,2),'r.-');
