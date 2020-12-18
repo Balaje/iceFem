@@ -2,10 +2,10 @@ clear
 clc
 
 [~,~,~,~,E,nu,rhow,rhoi,g,~]=getProperties();
-H=500;
-L=20000;
+H=800;
+L=10000;
 th=200;
-T=80;
+T=200;
 omega=2*pi/T;
 d=(rhoi/rhow)*th;
 NModes = 10;
@@ -33,7 +33,6 @@ for m=1:length(xpts)
 end
 
 figure(1)
-subplot(2,1,2);
 plot(xpts,Ufd,'linewidth',3);
 xlim([xpts(1),xpts(end)]);
 hold on

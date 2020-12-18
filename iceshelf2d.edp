@@ -1,13 +1,14 @@
 //Simple example to demonstrate the ice-shelf toolbox;
-//Invoking Domain decomposition technique.
+//NOTES:
+//1)   The functions/macros/keywords from the toolbox is denoted by [iceFEM] next to it.
+//2)   For a list of KEYWORDS and FUNCTIONS, refer to the manual located in the Repository.
 
 verbosity=0.;
 real cpu=mpiWtime();
 bool debug=true;
 
-//Domain decomposition module.
-macro dimension 2//EOM"
-macro fspace 2//EOM"
+macro dimension 2//EOM" (Sets up the dimension of the problem);
+macro fspace 2//EOM" (Sets up the FESpace);
 
 include "macros.idp"
 
@@ -29,41 +30,58 @@ solveDispersion;
 real starttime=mpiWtime();
 //Build the meshes.
 real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
-setMeshIce(botRight, midPX, midPY);
+
+setMeshIce(botRight, midPX, midPY);//[iceFEM] For a list of ARGS, refer to the manual
+
 real midx=LL/2., midy=-0.5*HH, endy=-HH;
-setMeshCav(midx, midy, endy);
-refineMesh;//Refine Mesh.
-splitMesh(isSplit);//Split Mesh for domain decomposition
+
+setMeshCav(midx, midy, endy);//[iceFEM] For a list of ARGS, refer to the manual
+
+refineMesh;//[iceFEM] Refine Mesh.
+splitMesh(isSplit);//[iceFEM] Split Mesh for domain decomposition (isSplit is defaulted to 0).
+
 real endtime=mpiWtime();
-real difTime=endtime-starttime;
+real difTime=endtime-starttime;//Time the code.
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0)
-  cout<<"Time taken for Meshing = "<<timeTaken<<" s"<<endl;
+    cout<<"Time taken for Meshing = "<<timeTaken<<" s"<<endl;
 
-Xh[int][VX,VY](nev); //Define an array of fe-function to store in-vacuo modes.
-real[int] ev(nev); //Define a real array for the eigenvalues.
+
+//The respective finite element spaces are
+//Vh, Vh<complex> -> P1/P2 on ICE.
+//Wh, Wh<complex> -> P1/P2 on CAVITY.
+//Xh, Xh<complex> -> [P1,P1]/[P2,P2] on ICE2d
+//                -> [P1,P1,P1]/[P2,P2,P2] on ICE3d
+
+Xh[int][VX,VY](nev); //[iceFEM] Define an array of fe-function to store in-vacuo modes. (Should be named: [VX,VY])
+real[int] ev(nev); //[iceFEM] Define a real array for the eigenvalues. (Should be named: ev[])
 starttime=mpiWtime();
-solveEigen;
+
+solveEigen; //[iceFEM] Solve the Eigenvalue problem;
+
+
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0)
-  cout<<"Time to solve Eigenvalue = "<<timeTaken<<" s"<<endl;
+    cout<<"Time to solve Eigenvalue = "<<timeTaken<<" s"<<endl;
 //readEigen;
 
 
 //  2) Get the Non-local boundary condition
-Wh<complex> chi1;
-matrix<complex> MQ;
-getQphi(4,MQ);
-getChi;
+Wh<complex> chi1; //[iceFEM] Define a function chi1 on the cavity domain for the incident wave.
+matrix<complex> MQ;//[iceFEM] Define a matrix MQ for the Q-operator.
+
+getQphi(4,MQ);//[iceFEM] Build Q-Operator on boundary 4 of cavity.
+getChi;//[iceFEM] Build Function Chi.
+
 for(int m=0; m<NModes+1; m++)
-  chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+    chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
-func fh=chi1;//Store in fh, the right-hand side function on the ocean-cavity interface.
-getLaplaceMat(0,0,0);
+func fh=chi1;//[iceFEM] Define and store in keyword fh, the right-hand side function on the ocean-cavity interface.
+getLaplaceMat(0,0,0);//[iceFEM]
 LHS=STIMA+(MQ);
 set(LHS,solver=UMFPACK,eps=1e-20);
 phih[]=LHS^-1*RHS[];
@@ -72,84 +90,90 @@ phi0=phih;//Store in phi0;
 WhBdy<complex> phi00=phi0;
 
 
-//Solve for radiation potential.
+//Solve for radiation potential. [PARALLEL RUN is OPTIONAL]
 Wh<complex>[int] phij(nev);
 WhBdy<complex>[int] phijj(nev);//Define array of boundary functions
-buildParti(nev);
+buildParti(nev); //[iceFEM] Build partition depending on the number of CPUs.
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 starttime=mpiWtime();
 for(int m=start; m<=stop; m++)
-  {
-    func fh=0;
-    getLaplaceMat(VX[m],VY[m],0);
-    LHS=STIMA+(MQ);
-    set(LHS,solver=UMFPACK,eps=1e-20);
-    phih[]=LHS^-1*RHS[];
-    phij[m]=phih; //Leave the bulk as it is. This will not be used in constructing the matrices.
-    phijj[m]=phih; //Interpolate on the BOUNDARY alone and store in matrix. This will be used in the construction of the matrices
-    PHIJProc(:,m-start)=phijj[m][];
-  }
+ {
+     func fh=0;
+     getLaplaceMat(VX[m],VY[m],0);//[iceFEM]
+     LHS=STIMA+(MQ);
+     set(LHS,solver=UMFPACK,eps=1e-20);
+     phih[]=LHS^-1*RHS[];
+     phij[m]=phih; //The full solution is used to visualize.
+     phijj[m]=phih; //Interpolate on the BOUNDARY alone and store in matrix.
+     PHIJProc(:,m-start)=phijj[m][];
+ }
 int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
-mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
+mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1); //Gather the solutions.
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiSUM);
 if(mpirank==0)
-  cout<<"Time taken to solve potentials = "<<timeTaken/mpisize<<" s"<<endl;
+    cout<<"Time taken to solve potentials = "<<timeTaken/mpisize<<" s"<<endl;
 
 //Unpack and set to phij locally in all procs (Only boundary)
 for(int m=0; m<nev; m++)
-  phijj[m][]=PHIJ(:,m);
+    phijj[m][]=PHIJ(:,m);
 
+
+//Build Reduced System using the modes. [H]{\lambda}={f}
 K.resize(nev,nev);
 B.resize(nev,nev);
 AB.resize(nev,nev);
 F.resize(nev);
 starttime=mpiWtime();
-buildReducedSystemOptim;
+buildReducedSystemOptim;//[iceFEM]
+
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0){
-  complex[int] Refm(nev), Reft(nev);
-  writeReducedSystem;
-  cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
+    complex[int] Refm(nev), Reft(nev);
+
+    writeReducedSystem;//[iceFEM] Write the reduced system to a file.
+    cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
+
  }
 
 //Solve the reduced system;
-solveReducedSystem;
+solveReducedSystem; //[iceFEM]
 
 //Compute the solution.
 Vh<complex> etax, etay, etaxProc, etayProc;
 Wh<complex> phi, phiProc;
 for(int m=start; m<=stop; m++)
-  {
-    phiProc = phiProc + xi[m]*phij[m];
-    etaxProc = etaxProc + xi[m]*VX[m];
-    etayProc = etayProc + xi[m]*VY[m];
-  }
+ {
+     phiProc = phiProc + xi[m]*phij[m];
+     etaxProc = etaxProc + xi[m]*VX[m];
+     etayProc = etayProc + xi[m]*VY[m];
+ }
 
 mpiReduce(phiProc[],phi[],processor(0),mpiSUM);
 mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
 mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 
 if(mpirank==0){
-  //Compute the reflection coefficient.
-  cout<<"\n\n\n";
-  cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;
-  phi=phi+phi0;  
-  complex Ref;
-  getRefCoeff(4,phi,Ref);
-  cout.precision(16);
-  cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
+    //Compute the reflection coefficient.
+    cout<<"\n\n\n";
+    cout<<"Non-Dim parameter Lc,Tc = "<<Lc<<","<<tc<<endl;
+    phi=phi+phi0;
+    complex Ref;
+    
+    getRefCoeff(4,phi,Ref);//[iceFEM] Compute the Reflection Coefficient
+    
+    cout.precision(16);
+    cout<<"Reflection Coefficient = "<<Ref<<endl<<"|R| = "<<abs(Ref)<<endl;
 
-  //Write data to MATLAB
-  //iter could be used to index the solution.
-
-  //  int[int] Order=[1,1];
-  //  savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
-  //  savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-  //  savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
+    //Write data to Paraview
+    //iter is used to index the solution.
+    int[int] Order=[1,1];
+    savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+    savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
+    savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
  }
 
 starttime=cpu;
@@ -157,4 +181,4 @@ endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0)
-  cout<<"Total time = "<<timeTaken<<" s"<<endl;
+    cout<<"Total time = "<<timeTaken<<" s"<<endl;

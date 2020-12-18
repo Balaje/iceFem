@@ -38,7 +38,7 @@ macro writeSolution(var, filename){
 
 //Construct/Load the meshes.
 real starttime=mpiWtime();
-iceBEDMAP2(nborders,isMesh);
+iceBEDMAP2(6,isMesh);
 if(isMesh){
   refineMesh; //refine the meshes and overwrite the original meshes.
  }
@@ -55,10 +55,9 @@ if(mpirank==0)
   cout<<"Solved Dispersion Equation ... "<<endl;
 
 matrix<complex> MQ;
-complex[int] ctilde(NModes+1);
 Wh<complex> chi1;
-MQ=getQphi(ThCavity,NModes,k,kd,HH,dd,Ap,4);
-ctilde=getChi(ThCavity,NModes,k,kd,HH,dd,Ap);
+getQphi(4,MQ);//[iceFEM] Build Q-Operator on boundary 4 of cavity.
+getChi;//[iceFEM] Build Function Chi.
 for(int m=0; m<NModes+1; m++)
   chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
 
@@ -69,7 +68,7 @@ if(mpirank==0)
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
 starttime=mpiWtime();
-readEigen;
+solveEigen;
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
@@ -89,8 +88,7 @@ WhBdy<complex> phi00=phi0;
 
 Wh<complex>[int] phij(nev);
 WhBdy<complex>[int] phijj(nev);
-int parti, rem, start, stop, partisize;
-buildParti;
+buildParti(nev);
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 starttime=mpiWtime();
 for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
@@ -105,7 +103,8 @@ for(int m=mpirank*parti; m<mpirank*parti+parti; m++)
     phijj[m]=phih;
     PHIJProc(:,m-start)=phijj[m][];
   }
-mpiAllgatherv(PHIJProc,PHIJ,rcounts,dspls);
+int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
+mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiSUM);
@@ -126,8 +125,9 @@ endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0){
-  cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
-  writeReducedSystem;
+    complex[int] Refm(nev), Reft(nev);
+    cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
+    writeReducedSystem;
  }
 
 //Solve the reduced system.
@@ -161,9 +161,9 @@ if(mpirank==0){
   //iter could be used to index the solution.
 
   int[int] Order=[1,1];
-  savevtk("1_BEDMAP2/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
-  savevtk("1_BEDMAP2/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
-  savevtk("1_BEDMAP2/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
+  savevtk(SolutionDir+"sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+  savevtk(SolutionDir+"sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
+  savevtk(SolutionDir+"solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
  }
 
 if(mpirank==0)
