@@ -147,7 +147,7 @@ mpirun -np 2 FreeFem++-mpi -ne -v 0 solveBEDMAP2.edp -isMesh 0 -iter 1 -hsize 0.
 
 and it produces the following outputs. Note the scales along the ``y`` axis is exaggerated for better visualization.
 
-| T=200 s | T=6000 s |
+| T=200 s | T=4000 s |
 | --- | --- |
 | ![BEDMAP 1](./Images/BM1.png) | ![BEDMAP 2](./Images/BM2.png) |
 
