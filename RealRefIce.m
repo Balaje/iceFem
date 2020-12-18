@@ -1,11 +1,15 @@
 clc
 clear
 
-%% From the finite element problems;
+SolutionDir='2_ICEBERG/';
+
+%% From the finite element problems; (Sample Shell command to run the frequency domain solutions for iceberg.edp)
+% for i in $(seq 15 2.5 80); 
+% do mpirun -np 2 FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 30 -Tr $i -L 3000 -H 2000 -h 200 -nev 8 -iter $(echo $i/2.5-5 | bc) > /dev/null; echo "Done $i"; done
 npts=27;
 RC=zeros(npts,4);
 for m=1:npts
-    RC(m,:)=load(['2_ICEBERG/2_RefCoeff/rc',num2str(m),'.dat']);
+    RC(m,:)=load([SolutionDir,'2_RefCoeff/rc',num2str(m),'.dat']);
 end
 RC1=RC(:,1)+1i*RC(:,2);
 TC=RC(:,3)+1i*RC(:,4);
@@ -16,27 +20,27 @@ b=80;
 T=linspace(a,b,npts);
 omega=2*pi./T;
 NptsNew=300;
-[omegaNew,detH,conH]=interpolateFreq(2*pi/b,2*pi/a,omega,8,'2_ICEBERG/2_ModesMatrix/',NptsNew-1,1);
-ReLAMBDA=load('2_ICEBERG/2_ModesMatrix/Interpolated_L/lambdaRe.dat');
-ImLAMBDA=load('2_ICEBERG/2_ModesMatrix/Interpolated_L/lambdaIm.dat');
+[omegaNew,detH,conH]=interpolateFreq(2*pi/b,2*pi/a,omega,8,[SolutionDir,'2_ModesMatrix/'],NptsNew-1,1);
+ReLAMBDA=load([SolutionDir,'2_ModesMatrix/Interpolated_L/lambdaRe.dat']);
+ImLAMBDA=load([SolutionDir,'2_ModesMatrix/Interpolated_L/lambdaIm.dat']);
 LAM=ReLAMBDA+1i*ImLAMBDA;
 
 %% Interpolate Reflection Coeffs
-V1=interpRefCoeffs(omega,omegaNew,8,'2_ICEBERG/2_RefCoeff','C');
-V2=interpRefCoeffs(omega,omegaNew,8,'2_ICEBERG/2_RefCoeff','T');
+V1=interpRefCoeffs(omega,omegaNew,8,[SolutionDir,'2_RefCoeff'],'C');
+V2=interpRefCoeffs(omega,omegaNew,8,[SolutionDir,'2_RefCoeff'],'T');
 % and load
-RefCDifRe=load('2_ICEBERG/2_RefCoeff/Interpolated_R/refCDifRe.dat');
-RefCDifIm=load('2_ICEBERG/2_RefCoeff/Interpolated_R/refCDifIm.dat');
-RefTDifRe=load('2_ICEBERG/2_RefCoeff/Interpolated_R/refTDifRe.dat');
-RefTDifIm=load('2_ICEBERG/2_RefCoeff/Interpolated_R/refTDifIm.dat');
+RefCDifRe=load([SolutionDir,'2_RefCoeff/Interpolated_R/refCDifRe.dat']);
+RefCDifIm=load([SolutionDir,'2_RefCoeff/Interpolated_R/refCDifIm.dat']);
+RefTDifRe=load([SolutionDir,'2_RefCoeff/Interpolated_R/refTDifRe.dat']);
+RefTDifIm=load([SolutionDir,'2_RefCoeff/Interpolated_R/refTDifIm.dat']);
 
 RCDif=RefCDifRe+1i*RefCDifIm;
 RTDif=RefTDifRe+1i*RefTDifIm;
 
-RefCRadRe=load('2_ICEBERG/2_RefCoeff/Interpolated_R/refCRadRe.dat');
-RefCRadIm=load('2_ICEBERG/2_RefCoeff/Interpolated_R/refCRadIm.dat');
-RefTRadRe=load('2_ICEBERG/2_RefCoeff/Interpolated_R/refTRadRe.dat');
-RefTRadIm=load('2_ICEBERG/2_RefCoeff/Interpolated_R/refTRadIm.dat');
+RefCRadRe=load([SolutionDir,'2_RefCoeff/Interpolated_R/refCRadRe.dat']);
+RefCRadIm=load([SolutionDir,'2_RefCoeff/Interpolated_R/refCRadIm.dat']);
+RefTRadRe=load([SolutionDir,'2_RefCoeff/Interpolated_R/refTRadRe.dat']);
+RefTRadIm=load([SolutionDir,'2_RefCoeff/Interpolated_R/refTRadIm.dat']);
 
 RCRad=RefCRadRe+1i*RefCRadIm;
 RTRad=RefTRadRe+1i*RefTRadIm;
@@ -114,6 +118,3 @@ dlmwrite([filePath,'/Interpolated_R/ref',TorC,'RadIm.dat'],imag(rcNew));
 
 V=0;
 end
-
-%% Shell command to run the frequency domain solutions
-% for i in $(seq 15 2.5 80); do mpiff iceberg.edp -N1 20 -N2 30 -Tr $i -L 3000 -H 2000 -h 200 -nev 8 -iter $(echo $i/2.5-5 | bc) > /dev/null; echo "Done $i"; done

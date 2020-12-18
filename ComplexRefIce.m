@@ -1,26 +1,28 @@
 clc
 clear
 
-%% From the finite element problems;
-
+SolutionDir='1_ICEBERG/';
+%% The finite element problems;
 npts=10;
 [X,Y]=meshgrid(linspace(2*pi/80,2*pi/15,npts),linspace(-0.06,0.06,npts));
 omega=X+1i*Y;
 T=2*pi./omega;
 RC=zeros(npts^2,4);
 
-count=1;
-for m=1:npts
-   for n=1:npts
-       cmd=['/usr/local/bin/mpirun -np 2 /usr/local/ff++/mpich3/bin/FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 80 -Tr ',num2str(real(T(m,n))),' -Ti ',num2str(imag(T(m,n))), ...
-           ' -L 1000 -H 5000 -h 200 -nev 8 -iter ',num2str(count)];       
-       [a,b]=system(cmd);
-       count=count+1;
-   end
-end
+%% Uncomment to run the FF code with complex frequencies
+% count=1;
+% for m=1:npts
+%    for n=1:npts
+%        cmd=['/usr/local/bin/mpirun -np 2 /usr/local/ff++/mpich3/bin/FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 80 -Tr ',num2str(real(T(m,n))),' -Ti ',num2str(imag(T(m,n))), ...
+%            ' -L 1000 -H 5000 -h 200 -nev 8 -iter ',num2str(count)];       
+%        [a,b]=system(cmd);
+%        count=count+1;
+%    end
+% end
 
+%% Interpolate the reflection coefficients
 for m=1:npts^2
-    RC(m,:)=load(['1_ICEBERG/2_RefCoeff/rc',num2str(m),'.dat']);
+    RC(m,:)=load([SolutionDir,'2_RefCoeff/rc',num2str(m),'.dat']);
 end
 RCOld=RC(:,1)+1i*RC(:,2);
 RCOld=reshape(RCOld,[npts,npts]);
@@ -32,22 +34,22 @@ NptsNew=300;
 omegaNew=Xq+1i*Yq;
 Tnew=2*pi./omegaNew;
 
-V1=interpolateFreqComplex(omega,omegaNew,8,'1_ICEBERG/2_ModesMatrix');
-V2=interpolateRefCoeff(omega,omegaNew,8,'1_ICEBERG/2_RefCoeff/','C');
-V3=interpolateRefCoeff(omega,omegaNew,8,'1_ICEBERG/2_RefCoeff/','T');
+V1=interpolateFreqComplex(omega,omegaNew,8,[SolutionDir,'2_ModesMatrix']);
+V2=interpolateRefCoeff(omega,omegaNew,8,[SolutionDir,'2_RefCoeff/'],'C');
+V3=interpolateRefCoeff(omega,omegaNew,8,[SolutionDir,'2_RefCoeff/'],'T');
 
 %% Load the RefCoeffs
-RefCDifRe=load('1_ICEBERG/2_RefCoeff/Interpolated_R/refCDifRe.dat');
-RefCDifIm=load('1_ICEBERG/2_RefCoeff/Interpolated_R/refCDifIm.dat');
-RefTDifRe=load('1_ICEBERG/2_RefCoeff/Interpolated_R/refTDifRe.dat');
-RefTDifIm=load('1_ICEBERG/2_RefCoeff/Interpolated_R/refTDifIm.dat');
+RefCDifRe=load([SolutionDir,'2_RefCoeff/Interpolated_R/refCDifRe.dat']);
+RefCDifIm=load([SolutionDir,'2_RefCoeff/Interpolated_R/refCDifIm.dat']);
+RefTDifRe=load([SolutionDir,'2_RefCoeff/Interpolated_R/refTDifRe.dat']);
+RefTDifIm=load([SolutionDir,'2_RefCoeff/Interpolated_R/refTDifIm.dat']);
 RCDif=RefCDifRe+1i*RefCDifIm;
 RTDif=RefTDifRe+1i*RefTDifIm;
 
-RefCRadRe=load('1_ICEBERG/2_RefCoeff/Interpolated_R/refCRadRe.dat');
-RefCRadIm=load('1_ICEBERG/2_RefCoeff/Interpolated_R/refCRadIm.dat');
-RefTRadRe=load('1_ICEBERG/2_RefCoeff/Interpolated_R/refTRadRe.dat');
-RefTRadIm=load('1_ICEBERG/2_RefCoeff/Interpolated_R/refTRadIm.dat');
+RefCRadRe=load([SolutionDir,'2_RefCoeff/Interpolated_R/refCRadRe.dat']);
+RefCRadIm=load([SolutionDir,'2_RefCoeff/Interpolated_R/refCRadIm.dat']);
+RefTRadRe=load([SolutionDir,'2_RefCoeff/Interpolated_R/refTRadRe.dat']);
+RefTRadIm=load([SolutionDir,'2_RefCoeff/Interpolated_R/refTRadIm.dat']);
 RCRad=RefCRadRe+1i*RefCRadIm;
 RTRad=RefTRadRe+1i*RefTRadIm;
 
@@ -55,8 +57,8 @@ RC=zeros(NptsNew,NptsNew);
 RT=zeros(NptsNew,NptsNew);
 
 %% Reconstruct RefCoeffs
-ReLAMBDA=load('1_ICEBERG/2_ModesMatrix/Interpolated_L/lambdaRe.dat');
-ImLAMBDA=load('1_ICEBERG/2_ModesMatrix/Interpolated_L/lambdaIm.dat');
+ReLAMBDA=load([SolutionDir,'2_ModesMatrix/Interpolated_L/lambdaRe.dat']);
+ImLAMBDA=load([SolutionDir,'2_ModesMatrix/Interpolated_L/lambdaIm.dat']);
 LAM=ReLAMBDA+1i*ImLAMBDA;
 iter=1;
 for i=1:NptsNew
