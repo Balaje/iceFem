@@ -16,15 +16,40 @@ the governing equations remain the same as the previous version and is shown in 
 | ![Geo](./Images/iceGeo.png)
 | ----------------------------------
 
-To setup and use the package, cd into the package directory, open up terminal and type
+**A few sample programs are discussed below to get you started**. To setup and use the package, cd into the package directory, open up terminal and type
 
 ```shell
 export FF_INCLUDEPATH="$PWD/include" #Add the include/ folder into the FreeFem++ environment variable. Needs to be run for the first time.
-./genDir.sh 1_SIMPLE5/
-mpirun -np 2 FreeFem++-mpi -v 0 iceshelf2d.edp -nev 16 -Tr 80 -hsize 0.05 -notchHeight 0.0 -isUniRef 0 -isSplit 1 -N 15
+./genDir.sh [YOUR_DIRECTORY NAME]
 ```
 
-The second command creates the necessary directory structure for organising the solution better. The last command computes the solution for a default uniform ice-shelf and cavity with
+The `genDir.sh` script creates the directory structure used by the package to write the relevant files. This assumes that the `MATLAB` scripts in the `modules` folder is being used. For example running
+
+```shell
+./genDir.sh 1_SIMPLE5
+```
+produces the following directories inside.
+
+``` shell
+1_SIMPLE5/ # This folder also contains the VTK files for visualizing the FreeFem solution.
+├── 2_Deformation
+├── 2_Modes # To store in-vacuo modes
+├── 2_ModesMatrix # [FEM] To store the reduced system.
+│   ├── Interpolated_F # [MATLAB] Store the interpolated RHS value
+│   ├── Interpolated_H # [MATLAB] Store the interpolated LHS value
+│   └── Interpolated_L # [MATLAB] Store the interpolated solutions $\lambda_j$
+├── 2_Potential # To store the radiation and diffraction potentials
+├── 2_RefCoeff # [FEM] To store the reflection coefficients
+│   ├── Interpolated_R # [MATLAB] To store the interpolated values of the Difraction and radiation reflection coefficients.
+│   ├── RefCoeff_Dif # [FEM] To store the Diffraction reflection coefficients
+│   └── RefCoeff_Rad # [FEM] To store the Radiation reflection coefficients
+└── 2_Stresses # [FEM] To store the stresses
+```
+The default directory name can be changed in the FreeFem code by setting the variable `SolutionDir`. Run
+```shell
+mpirun -np 2 FreeFem++-mpi -v 0 iceshelf2d.edp -nev 16 -Tr 80 -hsize 0.05 -notchHeight 0.0 -isUniRef 0 -isSplit 1 -N 15
+```
+This command command computes the solution for a default uniform ice-shelf and cavity with
 
 * Length L=20 km
 * Thickness h=200 m
@@ -34,9 +59,9 @@ The second command creates the necessary directory structure for organising the 
 To specify more inputs, one can use the following command
 
 ```shell
-mpirun -np 4 FreeFem++-mpi -ne -v 0 simple5.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS OF ICE]
+mpirun -np 2 FreeFem++-mpi -ne -v 0 simple5.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS OF ICE]
                                  -N [MESH PARAM]
-                                 -Tr [REAL(period)] -Ti [IMAGE(period)]
+                                 -Tr [REAL(period)] -Ti [IMAG(period)]
                                  -iter [SOL. INDEX]
                                  -isUniIce [ON/OFF UNIFORM/NON UNIFORM ICE]
                                  -isUniCav [ON/OFF UNIFORM/NON UNIFORM CAVITY]
@@ -50,16 +75,17 @@ mpirun -np 4 FreeFem++-mpi -ne -v 0 simple5.edp -L [LENGTH] -H [DEPTH OF CAVITY]
 The non-uniform refinement is performed proportional to shelf thickness. To specify the dimension of the problem and the polynomial order of approximation, define the following macros in the code
 
 ```cpp
-macro dimension 2//EOM" (dim=3)
-macro fspace 2//EOM" (fespace=P1)
+macro dimension 2//EOM" (dim=2)
+macro fspace 2//EOM" (fespace=P2)
 ```
 
-to solve a 3D problem using linear tetrahedral elements. Note that FreeFem offers support only for triangles/tetrahedrons. The non-local boundary condition has been extended to accommodate  more general cases.
+to solve a 2D problem using quadratic triangular elements. Note that FreeFem offers support only for triangles/tetrahedrons. The non-local boundary condition has been extended to accommodate  more general cases.
 
 
-**Example 1: Run**
+**Example 1: Ice shelf motion**
 
 ```shell
+./genDir.sh 1_SIMPLE5
 mpirun -np 4 FreeFem++-mpi -ne -v 0 iceshelf2d.edp -L 10000 -H 800 -h 200 -N 10 -Tr 200 -Ti 0 -iter 0 -hsize 0.04 -isSplit 1
 ```
 
@@ -70,7 +96,7 @@ splitMesh(isSplit);
 ```
 where ```isSplit``` is a global variable that indicates whether the splitting is active or not. The splitting macro will split the mesh and distribute the sub-meshes among the processors. The following data for the reflection coefficient is obtained. The thin-plate solution is shown as comparison to the FEM result.
 
-Model | Reflection Coefficient, R | abs(R) |
+Model | Reflection Coefficient, `R` | abs(`R`) |
 ---- |----- | ---- |
 FEM | (0.482959,0.875643) | 1.000000 |
 Thin Plate| (0.493626,0.869740) | 1.000000 |
@@ -86,19 +112,20 @@ All the visualization is performed using Paraview. The code produces the followi
 
 Run:
 ```shell
+./genDir.sh 2_ICEBERG
 mpirun -np 2 FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 30 -Tr 40 -L 3000 -H 2000 -h 200 -nev 8 -iter test
 ```
 solves the floating elastic plate vibration problem for an incident period of ``T=40s``. The output is shown in the Figure below:
 
 ![Displacement](./Images/iceberg1.png)
 
-The reflection and transmission coefficients are shown in the Table below:
+The reflection (`R`) and transmission (`T`) coefficients are shown in the Table below:
 
-omega | R(omega) | T(omega) | abs(R)^2+abs(T)^2 |
+T(in s) | `R`(omega) | `T`(omega) | abs(`R`)^2+abs(`T`)^2 |
 --- | --- | --- | --- |
 T=40 s | (0.475792,-0.647576) | (0.479653,0.352414) | 1.00000 |
 
-which verrify the energy conservation result. Note that `T(omega)=0` in ice--shelf case since there is no transmission. The Q-operator boundary condition is applied on both the ends while the wave forcing function is applied only on the left hand side (inlet boundary).
+which verifies the energy conservation result. Note that the transmission coefficient `T=0` in ice--shelf case since there is no transmission. The Q-operator boundary condition is applied on both the ends while the wave forcing function is applied only on the left hand side (inlet boundary).
 
 
 ## BEDMAP2 Integration
@@ -126,7 +153,7 @@ and it produces the following outputs. Note the scales along the ``y`` axis is e
 
 The reflection coefficients are tabulated below:
 
-T | Reflection Coefficient, R | abs(R) |
+T | Reflection Coefficient, `R` | abs(`R`) |
 ---| ---- | ---- |
 200 s| (-0.823879,-0.566776) |  1.000006|
 4000 s | (-0.987549,-0.157312) | 1.000000 |
@@ -136,7 +163,7 @@ T | Reflection Coefficient, R | abs(R) |
 
 3D problems are much more challenging to solve that 2D problems. The eigenmode decomposition of the ice-shelf typically consists of lower order vibration modes in the third direction. The modal decomposition often yield these vibration modes in an arbitrary order and thus simple solutions to the frequency domain problems are often harder to approximate. Hence, more analysis (including validation) is required to study these problems in detail. Nevertheless, preliminary support has been extended to 3D cases as well.
 
-All the macros should work if the correct dimension has been specified and the correct meshes are being used. Example meshes are available in ```Meshes/*.mesh```.
+All the macros should work if the correct dimension has been specified and the correct meshes are being used. Example meshes are available in ```Meshes/*.mesh```. The associated FreeFem script is `iceshelf3d.edp`.
 
 | Floating boat | 3D ice-shelf |
 | --- | --- |
