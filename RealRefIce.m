@@ -1,10 +1,16 @@
+%% Run the following command in the shell to obtain an initial set of frequency domain solutions.
+
+% for i in $(seq 15 2.5 80); do mpirun -np 2 FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 30 -Tr $i -L 3000 -H 2000 -h 200 -nev 8 -iter $(echo $i/2.5-5 | bc) > /dev/null; echo "Done $i"; done 
+
+% This may take a while depending on your computer. Once the command
+% finishes running, run this MATLAB script!
+
 clc
 clear
 
 SolutionDir='2_ICEBERG/';
 
 %% From the finite element problems; (Sample Shell command to run the frequency domain solutions for iceberg.edp)
-% for i in $(seq 15 2.5 80); do mpirun -np 2 FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 30 -Tr $i -L 3000 -H 2000 -h 200 -nev 8 -iter $(echo $i/2.5-5 | bc) > /dev/null; echo "Done $i"; done
 npts=27;
 RC=zeros(npts,4);
 for m=1:npts
@@ -66,7 +72,7 @@ legend('Coarse $\omega$ Space','Fine $\omega$ Space')
 xlim([omegaNew(1),omegaNew(end)])
 
 subplot(3,1,2);
-plot(omegaNew,sqrt(abs(RT).^2+abs(RC).^2),'k');
+plot(omegaNew,sqrt(abs(RT).^2+abs(RC).^2),'k','linewidth',2);
 hold on
 plot(omegaNew,abs(RT),'r','linewidth',2);
 plot(omegaNew,abs(RC),'b','linewidth',2);
