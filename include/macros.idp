@@ -735,9 +735,8 @@ macro getLaplaceMat(a,b,c){
 
 macro getLaplaceMatEB(m,rad){
     Wh<complex> psih;
-    real Px=(sqrt(2)*sin(mu[m]*L+pi/4) + exp(-mu[m]*LL))/(exp(-2*mu[m]*LL)+2*exp(-mu[m]*LL)*sin(mu[m]*LL)-1);
-    func etaj=rad*(-exp(-mu[m]*x)) + Px*(exp(-mu[m]*(LL-x))+exp(-mu[m]*(LL+x))) - sin(mu[m]*x) + (1-2*Px*exp(-mu[m]*LL))*cos(mu[m]*x);
-    etaj=etaj(LL-x,0);
+    func etaj = rad*((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+        
     varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih));
     varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(fh*psih*N.x)+ int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*etaj*psih);
     varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih*N.x);
@@ -818,7 +817,7 @@ macro buildReducedSystem(VX,VY,phi0,phij)
 
             for(int n=0; n<nev; n++)
             {
-                B(m,n) = (rhoi*ev[m]-rhoi*omega^2)*intN(ThIce)(VX[m]*VX[n] + VY[m]*VY[n]);
+                B(m,n) = (ev[m]-rhoi*omega^2)*intN(ThIce)(VX[m]*VX[n] + VY[m]*VY[n]);
 
                 IFMACRO(dimension,2)
                     K(n,m) = intN1(ThIce,3,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
@@ -827,9 +826,7 @@ macro buildReducedSystem(VX,VY,phi0,phij)
                     K(n,m) = intN1(ThIce,3,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y+Vz[n]*N.z));
                 ENDIFMACRO
 
-                    AB(n,m) = 0;
-                if(mpirank==0)
-                    cout<<"(m,n)"<<"("<<m<<","<<n<<")"<<endl;
+                    AB(n,m) = 0;                
             }
     }
 }//Macro to build the reduced system for the linear elasticity case. (Needs to be generalized even further. User should just specify the wetted surface and this should be computed).

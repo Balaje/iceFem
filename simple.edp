@@ -1,0 +1,80 @@
+verbosity=0;
+
+macro dimension 2//EOM"
+macro fspace 1//EOM"
+
+include "macros.idp"
+
+SolutionDir="1_TEST";
+
+setProblem;
+
+solveDispersion;
+
+
+//Build the meshes.
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
+setMeshIce(botRight, midPX, midPY);
+real midx=LL/2., midy=-0.5*HH, endy=-HH;
+setMeshCav(midx, midy, endy);
+
+//Refine Mesh
+refineMesh;
+
+
+//Solve the Eigenvalue problem;
+Xh[int][VX,VY](nev); //Define
+real[int] ev(nev); //Define
+solveEigen;
+
+//Get non-local boundary condition
+Wh<complex> chi1;
+matrix<complex> MQ;
+getQphi(4,MQ);
+getChi;
+for(int m=0; m<NModes+1; m++)
+    chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+
+
+Wh<complex> phi0; 
+func fh=chi1; //Set fh
+getLaplaceMat(0,0,0);
+LHS=STIMA+(MQ);
+set(LHS,solver=UMFPACK);
+phi0[]=LHS^-1*RHS[];
+
+
+Wh<complex>[int] phij(nev);
+for(int m=0; m<nev; m++)
+ {
+     func fh=0;
+     getLaplaceMat(VX[m],VY[m],0);
+     LHS=STIMA+(MQ);
+     set(LHS,solver=UMFPACK);
+     phij[m][]=LHS^-1*RHS[];
+ }
+
+buildReducedSystem(VX,VY,phi0,phij);
+
+solveReducedSystem;
+
+Vh<complex> etax,etay;
+Wh<complex> phi;
+
+phi=phi0;
+for(int m=0; m<nev; m++)
+ {
+     phi=phi+xi[m]*phij[m];
+     etax=etax+xi[m]*VX[m];
+     etay=etay+xi[m]*VY[m];
+ }
+
+complex Ref;
+getRefCoeff(4,phi,Ref);
+if(mpirank==0){
+    int[int] Order=[1,1];
+    savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],dataname="ReDisp",order=Order);
+    savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="ReDisp",order=Order);
+    cout<<"\n\nReflection Coefficient = "<<Ref<<endl;
+    cout<<"Absolute Value = "<<abs(Ref)<<endl;
+ }
