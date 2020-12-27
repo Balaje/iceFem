@@ -57,9 +57,8 @@ if(mpirank==0)
 matrix<complex> MQ;
 Wh<complex> chi1;
 getQphi(4,MQ);//[iceFEM] Build Q-Operator on boundary 4 of cavity.
-getChi;//[iceFEM] Build Function Chi.
-for(int m=0; m<NModes+1; m++)
-  chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+getChi(chi1);//[iceFEM] Build Function Chi.
+
 
 if(mpirank==0)
   cout<<"Obtained the nonlocal boundary condition"<<endl;
@@ -115,10 +114,6 @@ if(mpirank==0)
 for(int m=0; m<nev; m++)
   phijj[m][]=PHIJ(:,m);
 
-F.resize(nev);
-B.resize(nev,nev);
-K.resize(nev,nev);
-AB.resize(nev,nev);
 starttime=mpiWtime();
 buildReducedSystemOptim;
 endtime=mpiWtime();

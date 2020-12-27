@@ -73,10 +73,7 @@ Wh<complex> chi1; //[iceFEM] Define a function chi1 on the cavity domain for the
 matrix<complex> MQ;//[iceFEM] Define a matrix MQ for the Q-operator.
 
 getQphi(4,MQ);//[iceFEM] Build Q-Operator on boundary 4 of cavity.
-getChi;//[iceFEM] Build Function Chi.
-
-for(int m=0; m<NModes+1; m++)
-    chi1 = chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+getChi(chi1);//[iceFEM] Build Function Chi.
 
 //  3) Solve for the diffraction potential.
 Wh<complex> phi0;
@@ -121,10 +118,6 @@ for(int m=0; m<nev; m++)
 
 
 //Build Reduced System using the modes. [H]{\lambda}={f}
-K.resize(nev,nev);
-B.resize(nev,nev);
-AB.resize(nev,nev);
-F.resize(nev);
 starttime=mpiWtime();
 buildReducedSystemOptim;//[iceFEM]
 

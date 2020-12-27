@@ -31,9 +31,7 @@ solveEigen;
 Wh<complex> chi1;
 matrix<complex> MQ;
 getQphi(4,MQ);
-getChi;
-for(int m=0; m<NModes+1; m++)
-    chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+getChi(chi1);
 
 
 Wh<complex> phi0; 
