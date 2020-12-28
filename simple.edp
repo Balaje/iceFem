@@ -75,4 +75,10 @@ if(mpirank==0){
     savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="ReDisp",order=Order);
     cout<<"\n\nReflection Coefficient = "<<Ref<<endl;
     cout<<"Absolute Value = "<<abs(Ref)<<endl;
+
+    Wh rephi=real(phi);
+    Vh reetax=real(etax), reetay=real(etay);
+    writeToMATLAB(rephi,ThCavity,SolutionDir+"/cavmesh");
+    writeToMATLAB(reetax,ThIce,SolutionDir+"/icemeshX");
+    writeToMATLAB(reetay,ThIce,SolutionDir+"/icemeshY");
  }

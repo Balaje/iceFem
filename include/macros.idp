@@ -865,16 +865,16 @@ macro solveReducedSystem(){
         matrix<complex> Kmat, Bmat, ABmat;
         Kmat = K;
         Bmat=B;
-        ABmat=AB;
+        ABmat=AB;        
         HHmat=Kmat+Bmat+ABmat;
-        set(HHmat,solver=UMFPACK,eps=1e-20);
-        xi=HHmat^-1*F;
+        set(HHmat,solver=UMFPACK,eps=1e-20);        
+        xi=HHmat^-1*F;        
         ofstream file1(SolutionDir+"/2_ModesMatrix/lambdaj"+iter+".dat");
         file1.precision(8);
         for(int m=0; m<nev; m++)
             file1<<real(xi[m])<<"\t"<<imag(xi[m])<<endl;
     }
-    broadcast(processor(0),xi);
+    broadcast(processor(0),xi);    
 }//Macro to solve the reduced system
 
 func eta = 0;
@@ -890,7 +890,7 @@ macro constructEBdisp()
 
 macro writeToMATLAB(uh,Th,meshfilename)
 {
-    savemesh(Th,meshfilename+".mesh");
+    savemesh(Th,meshfilename+".msh");
     ofstream file(meshfilename);
     file.precision(16);
     file<<"2 1 1 "<<uh.n<<" 2 \n";

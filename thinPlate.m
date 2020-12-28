@@ -5,7 +5,7 @@ clc
 H=800;
 L=10000;
 th=200;
-T=200;
+T=400;
 omega=2*pi/T;
 d=(rhoi/rhow)*th;
 NModes = 10;
