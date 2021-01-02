@@ -46,8 +46,8 @@ def interpolateFreq(a,b,omega,Nev,filePath,npts,isSolve):
             ImFnew=f(omegaNew)
     np.savetxt(filePath+"Interpolated_H/ReH.dat",ReHnew,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_H/ImH.dat",ImHnew,delimiter="\t",newline="\n")
-    np.savetxt(filePath+"Interpolated_H/ReF.dat",ReFnew,delimiter="\t",newline="\n")
-    np.savetxt(filePath+"Interpolated_H/ImF.dat",ImFnew,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_F/ReF.dat",ReFnew,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_F/ImF.dat",ImFnew,delimiter="\t",newline="\n")
     if(isSolve):
         lambdaj=np.zeros((len(omegaNew),Nev))
         for p in range(0,len(omegaNew)-1):
@@ -73,7 +73,27 @@ def interpolateFreqComplex(omega,omegaNew,Nev,filePath):
         F[:,iter]=FRe+1j*FIm
     HNew=np.zeros((Nev**2,len(omegaNew)),dtype=complex)
     FNew=np.zeros((Nev,len(omegaNew)),dtype=complex)
-
     for m in range(0,Nev**2-1):
         ReH=np.reshape(H[m,:],(np.shape(omega)[0],np.shape(omega)[1]))
-        f=interp2d
+        f=interp2d(omegaflat.real, omegaflat.imag, ReH)
+        HH=f(omeganewflat.real,omeganewflat.imag)
+        HNew[m,:]=HH
+
+        if(m<Nev):
+            ReF=np.reshape(F[m,:],(np.shape(omega)[0],np.shape(omega)[1]))
+            f=interp2d(omegaflat.real,omegaflat.imag,ReF)
+            FF=f(omeganewflat.real,omeganewflat.imag)
+            FNew[m,:]=FF
+    np.savetxt(filePath+"Interpolated_H/ReH.dat",HNew.real,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_H/ImH.dat",HNew.imag,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_F/ReF.dat",FNew.real,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_F/ImF.dat",FNew.imag,delimiter="\t",newline="\n")
+    lambdaj=np.zeros((len(omegaNew),Nev))
+    for p in range(0,len(omegaNew)-1):
+        Hmat=np.reshape(HNew[:,p],(Nev,Nev),order='F')
+        Fmat=FNew[:,p]
+        lambdaj[p,:]=np.linalg.solve(Hmat,Fmat)
+    np.savetxt(filePath+"Interpolated_L/lambdaRe.dat",lambdaj.real,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_L/lambdaIm.dat",lambdaj.imag,delimiter="\t",newline="\n")
+
+    return 0
