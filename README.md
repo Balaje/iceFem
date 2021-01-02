@@ -3,9 +3,8 @@
 ## Dependencies
 - [**FreeFem**](https://freefem.org):
     A high level multiphysics finite element software. Full version with the `MPI` implementation and the `ffddm` module is required. The full version can be downloaded from the official website.
-- [**Bedmap2 Toolbox**](https://au.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab):      
-    To obtain real--life shelf/cavity data. This is available as a MATLAB toolbox.
-- **MATLAB**: This is really not a constraint if you are using the package without the BEDMAP2 plugin. Interpolation and related operations can be done using other packages. However, a list of `MATLAB` scripts are available for this purpose to make things easier.
+- [**Bedmap2 Toolbox**]([https://github.com/rprechelt/pybedmap2](https://github.com/rprechelt/pybedmap2)): To obtain real--life shelf/cavity data. This is available as a Python toolbox from the user *rprechelt*.
+- **Python:** This branch contains the BEDMAP2 module from [https://github.com/rprechelt/pybedmap2](https://github.com/rprechelt/pybedmap2) and the interpolation routine written using Python.
 - **Unix based OS:** Currently this program is written assuming a Unix based Operating system. Future support for windows will be added.
 
 ## Introduction
