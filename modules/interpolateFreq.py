@@ -19,10 +19,10 @@ def interpolateFreq(a,b,omega,Nev,filePath,npts,isSolve):
     omegaNew=np.linspace(a,b,npts+1)
     H=np.zeros((Nev**2,len(omega)),dtype=complex)
     F=np.zeros((Nev,len(omega)),dtype=complex)
-    for iter in range(0,len(omega)-1):
+    for iter in range(0,len(omega)):
         HRe=loadtxt(filePath+"ReH"+str(iter+1)+".dat",delimiter="\t")
         HIm=loadtxt(filePath+"ImH"+str(iter+1)+".dat",delimiter="\t")
-        H[:,iter]=HRe+1j*Him
+        H[:,iter]=HRe+1j*HIm
         if(isSolve):
             FRe=loadtxt(filePath+"ReF"+str(iter+1)+".dat",delimiter="\t")
             FIm=loadtxt(filePath+"ImF"+str(iter+1)+".dat",delimiter="\t")
@@ -30,26 +30,17 @@ def interpolateFreq(a,b,omega,Nev,filePath,npts,isSolve):
     HNew=np.zeros((Nev**2,len(omegaNew)),dtype=complex)
     FNew=np.zeros((Nev,len(omegaNew)),dtype=complex)
     for m in range(0,Nev**2-1):
-        ReH=H[m,:].real
-        ImH=H[m,:].imag
-        f=interpolate.interp1d(omega,ReH)
-        ReHnew=f(omegaNew)
-        f=interpolate.interp1d(omega,ImH)
-        ImHnew=f(omegaNew)
-        HNew[m,:]=ReHnew+1j*ImHnew
-        if(m<Nev & isSolve):
-            ReF=F[m,:].real
-            ImF=F[m,:].imag
-            f=interpolate.interp1d(omega,ReF)
-            ReFnew=f(omegaNew)
-            f=interpolate.interp1d(omega,ImF)
-            ImFnew=f(omegaNew)
-    np.savetxt(filePath+"Interpolated_H/ReH.dat",ReHnew,delimiter="\t",newline="\n")
-    np.savetxt(filePath+"Interpolated_H/ImH.dat",ImHnew,delimiter="\t",newline="\n")
-    np.savetxt(filePath+"Interpolated_F/ReF.dat",ReFnew,delimiter="\t",newline="\n")
-    np.savetxt(filePath+"Interpolated_F/ImF.dat",ImFnew,delimiter="\t",newline="\n")
+        f=interpolate.interp1d(omega,H[m,:],kind='cubic')
+        HNew[m,:]=f(omegaNew);
+        if(m<Nev and isSolve==1):
+            f=interpolate.interp1d(omega,F[m],kind='cubic')
+            FNew[m,:]=f(omegaNew)
+    np.savetxt(filePath+"Interpolated_H/ReH.dat",HNew.real,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_H/ImH.dat",HNew.imag,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_F/ReF.dat",FNew.real,delimiter="\t",newline="\n")
+    np.savetxt(filePath+"Interpolated_F/ImF.dat",FNew.imag,delimiter="\t",newline="\n")
     if(isSolve):
-        lambdaj=np.zeros((len(omegaNew),Nev))
+        lambdaj=np.zeros((len(omegaNew),Nev),dtype=complex)
         for p in range(0,len(omegaNew)-1):
             Hmat=np.reshape(HNew[:,p],(Nev,Nev),order='F')
             Fmat=FNew[:,p]
