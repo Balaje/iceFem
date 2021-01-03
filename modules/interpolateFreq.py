@@ -50,37 +50,47 @@ def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
     return omegaNew
 
 
-def interpolateCoeffsFreqComplex(omega,omegaNew,Nev,filePath):
-    omegaflat=omega.flatten(order='F')
-    omeganewflat=omegaNew.flatten(order='F')
-    H=np.zeros((Nev**2,len(omegaflat)),dtype=complex)
-    F=np.zeros((Nev**2,len(omeganewflat)),dtype=complex)
-    for iter in range(0,len(omegaflat)):
+def interpolateCoeffsFreqComplex(a,b,c,d,npts,Nev,filePath,nptsNew):
+    x=np.linspace(a,b,npts)
+    y=np.linspace(c,d,npts)
+    X,Y=np.meshgrid(x,y)
+    omega=X+1j*Y
+
+    xq=np.linspace(a,b,nptsNew)
+    yq=np.linspace(c,d,nptsNew)
+    Xq,Yq=np.meshgrid(xq,yq)
+    omegaNew=Xq+1j*Yq
+
+    H=np.zeros((Nev**2,npts**2),dtype=complex)
+    F=np.zeros((Nev,npts**2),dtype=complex)
+    for iter in range(0,npts**2):
         HRe=loadtxt(filePath+"ReH"+str(iter+1)+".dat",delimiter="\t")
         HIm=loadtxt(filePath+"ImH"+str(iter+1)+".dat",delimiter="\t")
-        H[:,iter]=HRe+1j*Him
+        H[:,iter]=HRe+1j*HIm
         FRe=loadtxt(filePath+"ReF"+str(iter+1)+".dat",delimiter="\t")
         FIm=loadtxt(filePath+"ImF"+str(iter+1)+".dat",delimiter="\t")
         F[:,iter]=FRe+1j*FIm
-    HNew=np.zeros((Nev**2,len(omegaNew)),dtype=complex)
-    FNew=np.zeros((Nev,len(omegaNew)),dtype=complex)
+    HNew=np.zeros((Nev**2,nptsNew**2),dtype=complex)
+    FNew=np.zeros((Nev,nptsNew**2),dtype=complex)
     for m in range(0,Nev**2):
-        ReH=np.reshape(H[m,:],(np.shape(omega)[0],np.shape(omega)[1]))
-        f=interpolate.interp2d(omegaflat.real, omegaflat.imag, ReH)
-        HH=f(omeganewflat.real,omeganewflat.imag)
-        HNew[m,:]=HH
-
+        f1=interpolate.interp2d(x, y, np.reshape(H[m,:].real,np.shape(omega)))
+        f2=interpolate.interp2d(x, y, np.reshape(H[m,:].imag,np.shape(omega)))
+        HH1=f1(xq,yq)
+        HH2=f2(xq,yq)
+        HNew[m,:]=HH1.flatten(order='F')+1j*HH2.flatten(order='F')
         if(m<Nev):
-            ReF=np.reshape(F[m,:],(np.shape(omega)[0],np.shape(omega)[1]))
-            f=interpolate.interp2d(omegaflat.real,omegaflat.imag,ReF,kind='cubic')
-            FF=f(omeganewflat.real,omeganewflat.imag)
-            FNew[m,:]=FF
+            f1=interpolate.interp2d(x, y, np.reshape(F[m,:].real,np.shape(omega)))
+            f2=interpolate.interp2d(x, y, np.reshape(F[m,:].imag,np.shape(omega)))
+            FF1=f1(xq,yq)
+            FF2=f2(xq,yq)
+            FNew[m,:]=FF1.flatten(order='F')+1j*FF2.flatten(order='F')
+
     np.savetxt(filePath+"Interpolated_H/ReH.dat",HNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_H/ImH.dat",HNew.imag,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_F/ReF.dat",FNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_F/ImF.dat",FNew.imag,delimiter="\t",newline="\n")
-    lambdaj=np.zeros((len(omegaNew),Nev))
-    for p in range(0,len(omegaNew)):
+    lambdaj=np.zeros((nptsNew**2,Nev),dtype=complex)
+    for p in range(0,nptsNew**2):
         Hmat=np.reshape(HNew[:,p],(Nev,Nev),order='F')
         Fmat=FNew[:,p]
         lambdaj[p,:]=np.linalg.solve(Hmat,Fmat)
