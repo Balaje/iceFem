@@ -17,6 +17,7 @@ omeganew=interpolateCoeffsFreq(2*pi/80,2*pi/15,omega,8,filePath+"2_ModesMatrix/"
 LAM=buildLam(filePath)
 
 plt.subplot(2,1,1)
+plt.title("Coefficients vs Frequency")
 for m in range(0,4):
     L=LAM[:,m]
     plt.plot(omeganew,abs(L),linewidth=2)
@@ -30,6 +31,7 @@ plt.plot(omeganew,np.transpose(abs(RC)),linewidth=2)
 ## Interpolating Transmission coefficients
 V=interpolateRefCoeff(omega,omeganew,8,filePath+"2_RefCoeff/","T")
 RT=buildRMat(LAM,filePath,"T")
+plt.title("Transmission and Reflection Coefficients vs Frequency")
 plt.plot(omeganew,np.transpose(abs(RT)),linewidth=2)
 
 # Check Energy Conservation

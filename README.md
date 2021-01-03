@@ -1,10 +1,15 @@
 # iceFEM++
 
 ## Dependencies
-- [**FreeFem**](https://freefem.org):
-    A high level multiphysics finite element software. Full version with the `MPI` implementation and the `ffddm` module is required. The full version can be downloaded from the official website.
-- [**Bedmap2 Toolbox**]([https://github.com/rprechelt/pybedmap2](https://github.com/rprechelt/pybedmap2)): To obtain real--life shelf/cavity data. This is available as a Python toolbox from the user *rprechelt*.
-- **Python:** This branch contains the BEDMAP2 module from [https://github.com/rprechelt/pybedmap2](https://github.com/rprechelt/pybedmap2) and the interpolation routine written using Python.
+- [**FreeFem**](https://freefem.org): A high level multiphysics finite element software. Full version with the `MPI` implementation and the `ffddm` module is required. The full version can be downloaded from the official website.
+
+- [**Bedmap2 Toolbox**]: Support yet to be provided.
+
+- **Python:** Requires Python support with `numpy`, `scipy` `matplotlib` and `cplot`, the last one for generating complex plots. Can be installed using
+```shell
+pip3 install cplot
+```
+
 - **Unix based OS:** Currently this program is written assuming a Unix based Operating system. Future support for windows will be added.
 
 ## Introduction
@@ -22,7 +27,7 @@ export FF_INCLUDEPATH="$PWD/include" #Add the include/ folder into the FreeFem++
 ./genDir.sh [YOUR_DIRECTORY NAME]
 ```
 
-The `genDir.sh` script creates the directory structure used by the package to write the relevant files. This assumes that the `MATLAB` scripts in the `modules` folder is being used. For example running
+The `genDir.sh` script creates the directory structure used by the package to write the relevant files. For example running
 
 ```shell
 ./genDir.sh 1_SIMPLE5
@@ -100,7 +105,7 @@ Model | Reflection Coefficient, `R` | abs(`R`) |
 FEM | (0.482959,0.875643) | 1.000000 |
 Thin Plate| (0.493626,0.869740) | 1.000000 |
 
-All the visualization is performed using Paraview. The code produces the following outputs for the displacement field and the velocity potential in the cavity region.
+All the visualization is performed using Paraview. The code produces the following outputs for the displacement field and the velocity potential in the cavity region. **NOTE: The Thin-plate code has been validated using the `MATLAB` module located in the other branch**.
 
 | Displacement/Potential (FEM) | Displacement (ThinPlate) |
 | --- | ---- |
@@ -126,36 +131,32 @@ T=40 s | (0.475792,-0.647576) | (0.479653,0.352414) | 1.00000 |
 
 which verifies the energy conservation result. Note that the transmission coefficient `T=0` in ice--shelf case since there is no transmission. The Q-operator boundary condition is applied on both the ends while the wave forcing function is applied only on the left hand side (inlet boundary).
 
+## Python Functions
 
-## BEDMAP2 Integration
+A list of functions written using Python has been added to perform interpolation to generate the interpolated frequency-domain solutions after obtaining the finite element solutions.
 
-Real-life ice-shelf profiles can be obtained using the BEDMAP2 dataset to generate the finite element meshes. Download the BEDMAP2 dataset [here](https://www.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab). The BEDMAP2 dataset is integrated with the code in a similar fashion to the [main branch](https://github.com/Balaje/iceFem/tree/master#bedmap2-integration). The profiles are generated using the MATLAB code ```bedMapProfile.m```. Once the profiles are generated, the resulting problem could be solved using the FreeFem code.
-
-A sample profile has been added in the ```Meshes/BEDMAP2/``` folder. The sample profiles include the cavity region beyond the ice shelf. To generate the directories for BEDMAP2. Run
-
-```shell
-./genDir.sh 1_BEDMAP2
+```python
+# Details of the function to be added
+def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):  
+def interpolateCoeffsFreqComplex(a,b,c,d,npts,Nev,filePath,nptsNew):
+def interpolateRefCoeff(omega,omegaNew,Nev,filePath,TorC):
+def interpolateRefCoeffComplex(a,b,c,d,npts, Nev, filePath, TorC, nptsNew):
+def buildLam(SolutionDir):  
+def buildRMat(LAM,SolutionDir,TorC):   
 ```
 
- Run the following command to generate the solution for two incident wave periods.
-
+Example scripts demonstrating the use of the Python Functions are provided.
+- `RealRefIce.py`: Computes and plots the Reflection and Transmission coefficients (Refer to the image on the paper). The Green line verifies the energy conservation result
 ```shell
-mpirun -np 2 FreeFem++-mpi -ne -v 0 solveBEDMAP2.edp -isMesh 1 -iter 1 -hsize 0.08 -Tr 200 -notchHeight 0.0 -N 5
-mpirun -np 2 FreeFem++-mpi -ne -v 0 solveBEDMAP2.edp -isMesh 0 -iter 1 -hsize 0.08 -Tr 4000 -notchHeight 0.0 -N 5
+abs(R)^2+abs(T)^2 = 1
 ```
 
-and it produces the following outputs. Note the scales along the ``y`` axis is exaggerated for better visualization.
+  ![Reflection and Transmission Coefficients](./Images/Figure_2.png)
 
-| T=200 s | T=4000 s |
-| --- | --- |
-| ![BEDMAP 1](./Images/BM1.png) | ![BEDMAP 2](./Images/BM2.png) |
+- `ComplexRefIce.py`: Computes and plots the Reflection and Transmission coefficients on the complex frequency space.
 
-The reflection coefficients are tabulated below:
+  ![Reflection and Transmission Coefficients](./Images/Figure_1.png)
 
-T | Reflection Coefficient, `R` | abs(`R`) |
----| ---- | ---- |
-200 s| (-0.823879,-0.566776) |  1.000006|
-4000 s | (-0.987549,-0.157312) | 1.000000 |
 
 
 ## 3D Problems
@@ -171,6 +172,14 @@ All the macros should work if the correct dimension has been specified and the c
 The first example is that of a floating boat which is an extension to an elastic plate problem in 2D. A detailed description of the geometry and the solution method can be found in this link here. The inlet and the outlet faces are prescribed by the user by specifying the appropriate labels. In this case, there is exactly one inlet (front plane, outward from the plane of the paper) and one outlet boundary (back, into the plane of the paper). No normal flow is prescribed on the sides and the bottom. The top surface is assigned as a free-surface.
 
 The second example is that of a classic ice-shelf vibration problem. The example here shows the vibration of a uniform ice-shelf of length 20 km and 200 m thick placed over a cavity of depth 500 m. The shelf is subjected to an incident wave forcing of 4000 s. The gray surface shows the 2D elasticity solution obtained using the same code. As mentioned earlier, there is a little bit of in-plane displacement along the third direction due to the contribution of the in-plane modes. Nevertheless, a good qualitative agreement is observed for the lower modes. This repository will be updated as more studies are conducted.
+
+## To-do
+
+- Python implementation of the thin-plate solution module using Eigenfunction Matching Method.
+
+- BEDMAP2 Support using Python.
+
+- Documentation of the Python Module.
 
 ## Acknowledgement
 This is joint work with my supervisors:

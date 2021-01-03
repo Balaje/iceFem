@@ -1,7 +1,15 @@
 # Interpolation Routines for the frequency domain solution
-# 1) def interpolateFreq(a,b,omega,Nev,filePath,npts,isSolve):
-#        Implements the interpolation of reduced system on real
-# frequency space.
+#(1) def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
+  # Implements the interpolation of reduced system on real frequency space
+  # Inputs
+  #   a: omega(1)
+  #   b: omega(end)
+  #   omega: An array containing the original frequency space.
+  #   Nev: Number of in-vacuo modes used in the construction of the solutions
+  #   filePath: Full path to the Working Directory. Eg. `1_SIMPLE5/`
+  #   npts: Number of interpolation points
+  #   isSolve: Option (0/1) to solve the reduced system to obtain the modal coefficients
+
 # 2) def interpolateFreqComplex(a,b,omega,Nev,filePath,npts,isSolve):
 #        Implements the interpolation of reduced system on complex
 # frequency space.
