@@ -43,3 +43,4 @@ omeganew=Xq+1j*Yq;
 Tnew=2*pi/omeganew
 
 interpolateCoeffsFreqComplex(a,b,c,d,npts,8,SolutionDir+"2_ModesMatrix/",nptsNew)
+interpolateRefCoeffComplex(a,b,c,d,npts,8,SolutionDir+"2_RefCoeff/","C",nptsNew)

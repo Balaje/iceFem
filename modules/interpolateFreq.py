@@ -118,30 +118,39 @@ def interpolateRefCoeff(omega,omegaNew,Nev,filePath,TorC):
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"RadRe.dat",rcNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"RadIm.dat",rcNew.imag,delimiter="\t",newline="\n")
 
-def interpolateRefCoeffComplex(omega, omegaNew, Nev, filePath, TorC):
-    omegaflat=omega.flatten(order='F')
-    omeganewflat=omegaNew.flatten(order='F')
-    rd=np.zeros((len(omegaflat),1),dtype=complex)
-    rr=np.zeros((len(omegaflat),Nev),dtype=complex)
-    for m in range(0,len(omegaflat)):
+def interpolateRefCoeffComplex(a,b,c,d,npts, Nev, filePath, TorC, nptsNew):
+    x=np.linspace(a,b,npts)
+    y=np.linspace(c,d,npts)
+    X,Y=np.meshgrid(x,y)
+    omega=X+1j*Y
+
+    xq=np.linspace(a,b,nptsNew)
+    yq=np.linspace(c,d,nptsNew)
+    Xq,Yq=np.meshgrid(xq,yq)
+    omegaNew=Xq+1j*Yq
+
+    rd=np.zeros((npts**2,1),dtype=complex)
+    rr=np.zeros((npts**2,Nev),dtype=complex)
+    for m in range(0,npts**2):
         rcDiff=np.loadtxt(filePath+"RefCoeff_Dif/ref"+TorC+str(m+1)+".dat",delimiter="\t")
         rcRad=np.loadtxt(filePath+"RefCoeff_Rad/ref"+TorC+str(m+1)+".dat",delimiter="\t")
         rd[m]=rcDiff[0]+1j*rcDiff[1]
         rr[m,:]=rcRad[:,0]+1j*rcRad[:,1]
 
-    reshapeRd=np.reshape(rd,(np.shape(omega)[0],np.shape(omega)[1]))
-    f=interpolate.interp2d(omegaflat.real,omegaflat.imag,reshapeRd)
-    rdNew=f(omeganewflat.real,omeganewflat.imag)
+    reshapeRd=np.reshape(rd,np.shape(omega))
+    fR=interpolate.interp2d(x, y, reshapeRd.real)
+    fI=interpolate.interp2d(x, y, reshapeRd.imag)
+    rdNew=fR(xq, yq)+1j*fI(xq, yq)
     rdNew=rdNew.flatten(order='F')
-    rcNew=np.zeros(len(omeganewflat),Nev)
+
+    rcNew=np.zeros((nptsNew**2,Nev),dtype=complex)
     for m in range(0,Nev):
-        reshapeRc=np.reshape(rr[:,m],[np.shape(omega)[0],np.shape(omega)[1]])
-        f=interpolate.interp2d(omegaflat.real,omegaflat.imag,reshapeRc)
-        rcc=f(omeganewflat.real,omeganewflat.imag)
+        reshapeRc=np.reshape(rr[:,m],np.shape(omega))
+        fR=interpolate.interp2d(x,y,reshapeRc.real)
+        fI=interpolate.interp2d(x,y,reshapeRc.imag)
+        rcc=fR(xq, yq)+1j*fI(xq, yq)
         rcNew[:,m]=rcc.flatten(order='F')
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"DifRe.dat",rdNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"DifIm.dat",rdNew.imag,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"RadRe.dat",rcNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"RadIm.dat",rcNew.imag,delimiter="\t",newline="\n")
-
-    return 0
