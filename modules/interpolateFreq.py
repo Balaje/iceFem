@@ -29,7 +29,7 @@ def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
             F[:,iter]=FRe+1j*FIm
     HNew=np.zeros((Nev**2,len(omegaNew)),dtype=complex)
     FNew=np.zeros((Nev,len(omegaNew)),dtype=complex)
-    for m in range(0,Nev**2-1):
+    for m in range(0,Nev**2):
         f=interpolate.interp1d(omega,H[m,:],kind='cubic')
         HNew[m,:]=f(omegaNew);
         if(m<Nev and isSolve==1):
@@ -55,7 +55,7 @@ def interpolateCoeffsFreqComplex(omega,omegaNew,Nev,filePath):
     omeganewflat=omegaNew.flatten(order='F')
     H=np.zeros((Nev**2,len(omegaflat)),dtype=complex)
     F=np.zeros((Nev**2,len(omeganewflat)),dtype=complex)
-    for iter in range(0,len(omegaflat)-1):
+    for iter in range(0,len(omegaflat)):
         HRe=loadtxt(filePath+"ReH"+str(iter+1)+".dat",delimiter="\t")
         HIm=loadtxt(filePath+"ImH"+str(iter+1)+".dat",delimiter="\t")
         H[:,iter]=HRe+1j*Him
@@ -64,7 +64,7 @@ def interpolateCoeffsFreqComplex(omega,omegaNew,Nev,filePath):
         F[:,iter]=FRe+1j*FIm
     HNew=np.zeros((Nev**2,len(omegaNew)),dtype=complex)
     FNew=np.zeros((Nev,len(omegaNew)),dtype=complex)
-    for m in range(0,Nev**2-1):
+    for m in range(0,Nev**2):
         ReH=np.reshape(H[m,:],(np.shape(omega)[0],np.shape(omega)[1]))
         f=interpolate.interp2d(omegaflat.real, omegaflat.imag, ReH)
         HH=f(omeganewflat.real,omeganewflat.imag)
@@ -80,7 +80,7 @@ def interpolateCoeffsFreqComplex(omega,omegaNew,Nev,filePath):
     np.savetxt(filePath+"Interpolated_F/ReF.dat",FNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_F/ImF.dat",FNew.imag,delimiter="\t",newline="\n")
     lambdaj=np.zeros((len(omegaNew),Nev))
-    for p in range(0,len(omegaNew)-1):
+    for p in range(0,len(omegaNew)):
         Hmat=np.reshape(HNew[:,p],(Nev,Nev),order='F')
         Fmat=FNew[:,p]
         lambdaj[p,:]=np.linalg.solve(Hmat,Fmat)
@@ -89,17 +89,17 @@ def interpolateCoeffsFreqComplex(omega,omegaNew,Nev,filePath):
     return 0
 
 def interpolateRefCoeff(omega,omegaNew,Nev,filePath,TorC):
-    rd=np.zeros((1,len(omega)),dtype=complex)
+    rd=np.zeros(len(omega),dtype=complex)
     rr=np.zeros((len(omega),Nev),dtype=complex)
     for m in range(0,len(omega)):
         rcDiff=np.loadtxt(filePath+"RefCoeff_Dif/ref"+TorC+str(m+1)+".dat",delimiter="\t")
         rcRad=np.loadtxt(filePath+"RefCoeff_Rad/ref"+TorC+str(m+1)+".dat",delimiter="\t")
-        rd[0,m]=rcDiff[0]+1j*rcDiff[1]
+        rd[m]=rcDiff[0]+1j*rcDiff[1]
         rr[m,:]=rcRad[:,0]+1j*rcRad[:,1]
     f=interpolate.interp1d(omega,rd,kind='cubic')
     rdNew=f(omegaNew)
     rcNew=np.zeros((len(omegaNew),Nev),dtype=complex)
-    for m in range(0,Nev-1):
+    for m in range(0,Nev):
         f=interpolate.interp1d(omega,rr[:,m],kind='cubic')
         rcNew[:,m]=f(omegaNew)
 
@@ -124,7 +124,7 @@ def interpolateRefCoeffComplex(omega, omegaNew, Nev, filePath, TorC):
     rdNew=f(omeganewflat.real,omeganewflat.imag)
     rdNew=rdNew.flatten(order='F')
     rcNew=np.zeros(len(omeganewflat),Nev)
-    for m in range(0,Nev-1):
+    for m in range(0,Nev):
         reshapeRc=np.reshape(rr[:,m],[np.shape(omega)[0],np.shape(omega)[1]])
         f=interpolate.interp2d(omegaflat.real,omegaflat.imag,reshapeRc)
         rcc=f(omeganewflat.real,omeganewflat.imag)
