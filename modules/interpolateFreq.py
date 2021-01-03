@@ -154,3 +154,23 @@ def interpolateRefCoeffComplex(a,b,c,d,npts, Nev, filePath, TorC, nptsNew):
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"DifIm.dat",rdNew.imag,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"RadRe.dat",rcNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_R/ref"+TorC+"RadIm.dat",rcNew.imag,delimiter="\t",newline="\n")
+
+
+def buildLam(SolutionDir):
+    LAMRe=np.loadtxt(SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat")
+    LAMIm=np.loadtxt(SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat")
+    LAM=LAMRe+1j*LAMIm
+    return LAM
+
+def buildRMat(LAM,SolutionDir,TorC):
+    RefTDifRe=np.loadtxt(SolutionDir+"2_RefCoeff/Interpolated_R/ref"+TorC+"DifRe.dat");
+    RefTDifIm=np.loadtxt(SolutionDir+"2_RefCoeff/Interpolated_R/ref"+TorC+"DifIm.dat");
+    RefTRadRe=np.loadtxt(SolutionDir+"2_RefCoeff/Interpolated_R/ref"+TorC+"RadRe.dat");
+    RefTRadIm=np.loadtxt(SolutionDir+"2_RefCoeff/Interpolated_R/ref"+TorC+"RadIm.dat");
+    RTDif=RefTDifRe+1j*RefTDifIm
+    RTRad=RefTRadRe+1j*RefTRadIm
+    RT=np.zeros(len(RTDif),dtype=complex)
+    for indx in range(0,len(RT)):
+        L=LAM[indx,:]
+        RT[indx]=RTDif[indx]+np.dot(RTRad[indx,:],L)
+    return RT
