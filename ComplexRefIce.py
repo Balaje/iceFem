@@ -4,7 +4,7 @@ import cplot
 import matplotlib.pyplot as plt
 from os import system
 
-SolutionDir="1_ICEBERG/"
+SolutionDir="2_ICEBERG/"
 
 npts=10;
 pi=np.pi
@@ -35,7 +35,7 @@ RCOld=np.reshape(RCOld,(npts,npts))
 TCOld=RC[:,2]+1j*RC[:,3]
 TCOld=np.reshape(TCOld,(npts,npts))
 
-nptsNew=100;
+nptsNew=300;
 xq=np.linspace(2*pi/80,2*pi/15,nptsNew)
 yq=np.linspace(-0.06,0.06,nptsNew)
 Xq,Yq=np.meshgrid(xq,yq)
@@ -49,7 +49,7 @@ interpolateRefCoeffComplex(a,b,c,d,npts,8,SolutionDir+"2_RefCoeff/","C",nptsNew)
 RC=buildRMat(LAM,SolutionDir,"C")
 RCNew=np.reshape(RC,np.shape(omeganew))
 RCNew=RCNew.T
-VAL=cplot.get_srgb1(RCNew,colorspace="hsl",alpha=0)
+VAL=cplot.get_srgb1(RCNew,colorspace="cam16",alpha=0.5)
 plt.subplot(2,1,1)
 plt.title("Reflection Coefficient")
 plt.imshow(VAL,aspect=0.4)
@@ -58,7 +58,7 @@ interpolateRefCoeffComplex(a,b,c,d,npts,8,SolutionDir+"2_RefCoeff/","T",nptsNew)
 RT=buildRMat(LAM,SolutionDir,"T")
 RTNew=np.reshape(RT,np.shape(omeganew))
 RTNew=RTNew.T
-VAL=cplot.get_srgb1(RTNew,colorspace="hsl",alpha=0)
+VAL=cplot.get_srgb1(RTNew,colorspace="cam16",alpha=0.5)
 plt.subplot(2,1,2)
 plt.title("Transmission Coefficient")
 plt.imshow(VAL,aspect=0.4)
