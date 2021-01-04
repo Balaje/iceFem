@@ -2,7 +2,7 @@ import numpy as np
 from modules.interpolateFreq import *
 import matplotlib.pyplot as plt
 
-filePath="2_ICEBERG/"
+filePath="1_ICEBERG/"
 
 T=np.linspace(15,80,27)
 pi=np.pi
