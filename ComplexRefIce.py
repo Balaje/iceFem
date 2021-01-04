@@ -3,6 +3,7 @@ from modules.interpolateFreq import *
 import cplot
 import matplotlib.pyplot as plt
 from os import system
+from matplotlib.ticker import FormatStrFormatter
 
 SolutionDir="2_ICEBERG/"
 
@@ -47,19 +48,14 @@ LAM=buildLam(SolutionDir)
 
 interpolateRefCoeffComplex(a,b,c,d,npts,8,SolutionDir+"2_RefCoeff/","C",nptsNew)
 RC=buildRMat(LAM,SolutionDir,"C")
-RCNew=np.reshape(RC,np.shape(omeganew))
-RCNew=RCNew.T
-VAL=cplot.get_srgb1(RCNew,colorspace="cam16",alpha=0.5)
-plt.subplot(2,1,1)
+ax=plt.subplot(2,1,1)
+genComplexPlot(RC,omeganew)
 plt.title("Reflection Coefficient")
-plt.imshow(VAL,aspect=0.4)
 
 interpolateRefCoeffComplex(a,b,c,d,npts,8,SolutionDir+"2_RefCoeff/","T",nptsNew)
 RT=buildRMat(LAM,SolutionDir,"T")
-RTNew=np.reshape(RT,np.shape(omeganew))
-RTNew=RTNew.T
-VAL=cplot.get_srgb1(RTNew,colorspace="cam16",alpha=0.5)
-plt.subplot(2,1,2)
+ax=plt.subplot(2,1,2)
+genComplexPlot(RT,omeganew)
 plt.title("Transmission Coefficient")
-plt.imshow(VAL,aspect=0.4)
+
 plt.show()

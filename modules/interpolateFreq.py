@@ -22,6 +22,8 @@
 from scipy import interpolate
 from numpy import loadtxt
 import numpy as np
+import cplot
+import matplotlib.pyplot as plt
 
 def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
     omegaNew=np.linspace(a,b,npts+1)
@@ -182,3 +184,12 @@ def buildRMat(LAM,SolutionDir,TorC):
         L=LAM[indx,:]
         RT[indx]=RTDif[indx]+np.dot(RTRad[indx,:],L)
     return RT
+
+def genComplexPlot(RC,omeganew):
+    RCNew=np.reshape(RC,np.shape(omeganew))
+    RCNew=RCNew.T
+    VAL=cplot.get_srgb1(RCNew,colorspace="cam16",alpha=0.5)
+    VAL=np.flipud(VAL)
+    plt.imshow(VAL,aspect=0.4)
+    plt.xticks([])
+    plt.yticks([])
