@@ -24,6 +24,7 @@ from numpy import loadtxt
 import numpy as np
 import cplot
 import matplotlib.pyplot as plt
+from matplotlib.ticker import StrMethodFormatter
 
 def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
     omegaNew=np.linspace(a,b,npts+1)
@@ -190,6 +191,8 @@ def genComplexPlot(RC,omeganew):
     RCNew=RCNew.T
     VAL=cplot.get_srgb1(RCNew,colorspace="cam16",alpha=0.5)
     VAL=np.flipud(VAL)
-    plt.imshow(VAL,aspect=0.4)
-    plt.xticks([])
-    plt.yticks([])
+    a=omeganew[0,0].real; b=omeganew[-1,-1].real
+    c=omeganew[0,0].imag; d=omeganew[-1,-1].imag
+    plt.imshow(VAL,extent=[a,b,c,d])
+    plt.xlabel("$Re(\omega)$",usetex=True)
+    plt.ylabel("$Im(\omega)$",usetex=True)

@@ -36,7 +36,7 @@ RCOld=np.reshape(RCOld,(npts,npts))
 TCOld=RC[:,2]+1j*RC[:,3]
 TCOld=np.reshape(TCOld,(npts,npts))
 
-nptsNew=300;
+nptsNew=200;
 xq=np.linspace(2*pi/80,2*pi/15,nptsNew)
 yq=np.linspace(-0.06,0.06,nptsNew)
 Xq,Yq=np.meshgrid(xq,yq)
@@ -50,12 +50,10 @@ interpolateRefCoeffComplex(a,b,c,d,npts,8,SolutionDir+"2_RefCoeff/","C",nptsNew)
 RC=buildRMat(LAM,SolutionDir,"C")
 ax=plt.subplot(2,1,1)
 genComplexPlot(RC,omeganew)
-plt.title("Reflection Coefficient")
 
 interpolateRefCoeffComplex(a,b,c,d,npts,8,SolutionDir+"2_RefCoeff/","T",nptsNew)
 RT=buildRMat(LAM,SolutionDir,"T")
 ax=plt.subplot(2,1,2)
 genComplexPlot(RT,omeganew)
-plt.title("Transmission Coefficient")
 
 plt.show()
