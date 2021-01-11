@@ -4,7 +4,7 @@ macro dimension 2//EOM"
 macro fspace 2//EOM"
 
 include "macros.idp"
-string solDir="1_SIMPLE5/";
+SolutionDir=getARGV("-solDir","THICKNESS_0");
 
 
 macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
@@ -64,13 +64,11 @@ for(int m=0; m<nev; m++)
 
 //Import the interpolated coefficients.
 int nfreq=getARGV("-nfreq",200);
+
 complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
-for(int m=0; m<nfreq; m++)
-  {
-    ifstream file(solDir+"2_ModesMatrix/lambdaj"+m+".dat");
-    for(int n=0; n<nev; n++)
-      file>>lambdaRe(m,n)>>lambdaIm(m,n);         
-  }
+readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat",lambdaRe);
+readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat",lambdaIm);
+
 complex[int,int] lambda=lambdaIm;
 lambda*=1i;
 lambda+=lambdaRe;
@@ -87,7 +85,7 @@ UYT=conj(UYT);
 complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
 //Write time domain solution
-real dt=50, T=10000;
+real dt=100, T=10000;
 real[int] time=-T:dt:T;
 
 complex[int] domega(nfreq), omegaNew(nfreq);
@@ -101,12 +99,11 @@ complex[int] randn(nfreq);
 randn=FAmp(2,:);
 //Find the complex solution.
 complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
-int parti=time.n/mpisize;
 
 mesh Th1=emptymesh(ThIce);
 fespace Vh1(Th1,P1);
 buildParti(time.n);
-real[int] RMSStrain(time.n), RMSStrainProc(partisize);
+real[int] RMSStrain(time.n), RMSStrainProc(time.n), RMSDisp(time.n), RMSDispProc(time.n);
 for(int n=start; n<=stop; n++)
   {
     omegaVec=(-1i)*omegaNew;
@@ -120,18 +117,19 @@ for(int n=start; n<=stop; n++)
     u3x=UXT*omegaVec;
     u3y=UYT*omegaVec;    
 
-    Vh<complex> etax=u3x, etay=u3y;
-    RMSStrainProc[n]=sqrt(abs(intN(ThIce)(epsilon(u3x,uy)'*epsilon(u3x,u3y))));
+    Vh<complex> etax=u3x, etay=u3y;    
+    RMSStrainProc[n]=sqrt(abs(intN(ThIce)(epsilon(etax,etay)'*epsilon(etax,etay))));
+    RMSDispProc[n]=sqrt(abs(intN(ThIce)(etax^2+etay^2)));
 	    
     if(mpirank==0)
       cout<<"Time t="<<n<<endl;
   }
-int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
-mpiAllgatherv(RMSStrainProc,RMSStrain,rcounts1,dspls1);
-
+mpiAllReduce(RMSStrainProc,RMSStrain,mpiCommWorld,mpiSUM);
+mpiAllReduce(RMSDispProc,RMSDisp,mpiCommWorld,mpiSUM);
 //Write the time domain L2--average.
 {
   ofstream file(SolutionDir+"RMSStrain.dat");
-  for(int m=0; m<time.n; m++)
-    file<<time[m]<<"\t"<<RMSStrain[m]<<endl;
+  for(int m=0; m<time.n; m++){
+    file<<time[m]<<"\t"<<RMSStrain[m]<<"\t"<<RMSDisp[m]<<endl;    
+  }
 }
