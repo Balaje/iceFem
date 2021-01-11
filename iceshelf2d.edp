@@ -14,7 +14,7 @@ include "macros.idp"
 
 real timeTaken;
 
-SolutionDir="1_SIMPLE5/";
+SolutionDir=getARGV("-SolDir","1_SIMPLE5/");
 
 macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
                  2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
