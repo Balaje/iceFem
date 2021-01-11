@@ -52,7 +52,7 @@ def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
     np.savetxt(filePath+"Interpolated_F/ImF.dat",FNew.imag,delimiter="\t",newline="\n")
     if(isSolve):
         lambdaj=np.zeros((len(omegaNew),Nev),dtype=complex)
-        for p in range(0,len(omegaNew)-1):
+        for p in range(0,len(omegaNew)):
             Hmat=np.reshape(HNew[:,p],(Nev,Nev),order='F')
             Fmat=FNew[:,p]
             lambdaj[p,:]=np.linalg.solve(Hmat,Fmat)
