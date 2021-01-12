@@ -33,10 +33,10 @@ My = dM1*Mdy;
 */
 
 macro readFile(rows,cols,filename,array){
-  ifstream file(filename);
-  for(int m=0; m<rows; m++)
-    for(int n=0; n<cols; n++)
-      file>>array(m,n);
+    ifstream file(filename);
+    for(int m=0; m<rows; m++)
+        for(int n=0; n<cols; n++)
+            file>>array(m,n);
 }//Macro to read files.EOM"
 
 //Set the problem and build the meshes
@@ -51,15 +51,15 @@ Xh[int][VX,VY](nev);
 real[int] ev(nev);
 solveEigen;
 if(mpirank==0)
-  cout<<"Solved Eigenvalue Problem"<<endl;
+    cout<<"Solved Eigenvalue Problem"<<endl;
 
 complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
 for(int m=0; m<nev; m++)
-  {
-    Vh VX1=VX[m], VY1=VY[m];
-    mx(m,:).re=VX1[];
-    my(m,:).re=VY1[];
-  }
+ {
+     Vh VX1=VX[m], VY1=VY[m];
+     mx(m,:).re=VX1[];
+     my(m,:).re=VY1[];
+ }
 
 
 //Import the interpolated coefficients.
@@ -85,7 +85,7 @@ UYT=conj(UYT);
 complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
 //Write time domain solution
-real dt=100, T=10000;
+real dt=50, T=10000;
 real[int] time=-T:dt:T;
 
 complex[int] domega(nfreq), omegaNew(nfreq);
@@ -103,33 +103,50 @@ complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
 mesh Th1=emptymesh(ThIce);
 fespace Vh1(Th1,P1);
 buildParti(time.n);
-real[int] RMSStrain(time.n), RMSStrainProc(time.n), RMSDisp(time.n), RMSDispProc(time.n);
+complex[int] exx(Vh.ndof), exy(Vh.ndof), eyy(Vh.ndof);
+complex[int] exxProc(Vh.ndof), exyProc(Vh.ndof), eyyProc(Vh.ndof);
 for(int n=start; n<=stop; n++)
-  {
-    omegaVec=(-1i)*omegaNew;
-    omegaVec*=time(n);
-    omegaVec+=(-1i)*randn;
-    omegaVec=exp(omegaVec);
-    omegaVec=omegaVec.*FAmp(1,:);
-    omegaVec=omegaVec.*domega;
-    omegaVec*=(2*omegaNew.n/pi);    
-    
-    u3x=UXT*omegaVec;
-    u3y=UYT*omegaVec;    
+ {
+     omegaVec=(-1i)*omegaNew;
+     omegaVec*=time(n);
+     omegaVec+=(-1i)*randn;
+     omegaVec=exp(omegaVec);
+     omegaVec=omegaVec.*FAmp(1,:);
+     omegaVec=omegaVec.*domega;
+     omegaVec*=(2*omegaNew.n/pi);
 
-    Vh<complex> etax=u3x, etay=u3y;    
-    RMSStrainProc[n]=sqrt(abs(intN(ThIce)(epsilon(etax,etay)'*epsilon(etax,etay))));
-    RMSDispProc[n]=sqrt(abs(intN(ThIce)(etax^2+etay^2)));
-	    
-    if(mpirank==0)
-      cout<<"Time t="<<n<<endl;
-  }
-mpiAllReduce(RMSStrainProc,RMSStrain,mpiCommWorld,mpiSUM);
-mpiAllReduce(RMSDispProc,RMSDisp,mpiCommWorld,mpiSUM);
+     u3x=UXT*omegaVec;
+     u3y=UYT*omegaVec;
+
+     Vh<complex> etax=u3x, etay=u3y;
+     for(int m=0; m<ThIce.nv; m++)
+     {         
+         if(ThIce(m).label==3)
+         {
+             exxProc[m]=exxProc[m]+epsilon(etax,etax)[0](ThIce(m).x,ThIce(m).y)^2;
+             eyyProc[m]=eyyProc[m]+epsilon(etay,etay)[1](ThIce(m).x,ThIce(m).y)^2;
+             exyProc[m]=exyProc[m]+epsilon(etax,etay)[2](ThIce(m).x,ThIce(m).y)^2;             
+         }
+
+     }
+
+     if(mpirank==0)
+         cout<<"Time t="<<n<<endl;
+ }
+exxProc=sqrt(exxProc);
+exxProc/=time.n;
+exyProc=sqrt(exyProc);
+exyProc/=time.n;
+eyyProc=sqrt(eyyProc);
+eyyProc/=time.n;
+mpiAllReduce(exxProc,exx,mpiCommWorld,mpiSUM);
+mpiAllReduce(exyProc,exy,mpiCommWorld,mpiSUM);
+mpiAllReduce(eyyProc,eyy,mpiCommWorld,mpiSUM);
 //Write the time domain L2--average.
 {
-  ofstream file(SolutionDir+"RMSStrain.dat");
-  for(int m=0; m<time.n; m++){
-    file<<time[m]<<"\t"<<RMSStrain[m]<<"\t"<<RMSDisp[m]<<endl;    
-  }
+    ofstream file(SolutionDir+"RMSStrain.dat");
+    for(int m=0; m<ThIce.nv; m++){
+        if(ThIce(m).label==3)
+            file<<ThIce(m).x*Lc<<"\t"<<abs(exx[m])<<"\t"<<abs(exy[m])<<"\t"<<abs(eyy[m])<<endl;
+    }
 }
