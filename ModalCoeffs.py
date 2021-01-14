@@ -10,7 +10,7 @@ omega=np.linspace(2*pi*0.0001,2*pi*0.01,10)
 T=2*pi/omega;
 
 npts=199
-nev=16
+nev=64
 omeganew=interpolateCoeffsFreq(2*pi*0.0001,2*pi*0.01,omega,nev,filePath+"2_ModesMatrix/",npts,1)
 LAM=buildLam(filePath)
 

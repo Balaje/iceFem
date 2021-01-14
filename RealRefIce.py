@@ -18,22 +18,22 @@ LAM=buildLam(filePath)
 
 plt.subplot(2,1,1)
 plt.title("Coefficients vs Frequency")
-for m in range(0,4):
+for m in range(0,7):
     L=LAM[:,m]
-    plt.plot(omeganew,abs(L),linewidth=2)
+    plt.plot(2*pi/omeganew,abs(L),linewidth=2)
 
 ## Interpolating reflection coefficients
 V=interpolateRefCoeff(omega,omeganew,8,filePath+"2_RefCoeff/","C")
 RC=buildRMat(LAM,filePath,"C")
 plt.subplot(2,1,2)
-plt.plot(omeganew,np.transpose(abs(RC)),linewidth=2)
+plt.plot(2*pi/omeganew,np.transpose(abs(RC)),linewidth=2)
 
 ## Interpolating Transmission coefficients
 V=interpolateRefCoeff(omega,omeganew,8,filePath+"2_RefCoeff/","T")
 RT=buildRMat(LAM,filePath,"T")
 plt.title("Transmission and Reflection Coefficients vs Frequency")
-plt.plot(omeganew,np.transpose(abs(RT)),linewidth=2)
+plt.plot(2*pi/omeganew,np.transpose(abs(RT)),linewidth=2)
 
 # Check Energy Conservation
-plt.plot(omeganew,np.transpose(abs(RT)**2+abs(RC)**2),linewidth=2)
+plt.plot(2*pi/omeganew,np.transpose(abs(RT)**2+abs(RC)**2),linewidth=2)
 plt.show()

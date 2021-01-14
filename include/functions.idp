@@ -118,15 +118,15 @@ func complex[int] dispersionfreesurface(complex alph, int N1, real H)
 
 func real[int] getProps(real &E, real &nu, real &rhoi, real &rhow, real &ag, real &Ad)
 {
-  E = 11*10^9;
-  nu = 0.33;
-  rhoi = 922.5;
-  rhow = 1025;
-  ag= 9.8;
-  Ad = 1;
+    E = getARGV("-Youngs",11e9);
+    nu = 0.33;
+    rhoi = 922.5;
+    rhow = 1025;
+    ag= 9.8;
+    Ad = 1;
 
-  real[int] elasCons(2);
-  elasCons=[E/(2*(1+nu)), E*nu/((1+nu)*(1-2*nu))];
+    real[int] elasCons(2);
+    elasCons=[E/(2*(1+nu)), E*nu/((1+nu)*(1-2*nu))];
 
-  return elasCons;
+    return elasCons;
 }
