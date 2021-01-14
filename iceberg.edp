@@ -6,7 +6,7 @@ macro fspace 2//EOM"
 
 include "macros.idp"
 
-SolutionDir="1_ICEBERG/";
+SolutionDir=getARGV("-SolDir","1_ICEBERG/");
 
 setProblem;
 
