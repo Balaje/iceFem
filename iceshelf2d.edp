@@ -24,18 +24,24 @@ macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
 //For a detailed list of default args. Refer the manual.
 setProblem;
 
+real starttime=mpiWtime();
+/* 
+//Build the meshes (Old Routine).
+real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
+setMeshIce(botRight, midPX, midPY);//[iceFEM] For a list of ARGS, refer to the manual
+real midx=LL/2., midy=-0.5*HH, endy=-HH;
+setMeshCav(midx, midy, endy);//[iceFEM] For a list of ARGS, refer to the manual
+*/
+
+//Build the meshes (The draft variable `dd` will be changed).
+real draft1=-0.2*tth, free1=0.1*tth;
+real draft2=-2.9*tth, free2=2.1*tth;
+real HH1=-HH, HH2=-HH;
+setLinearThickeningIce(draft1,draft2,free1,free2);
+setLinearThickeningCavity(HH1,HH2,draft1,draft2);
+
 //Solve the dispersion equation -k tan(k h) = \alpha. -k tan(k (h-d)) = \alpha
 solveDispersion;
-
-real starttime=mpiWtime();
-//Build the meshes.
-real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
-
-setMeshIce(botRight, midPX, midPY);//[iceFEM] For a list of ARGS, refer to the manual
-
-real midx=LL/2., midy=-0.5*HH, endy=-HH;
-
-setMeshCav(midx, midy, endy);//[iceFEM] For a list of ARGS, refer to the manual
 
 refineMesh;//[iceFEM] Refine Mesh.
 splitMesh(isSplit);//[iceFEM] Split Mesh for domain decomposition (isSplit is defaulted to 0).
