@@ -351,37 +351,15 @@ macro setMeshCav(midx, midy, endy)
     ENDIFMACRO
         }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
+macro nonDimensionalMesh(){
+    ThIce=movemesh(ThIce,[x/Lc,y/Lc]);    
+    ThCavity=movemesh(ThCavity,[x/Lc,y/Lc]);
+}
 
 
 //MACROS to import sample 3D meshes
 macro setMeshIceCav3d()
 {
-    real L=100;
-    real BB=10, th=2.25;
-    real H=0.8*L;
-    real E, nu;
-    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
-    real EI = E*th^3/(12*(1-nu^2));
-    Lc = (EI/(rhow*ag))^(1./4.);
-    tc = sqrt(rhow*Lc^6/(EI*H));
-    LL=L/Lc;
-    dd=0;
-    HH=H/Lc;
-    real mu1=elasCons[0], lambda=elasCons[1];
-    muhat=mu1/Lc^2;
-    lambdahat=lambda/Lc^2;
-    gammahat = rhow/Lc;
-    deltahat = rhow*ag/Lc;
-    real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
-    complex t = Tr+1i*Ti;
-    omega = 2*pi/t;
-    Ap=(ag/(1i*omega))*Ad;
-    IFMACRO(dimension,2)
-        cout<<"Dimension should be 3 to use 3d meshes"<<endl;
-    exit(0);
-    ENDIFMACRO
-        int N1 = getARGV("-N",3);
-    int N2 = getARGV("-N",3);
     ThIce = readmesh3("MESHES/boat.mesh");
     ThCavity = readmesh3("MESHES/water.mesh");
     ThIce = movemesh(ThIce,[x/Lc,y/Lc,z/Lc]);
@@ -1057,6 +1035,15 @@ macro buildReducedSystemOptim(){
 
 }//EOM"
 
+/*Store the variables
+1) - RefC (Diffraction Reflection Coefficient)
+2) - RefT (Diffraction Transmission Coefficient)
+3) - Refc (Radiation Reflection Coefficients)
+4) - Reft (Radiation Transmission Coefficients)
+5) - H (Scattering matrix)
+6) - F (RHS Forcing vector)
+to the disk
+*/
 macro writeReducedSystem()
 {
     ofstream file1(SolutionDir+"2_ModesMatrix/ReH"+iter+".dat");
@@ -1065,18 +1052,25 @@ macro writeReducedSystem()
     ofstream file4(SolutionDir+"2_ModesMatrix/ImF"+iter+".dat");
     ofstream file5(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");
     ofstream file6(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refT"+iter+".dat");
+    ofstream file7(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
+    ofstream file8(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refT"+iter+".dat");    
     file1.precision(16);
     file2.precision(16);
     file3.precision(16);
     file4.precision(16);
     file5.precision(16);
     file6.precision(16);
+    file7.precision(16);
+    file8.precision(16);
 
+
+    file7<<real(RefC)<<"\t"<<imag(RefC)<<endl;
+    file8<<real(RefT)<<"\t"<<imag(RefT)<<endl;
     for(int m=0; m<nev; m++)
     {
         file3<<real(F[m])<<endl;
         file4<<imag(F[m])<<endl;
-        file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
+        file5<<real(Refc[m])<<"\t"<<imag(Refc[m])<<endl;
         file6<<real(Reft[m])<<"\t"<<imag(Reft[m])<<endl;
         for(int n=0; n<nev; n++)
         {
@@ -1244,3 +1238,10 @@ macro getRefModes(bInd,phi,Ref){
     c = AA*c1;
     Ref = c[0]/Ap;
 }//EOM"
+
+
+macro writeRefCoeffDiffraction(Ref)
+{
+    
+}//EOM"
+

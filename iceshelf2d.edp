@@ -88,11 +88,20 @@ phi0=phih;//Store in phi0;
 WhBdy<complex> phi00=phi0;
 
 
+//To compute the reflection coefficients.
+complex RefC; //Create this variable to store the Diffraction reflection coefficient.
+getRefCoeff(4,phi0,RefC); //[iceFEM] - Get the reflection coefficient with forcing BC.
+complex RefT; //Create this variable to store the Diffraction transmission coefficient.
+getRefModes(5,phi0,RefT); //[iceFEM] - Get the reflection coefficient without forcing.
+
+
 //Solve for radiation potential. [PARALLEL RUN is OPTIONAL]
 Wh<complex>[int] phij(nev);
 WhBdy<complex>[int] phijj(nev);//Define array of boundary functions
 buildParti(nev); //[iceFEM] Build partition depending on the number of CPUs.
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
+complex[int] RefmProc(nev), ReftProc(nev);
+complex[int] Refc(nev), Reft(nev);
 starttime=mpiWtime();
 for(int m=start; m<=stop; m++)
  {
@@ -104,9 +113,13 @@ for(int m=start; m<=stop; m++)
      phij[m]=phih; //The full solution is used to visualize.
      phijj[m]=phih; //Interpolate on the BOUNDARY alone and store in matrix.
      PHIJProc(:,m-start)=phijj[m][];
+     getRefModes(5,phih,ReftProc[m]);
+     getRefModes(4,phih,RefmProc[m]);
  }
 int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
 mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1); //Gather the solutions.
+mpiAllReduce(RefmProc,Refc,mpiCommWorld,mpiSUM);
+mpiAllReduce(ReftProc,Reft,mpiCommWorld,mpiSUM);
 endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiSUM);

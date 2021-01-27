@@ -14,13 +14,12 @@ SolutionDir="1_SIMPLE3D/";
   solveDispersion;
 */
 
-setMeshIceCav3d;
-alpha=omega^2/10;
-//cout<<alpha<<endl;
-k=dispersionfreesurface(alpha,NModes,HH);
-k[0]=-k[0];
-kd=k;
-dd=0;
+setProblem; //Get all the dimensions from user. Does non-dimensionalization as well
+
+setMeshIceCav3d; //Imports Ice and Cavity mesh.
+
+dd=0; //Since there is no submergence away from the body.
+solveDispersion; //Solve dispersion equation.
 
 //---- Find the eigenvalues of the dispersion relation.
 Xh[int][VX,VY,VZ](nev);
@@ -49,18 +48,12 @@ set(LHS,solver=sparsesolver);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
 WhBdy<complex> phi00=phi0;
-{
-    ofstream file1(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
-    complex Ref;
-    getRefCoeff(4,phi0,Ref);
-    file1<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-}
-{
-    ofstream file1(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refT"+iter+".dat");
-    complex Ref;
-    getRefModes(5,phi0,Ref);
-    file1<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-}
+
+complex RefC; //Create this variable to store the Diffraction reflection coefficient.
+getRefCoeff(4,phi0,RefC);
+complex RefT; //Create this variable to store the Diffraction transmission coefficient.
+getRefModes(5,phi0,RefT);
+
 if(mpirank==0)
     cout<<"Done diffraction potential "<<endl;
 
@@ -70,7 +63,8 @@ Wh<complex>[int] phij(nev);
 WhBdy<complex>[int] phijj(nev);
 buildParti(nev);
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
-complex[int] Refm(nev), RefmProc(nev), Reft(nev), ReftProc(nev);
+complex[int] RefmProc(nev), ReftProc(nev);
+complex[int] Refc(nev), Reft(nev);
 for(int m=start; m<=stop; m++)
  {
      func fh=0;
@@ -90,7 +84,7 @@ for(int m=start; m<=stop; m++)
 
 int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
 mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
-mpiAllReduce(RefmProc,Refm,mpiCommWorld,mpiSUM);
+mpiAllReduce(RefmProc,Refc,mpiCommWorld,mpiSUM);
 mpiAllReduce(ReftProc,Reft,mpiCommWorld,mpiSUM);
 
 for(int m=0; m<nev; m++)
