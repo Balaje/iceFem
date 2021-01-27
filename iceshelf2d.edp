@@ -95,9 +95,7 @@ WhBdy<complex> phi00=phi0;
 
 
 //To compute the reflection coefficients.
-complex RefC; //Create this variable to store the Diffraction reflection coefficient.
 getRefCoeff(4,phi0,RefC); //[iceFEM] - Get the reflection coefficient with forcing BC.
-complex RefT; //Create this variable to store the Diffraction transmission coefficient.
 getRefModes(5,phi0,RefT); //[iceFEM] - Get the reflection coefficient without forcing.
 
 
@@ -107,7 +105,6 @@ WhBdy<complex>[int] phijj(nev);//Define array of boundary functions
 buildParti(nev); //[iceFEM] Build partition depending on the number of CPUs.
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 complex[int] RefmProc(nev), ReftProc(nev);
-complex[int] Refc(nev), Reft(nev);
 starttime=mpiWtime();
 for(int m=start; m<=stop; m++)
  {
@@ -145,11 +142,8 @@ endtime=mpiWtime();
 difTime=endtime-starttime;
 mpiReduce(difTime,timeTaken,processor(0),mpiMAX);
 if(mpirank==0){
-    complex[int] Refm(nev), Reft(nev);
-
     writeReducedSystem;//[iceFEM] Write the reduced system to a file.
     cout<<"Time taken to build reduced system = "<<timeTaken<<" s"<<endl;
-
  }
 
 //Solve the reduced system;

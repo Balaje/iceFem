@@ -49,9 +49,7 @@ phih[]=LHS^-1*RHS[];
 phi0=phih;
 WhBdy<complex> phi00=phi0;
 
-complex RefC; //Create this variable to store the Diffraction reflection coefficient.
 getRefCoeff(4,phi0,RefC);
-complex RefT; //Create this variable to store the Diffraction transmission coefficient.
 getRefModes(5,phi0,RefT);
 
 if(mpirank==0)
@@ -64,7 +62,6 @@ WhBdy<complex>[int] phijj(nev);
 buildParti(nev);
 complex[int,int] PHIJ(WhBdy.ndof,nev),PHIJProc(WhBdy.ndof,partisize);
 complex[int] RefmProc(nev), ReftProc(nev);
-complex[int] Refc(nev), Reft(nev);
 for(int m=start; m<=stop; m++)
  {
      func fh=0;

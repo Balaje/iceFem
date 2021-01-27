@@ -67,6 +67,9 @@ complex omega, Ap, tt, alpha;
 bool isUniformIce, isUniformCav;
 string iter=getARGV("-iter","0");
 
+complex RefC, RefT;
+complex[int] Refc(nev), Reft(nev);
+
 complex [int] k(NModes+1), kd(NModes+1);
 complex [int,int] B(nev,nev), K(nev,nev), AB(nev,nev), Hmat(nev,nev);
 complex [int] F(nev);
@@ -272,7 +275,7 @@ macro setLinearThickeningIce(draft1, draft2, free1, free2)
     cout<<"Dimension should be 2 to use this routine"<<endl;
     exit(0);
     ENDIFMACRO
-        dd=abs(draft1);
+    dd=abs(draft1);
     real slope1=(free2-free1)/LL, slope2=(draft2-draft1)/LL;
     real intercept1=free1, intercept2=draft1;    
     border I01(t=0,LL) {x=t; y=slope2*t+intercept2; label=3;};
