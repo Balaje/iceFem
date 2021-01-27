@@ -761,7 +761,7 @@ macro getLaplaceMatFunc(eta){
 macro getLaplaceMatDBC(a,b){
     Wh<complex> psih;
     varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=fh);
-    varf lh(unused,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
+    varf lh(phih,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih) + on(4,phih=fh);
     varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih*N.x);
     STIMA=ah(Wh,Wh);
     BMASSMA=bMh(Wh,Wh);

@@ -58,6 +58,7 @@ real[int] ev(nev); //[iceFEM] Define a real array for the eigenvalues. (Should b
 starttime=mpiWtime();
 
 solveEigen; //[iceFEM] Solve the Eigenvalue problem;
+writeEigen(1,1);
 
 
 endtime=mpiWtime();
