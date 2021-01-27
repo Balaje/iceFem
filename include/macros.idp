@@ -1239,9 +1239,3 @@ macro getRefModes(bInd,phi,Ref){
     Ref = c[0]/Ap;
 }//EOM"
 
-
-macro writeRefCoeffDiffraction(Ref)
-{
-    
-}//EOM"
-
