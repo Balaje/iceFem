@@ -34,8 +34,8 @@ setMeshCav(midx, midy, endy);//[iceFEM] For a list of ARGS, refer to the manual
 */
 
 //Build the meshes (The draft variable `dd` will be changed).
-real draft1=-0.2*tth, free1=0.1*tth;
-real draft2=-2.9*tth, free2=2.1*tth;
+real draft1=-0.9*tth, free1=0.1*tth;
+real draft2=-0.9*tth, free2=0.1*tth;
 real HH1=-HH, HH2=-HH;
 setLinearThickeningIce(draft1,draft2,free1,free2);
 setLinearThickeningCavity(HH1,HH2,draft1,draft2);
@@ -181,6 +181,8 @@ if(mpirank==0){
     savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
     savevtk(SolutionDir+"/sol2_"+iter+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
     savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi)],dataname="RePhi ImPhi",order=Order);
+    ofstream file(SolutionDir+"2_RefCoeff/rc"+iter+".dat");
+    file<<real(RefC)<<"\t"<<imag(RefC)<<"\t"<<real(RefT)<<"\t"<<imag(RefT)<<endl;
  }
 
 starttime=cpu;

@@ -40,24 +40,40 @@ def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
             F[:,iter]=FRe+1j*FIm
     HNew=np.zeros((Nev**2,len(omegaNew)),dtype=complex)
     FNew=np.zeros((Nev,len(omegaNew)),dtype=complex)
+
     for m in range(0,Nev**2):
         f=interpolate.interp1d(omega,H[m,:],kind='cubic')
         HNew[m,:]=f(omegaNew);
         if(m<Nev and isSolve==1):
             f=interpolate.interp1d(omega,F[m],kind='cubic')
             FNew[m,:]=f(omegaNew)
+
+#    for m in range(0,4):
+#        plt.semilogy(omega,abs(F[m,:]),marker='+',linestyle=' ',label="Original F["+str(m)+"]")
+#    for m in range(0,4):
+#        plt.semilogy(omegaNew,abs(FNew[m,:]),label="Interpolated F["+str(m)+"]")
+#    plt.legend()
+#    heading="Entries vs Frequency ("+filePath+")";
+#    plt.title(heading)
+#    plt.show()
+
     np.savetxt(filePath+"Interpolated_H/ReH.dat",HNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_H/ImH.dat",HNew.imag,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_F/ReF.dat",FNew.real,delimiter="\t",newline="\n")
     np.savetxt(filePath+"Interpolated_F/ImF.dat",FNew.imag,delimiter="\t",newline="\n")
+    condH=np.zeros(len(omegaNew));
     if(isSolve):
         lambdaj=np.zeros((len(omegaNew),Nev),dtype=complex)
         for p in range(0,len(omegaNew)):
             Hmat=np.reshape(HNew[:,p],(Nev,Nev),order='F')
+            condH[p]=np.linalg.cond(Hmat)
             Fmat=FNew[:,p]
             lambdaj[p,:]=np.linalg.solve(Hmat,Fmat)
         np.savetxt(filePath+"Interpolated_L/lambdaRe.dat",lambdaj.real,delimiter="\t",newline="\n")
         np.savetxt(filePath+"Interpolated_L/lambdaIm.dat",lambdaj.imag,delimiter="\t",newline="\n")
+
+        plt.plot(omegaNew,condH)
+        plt.show()
     return omegaNew
 
 

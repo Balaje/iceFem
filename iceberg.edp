@@ -10,14 +10,22 @@ SolutionDir=getARGV("-SolDir","1_ICEBERG/");
 
 setProblem;
 
+real draft1=-0.9*tth, free1=0.1*tth;
+real draft2=-0.9*tth, free2=0.1*tth;
+real HH1=-HH, HH2=-HH;
+setLinearThickeningIce(draft1,draft2,free1,free2);
+setLinearThickeningCavity(HH1,HH2,draft1,draft2);
+
+refineMesh;
+
+//Change numbering.
+int[int] lbl=[3,3,2,1,1,1,1,1]; 
+ThIce=change(ThIce,label=lbl);
+lbl=[1,1,1,5,3,3,4,4];
+ThCavity=change(ThCavity,label=lbl);
+
 solveDispersion;
 
-int N1=getARGV("-N1",4);
-int[int] lbl=[3,1,1,1];
-ThIce=square(LL/tth*N1,N1,[LL*x,-dd+tth*y],label=lbl);
-int N2=getARGV("-N2",4);
-lbl=[1,5,3,4];
-ThCavity=square(LL/(HH-dd)*N2,N2,[LL*x,-HH+(HH-dd)*y],label=lbl);
 
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
@@ -41,25 +49,17 @@ set(LHS,solver=sparsesolver);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
 phi00=phi0;
-{
-    ofstream file1(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
-    complex Ref;
-    getRefCoeff(4,phi0,Ref);
-    file1<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-}
-{
-    ofstream file1(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refT"+iter+".dat");
-    complex Ref;
-    getRefModes(5,phi0,Ref);
-    file1<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-}
+
+getRefCoeff(4,phi0,RefC);
+getRefModes(5,phi0,RefT);
+
 //savevtk(SolutionDir+"2_Potential/solDif.vtu",ThCavity,real(phi0),dataname="RePhi");
 
 Wh<complex> [int] phij(nev);
 WhBdy<complex>[int] phijj(nev);
 buildParti(nev);
 complex[int,int] PHIJ(WhBdy.ndof,nev), PHIJProc(WhBdy.ndof,partisize);
-complex[int] Refm(nev), RefmProc(nev), Reft(nev), ReftProc(nev);
+complex[int] RefmProc(nev), ReftProc(nev);
 for(int m=start; m<=stop; m++)
 {
     func fh=0;
@@ -79,7 +79,7 @@ for(int m=start; m<=stop; m++)
 
 int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
 mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
-mpiAllReduce(RefmProc,Refm,mpiCommWorld,mpiSUM);
+mpiAllReduce(RefmProc,Refc,mpiCommWorld,mpiSUM);
 mpiAllReduce(ReftProc,Reft,mpiCommWorld,mpiSUM);
 
 for(int m=0; m<nev; m++)
