@@ -5,7 +5,7 @@ import sys
 
 filePath=sys.argv[1];
 
-T=np.linspace(10,80,21)
+T=np.linspace(10,80,29)
 pi=np.pi
 omega=2*pi/T
 RC=np.zeros((21,4),dtype=complex)
@@ -15,7 +15,7 @@ nev=8
 omeganew=interpolateCoeffsFreq(2*pi/80,2*pi/10,omega,nev,filePath+"2_ModesMatrix/",npts,1)
 LAM=buildLam(filePath)
 
-plt.figure(figsize=[10,4])
+plt.figure(figsize=[5,4])
 plt.title("Modal Amplitudes")
 for m in np.arange(0,6):
     L=LAM[:,m]
