@@ -5,17 +5,17 @@ import sys
 
 filePath=sys.argv[1];
 
-T=np.linspace(10,80,29)
+T=np.linspace(10,100,51)
 pi=np.pi
 omega=2*pi/T
 RC=np.zeros((21,4),dtype=complex)
 
-npts=299
-nev=8
-omeganew=interpolateCoeffsFreq(2*pi/80,2*pi/10,omega,nev,filePath+"2_ModesMatrix/",npts,1)
+npts=199
+nev=16
+omeganew=interpolateCoeffsFreq(2*pi/100,2*pi/10,omega,nev,filePath+"2_ModesMatrix/",npts,1)
 LAM=buildLam(filePath)
 
-plt.figure(figsize=[5,4])
+plt.figure(figsize=[10,4])
 plt.title("Modal Amplitudes")
 for m in np.arange(0,6):
     L=LAM[:,m]
@@ -25,13 +25,13 @@ plt.xlabel('$\omega$')
 plt.savefig(sys.argv[2]+"_1.pdf",bbox_inches='tight')
 
 ## Interpolating reflection coefficients
-V=interpolateRefCoeff(omega,omeganew,8,filePath+"2_RefCoeff/","C")
+V=interpolateRefCoeff(omega,omeganew,nev,filePath+"2_RefCoeff/","C")
 RC=buildRMat(LAM,filePath,"C")
 plt.figure(figsize=[10,4])
 plt.plot(omeganew/(2*pi),np.transpose(abs(RC)),linewidth=2,label="R($\omega$)")
 
 ## Interpolating Transmission coefficients
-V=interpolateRefCoeff(omega,omeganew,8,filePath+"2_RefCoeff/","T")
+V=interpolateRefCoeff(omega,omeganew,nev,filePath+"2_RefCoeff/","T")
 RT=buildRMat(LAM,filePath,"T")
 plt.plot(omeganew/(2*pi),np.transpose(abs(RT)),linewidth=2,label="T($\omega$)")
 plt.plot(omeganew/(2*pi),np.transpose(abs(RT)**2+abs(RC)**2),linewidth=2,label="$1.0$")

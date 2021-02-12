@@ -72,8 +72,6 @@ def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
         np.savetxt(filePath+"Interpolated_L/lambdaRe.dat",lambdaj.real,delimiter="\t",newline="\n")
         np.savetxt(filePath+"Interpolated_L/lambdaIm.dat",lambdaj.imag,delimiter="\t",newline="\n")
 
-        plt.plot(omegaNew,condH)
-        plt.show()
     return omegaNew
 
 

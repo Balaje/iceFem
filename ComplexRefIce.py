@@ -25,9 +25,9 @@ RC=np.zeros((npts**2,4))
 count=1
 for m in range(0,npts):
     for n in range(0,npts):
-        cmd="/usr/local/bin/mpirun -np 2 /usr/local/ff++/mpich3/bin/FreeFem++-mpi -v 0 iceberg.edp -N 10 -Tr "+str(T[m,n].real)+" -Ti "+str(T[m,n].imag)+" -Youngs 2e8 -L 3000 -H 1000 -h 200 -nev 8 -iter "+str(count)+" -SolDir 3_ICEBERG/ -hsize 0.04 -isSplit 1 > /dev/null"
+        cmd="/usr/local/bin/mpirun -np 2 /usr/local/ff++/mpich3/bin/FreeFem++-mpi -v 0 iceberg.edp -N 10 -Tr "+str(T[m,n].real)+" -Ti "+str(T[m,n].imag)+" -Youngs 2e9 -L 3000 -H 2000 -h 200 -nev 8 -iter "+str(count)+" -SolDir 2_ICEBERG/ -hsize 0.04 -isSplit 1 > /dev/null"
         #print(cmd)
-        #a=system(cmd)
+        a=system(cmd)
         print("Done running",count)
         count=count+1
 for m in range(0,npts**2):
@@ -37,7 +37,7 @@ RCOld=np.reshape(RCOld,(npts,npts))
 TCOld=RC[:,2]+1j*RC[:,3]
 TCOld=np.reshape(TCOld,(npts,npts))
 
-nptsNew=300;
+nptsNew=300
 xq=np.linspace(2*pi/80,2*pi/10,nptsNew)
 yq=np.linspace(-0.08,0.08,nptsNew)
 Xq,Yq=np.meshgrid(xq,yq)

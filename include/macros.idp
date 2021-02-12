@@ -282,7 +282,7 @@ macro setLinearThickeningIce(draft1, draft2, free1, free2)
     border I02(t=draft2,free2) {x=LL; y=t; label=2;};
     border I03(t=LL,0) {x=t; y=slope1*t+intercept1; label=1;};
     border I04(t=free1,draft1) {x=0; y=t; label=1;};    
-    ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(N1));
+    ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(N1));   
 }//EOM"
 
 macro setLinearThickeningCavity(Height1, Height2, draft1, draft2)
@@ -295,7 +295,7 @@ macro setLinearThickeningCavity(Height1, Height2, draft1, draft2)
     ENDIFMACRO        
     real slope1=(draft2-draft1)/LL, slope2=(Height2-Height1)/LL;
     real intercept1=draft1, intercept2=Height1;
-    border C01(t=0,LL) {x=t; y=slope2*t+intercept2+3*sin(pi*x/LL)*x/LL; label=1;};
+    border C01(t=0,LL) {x=t; y=slope2*t+intercept2+0*sin(pi*x/LL)*x/LL; label=1;};
     border C02(t=Height2,draft2) {x=LL; y=t; label=6;};
     border C03(t=LL,0) {x=t; y=slope1*t+intercept1; label=3;};
     border C04(t=draft1,Height1) {x=0; y=t; label=4;};
