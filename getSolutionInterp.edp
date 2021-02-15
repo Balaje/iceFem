@@ -1,0 +1,39 @@
+//Example to reconstruct fine solution
+verbosity=0;
+macro dimension 2//EOM"
+macro fspace 2//EOM"
+include "macros.idp"
+SolutionDir=getARGV("-SolDir","3_ICEBERG/");
+
+Vh<complex> dispX, dispY;
+/*
+macro constructFineSpace(nfreq, index, complex[int], complex[int] ):
+
+Description:
+- Saves the entire solution in complex[int,int] UXT, UYT. (Predefined)
+- Extract the solution "index" from the frequency space and store in Vectors
+- Also saves a .vtk file corresponding to the disk.
+*/
+constructFineSpace(nfreq,59,dispX[],dispY[]); 
+
+
+//Do stuff with the full interpolated solution UXT, UYT.
+complex[int] disp(Vh.ndof);
+ofstream file1("./dispVsFreq.dat");
+ofstream file2("./strainVsFreq.dat");
+for(int m=0; m<nfreq; m++)
+{
+    disp=UXT(:,m);
+    dispX[]=disp;        
+    disp=UYT(:,m);
+    dispY[]=disp;
+
+    Vh absDispX=abs(dispX), absDispY=abs(dispY);
+    Vh absexx=abs(epsilon(dispX,dispY)[0]),abseyy=abs(epsilon(dispX,dispY)[2]),absexy=abs(epsilon(dispX,dispY)[1]);
+    {        
+        file1<<absDispX[].max<<"\t"<<absDispY[].max<<endl;
+        file2<<absexx[].max<<"\t"<<abseyy[].max<<"\t"<<absexy[].max<<endl;
+    }
+}
+
+

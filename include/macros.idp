@@ -253,13 +253,13 @@ macro iceBEDMAP2(nborders, isBuild)
         }
         ThIce=movemesh(ThIce,[x*1./Lc,y*1./Lc]);
         ThCavity=movemesh(ThCavity,[x*1./Lc,y*1./Lc]);
-        savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
-        savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
+        savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.msh");
+        savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.msh");        
     }
     else
     {
-        ThCavity=readmeshN("Meshes/cavMeshBEDMAP.msh");
-        ThIce=readmeshN("Meshes/iceMeshBEDMAP.msh");
+        ThCavity=readmeshN(SolutionDir+"2_Modes/cavMesh.msh");
+        ThIce=readmeshN(SolutionDir+"2_Modes/iceMesh.msh");
     }
 }//This is a macro to obtain the ice-cavity profiles from BEDMAP2
 
@@ -464,13 +464,15 @@ macro writeEigen(isVtk, isDat)
                 }
         if(isDat)
         {
+            Vh modeX=VX[m], modeY=VY[m];
             ofstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
-            fileX<<VX[m][];
+            fileX<<modeX[];
             ofstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
-            fileY<<VY[m][];
+            fileY<<modeY[];
             IFMACRO(dimension,3)
+                Vh modeZ=VZ[m];
                 ofstream fileZ(SolutionDir+"2_Modes/ModesZ"+m+".dat");
-            fileZ<<VZ[m][];
+                fileZ<<modeZ[];
             ENDIFMACRO
                 }
     }
@@ -515,7 +517,7 @@ macro refineMesh(){
             ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
         }
         cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
-        savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
+        savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.msh");                
         plot(ThIce,wait=1);
     }
     else if(mpirank==1){
@@ -538,9 +540,9 @@ macro refineMesh(){
             ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
         }
         cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
-        savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
+        savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.msh");        
         plot(ThCavity,wait=1);
-    }
+    }        
     broadcast(processor(0),ThIce);
     broadcast(processor(1),ThCavity);
 }//EOM" (Macro to refine mesh).
@@ -1280,3 +1282,54 @@ macro getRefModes(bInd,phi,Ref){
     Ref = c[0]/Ap;
 }//EOM"
 
+macro readFile(rows,cols,filename,array){
+    ifstream file(filename);
+    for(int m=0; m<rows; m++)
+        for(int n=0; n<cols; n++)
+            file>>array(m,n);
+}//Macro to read files.EOM"
+
+int nfreq=getARGV("-nfreq",199);
+complex[int,int] UXT(Vh.ndof,nfreq), UYT(Vh.ndof,nfreq);
+macro constructFineSpace(nfreq,extractIndx,dIndx,dIndy){
+    ThCavity=readmeshN(SolutionDir+"2_Modes/cavMesh.msh");
+    ThIce=readmeshN(SolutionDir+"2_Modes/iceMesh.msh");   
+    UXT.resize(Vh.ndof,nfreq);
+    UYT.resize(Vh.ndof,nfreq);    
+    complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
+    real[int] tmp(Vh.ndof);
+    for(int m=0; m<nev; m++)
+    {        
+        ifstream filex(SolutionDir+"2_Modes/MODESX"+m+".dat");
+        filex>>tmp;
+        mx(m,:).re=tmp;
+        ifstream filey(SolutionDir+"2_Modes/MODESY"+m+".dat");
+        filey>>tmp;
+        my(m,:).re=tmp;
+    }
+
+    complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
+    readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat",lambdaRe);
+    readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat",lambdaIm);
+    complex[int,int] lambda=lambdaIm;
+    lambda*=1i;
+    lambda+=lambdaRe;
+    Vh<complex> ux,uy;
+    complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof);
+    UX=lambda*mx;
+    UY=lambda*my;
+    UXT=UX';
+    UYT=UY';
+    UXT=conj(UXT);
+    UYT=conj(UYT);
+    if(extractIndx>=0){        
+        dIndx=UXT(:,extractIndx);
+        dIndy=UYT(:,extractIndx);
+        int[int] Order=[1,1];
+        savevtk(SolutionDir+"/reconDisp"+iter+".vtu",ThIce,[real(dispX),real(dispY)],[imag(dispX),imag(dispY)], dataname="ReDisp ImDisp",order=Order);
+    }
+    else{
+        dIndx=0;
+        dIndy=0;
+    }
+}//EOM"

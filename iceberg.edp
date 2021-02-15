@@ -123,7 +123,7 @@ mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
 mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 
 if(mpirank==0)
-{
+{    
     phi=phi+phi0;
     int[int] Order1=[1,1,1],Order=[1,1];
     savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
