@@ -664,19 +664,24 @@ macro solveEigenEB()
 macro getMat(A, f, g, MM, MMt){
     func complex innerproduct(complex k, complex kappa, real H, real d)
     {
-        if(abs(k-kappa) >= 1e-7)
-            return ( (kappa*sin(kappa*(H-d))*cos(k*(H-d)) - k*cos(kappa*(H-d))*sin(k*(H-d)))/(kappa^2-k^2) );
-        else
-            return ( (H-d)/2 + sin(2*k*(H-d))/(4*k)  );
+        if(abs(k-kappa) >= 1e-7){
+            complex V1=exp(-1i*k*dd)*(exp(-2i*k*(HH-dd))+1)/(exp(-2i*k*HH)+1);
+            complex V2=exp(-1i*k*dd)*(-exp(-2i*k*(HH-dd))+1)/(exp(-2i*k*HH)+1);
+            return ((kappa*tan(kappa*(HH-dd))*V1 - k*V2)/(kappa^2-k^2));            
+        }           
+        else{
+            complex V2=exp(-1i*k*dd)*(-exp(-2i*k*(HH-dd))+1)/(exp(-2i*k*HH)+1);            
+            return ( (HH-dd)/(2*cos(k*HH)*cos(k*(HH-dd))) + 1/(2*k)*V2 );            
+        }           
     }
     A = 0.; MM = 0.; MMt = 0.; f = 0.; g = 0.;
     for(int m=0; m<NModes+1; m++)
     {
-        A(m,m) = k[m]*0.5*(cos(k[m]*HH)*sin(k[m]*HH) + k[m]*HH)/(k[m]*(cos(k[m]*HH))^2);
-        f(m) = Ap*innerproduct(k[0], kd[m], HH, dd)/(cos(kd[m]*(HH-dd))*cos(k[0]*(HH)));
+        A(m,m) = k[m]*innerproduct(k[m], k[m], HH, 0);
+        f(m) = Ap*innerproduct(k[0], kd[m], HH, dd);
         for(int n=0; n<NModes+1; n++)
         {
-            MM(m,n) = innerproduct(k[n], kd[m], HH, dd)/(cos(kd[m]*(HH-dd))*cos(k[n]*(HH)));
+            MM(m,n) = innerproduct(k[n], kd[m], HH, dd);
             MMt(n,m) = MM(m,n);
         }
     }
@@ -698,10 +703,10 @@ macro getQphi(bInd,MQ){
     for(int m=0; m<NModes+1; m++)
     {
         IFMACRO(dimension,2)
-            func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
         ENDIFMACRO
             IFMACRO(dimension,3)
-            func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
         ENDIFMACRO
 
         varf boundaryip(unused,vh) = intN1(ThCavity,bInd,qforder=10)(eigenfunc*vh);
@@ -735,7 +740,7 @@ macro getChi(chi1){
     ctilde = Mg - Tf;
     
     for(int m=0; m<NModes+1; m++)
-        chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        chi1=chi1+ctilde[m]*exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
 }//EOM to compute ctilde"
 
 matrix<complex> STIMA,BMASSMA;
@@ -1237,7 +1242,7 @@ macro getRefCoeff(bInd,phi,Ref){
     complex[int] aa(NModes+1), bb(NModes+1), c(NModes+1);
     for(int m=0; m<NModes+1; m++)
     {
-        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
         aa(m) = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
     }
     complex [int] f(NModes+1), g(NModes+1);
@@ -1263,7 +1268,7 @@ macro getRefModes(bInd,phi,Ref){
     complex [int] aa(NModes+1), bb(NModes+1);
     for(int m=0; m<NModes+1; m++)
     {
-        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
         aa[m] = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
     }
     complex [int] c1(NModes+1);

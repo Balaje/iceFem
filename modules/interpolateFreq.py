@@ -66,12 +66,14 @@ def interpolateCoeffsFreq(a,b,omega,Nev,filePath,npts,isSolve):
         lambdaj=np.zeros((len(omegaNew),Nev),dtype=complex)
         for p in range(0,len(omegaNew)):
             Hmat=np.reshape(HNew[:,p],(Nev,Nev),order='F')
-            condH[p]=np.linalg.cond(Hmat)
+            condH[p]=abs(np.linalg.cond(Hmat))
             Fmat=FNew[:,p]
             lambdaj[p,:]=np.linalg.solve(Hmat,Fmat)
         np.savetxt(filePath+"Interpolated_L/lambdaRe.dat",lambdaj.real,delimiter="\t",newline="\n")
         np.savetxt(filePath+"Interpolated_L/lambdaIm.dat",lambdaj.imag,delimiter="\t",newline="\n")
 
+    plt.semilogy(omegaNew/(2*np.pi),condH)
+    plt.show()
     return omegaNew
 
 

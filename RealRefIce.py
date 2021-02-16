@@ -6,14 +6,14 @@ import time
 
 filePath=sys.argv[1];
 
-T=np.linspace(10,100,51)
+T=np.linspace(8,100,51)
 pi=np.pi
 omega=2*pi/T
 RC=np.zeros((21,4),dtype=complex)
 
 npts=199
 nev=16
-omeganew=interpolateCoeffsFreq(2*pi/100,2*pi/10,omega,nev,filePath+"2_ModesMatrix/",npts,1)
+omeganew=interpolateCoeffsFreq(2*pi/100,2*pi/8,omega,nev,filePath+"2_ModesMatrix/",npts,1)
 LAM=buildLam(filePath)
 
 plt.figure(figsize=[5,4])
