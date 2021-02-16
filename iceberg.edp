@@ -140,7 +140,8 @@ if(mpirank==0)
     HH=abs(HH2);        
     solveDispersion;  
     getRefModes(5,phi,RefT);    
-    
+
+    cout<<"Lc= "<<Lc<<"\t"<<"tc= "<<tc<<endl;
     cout<<RefR<<"\t"<<RefT<<endl;
     cout.precision(8);
     cout<<"Reflection Coefficient = "<<sqrt(abs(RefR)^2+abs(RefT)^2)<<endl;
