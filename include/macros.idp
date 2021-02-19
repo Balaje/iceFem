@@ -671,7 +671,7 @@ macro getMat(A, f, g, MM, MMt){
         }           
         else{
             complex V2=-1i*exp(-1i*k*d)*(-exp(-2i*k*(H-d))+1)/(exp(-2i*k*H)+1);            
-            return ( (H-d)/(2*cos(k*H)*cos(k*(H-d))) + 1/(2*k)*V2 );            
+            return ( (2*exp(-1i*k*(2*H-d))*(H-d))/((1+exp(-2i*k*H))*(1+exp(-2i*k*(H-d)))) + 1/(2*k)*V2 );            
         }           
     }
     A = 0.; MM = 0.; MMt = 0.; f = 0.; g = 0.;
@@ -703,10 +703,10 @@ macro getQphi(bInd,MQ){
     for(int m=0; m<NModes+1; m++)
     {
         IFMACRO(dimension,2)
-            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
+            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
         ENDIFMACRO
             IFMACRO(dimension,3)
-            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
+            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
         ENDIFMACRO
 
         varf boundaryip(unused,vh) = intN1(ThCavity,bInd,qforder=10)(eigenfunc*vh);
@@ -740,7 +740,7 @@ macro getChi(chi1){
     ctilde = Mg - Tf;
     
     for(int m=0; m<NModes+1; m++)
-        chi1=chi1+ctilde[m]*exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
+        chi1=chi1+ctilde[m]*exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
 }//EOM to compute ctilde"
 
 matrix<complex> STIMA,BMASSMA;

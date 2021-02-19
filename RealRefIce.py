@@ -11,9 +11,9 @@ pi=np.pi
 omega=2*pi/T
 RC=np.zeros((21,4),dtype=complex)
 
-npts=199
+npts=299
 nev=16
-omeganew=interpolateCoeffsFreq(2*pi/100,2*pi/8,omega,nev,filePath+"2_ModesMatrix/",npts,1)
+omeganew=interpolateCoeffsFreq(2*pi/100,2*pi/30,omega,nev,filePath+"2_ModesMatrix/",npts,1)
 LAM=buildLam(filePath)
 
 plt.figure(figsize=[5,4])
@@ -23,6 +23,7 @@ for m in np.arange(0,6):
     plt.plot(omeganew/(2*pi),abs(L),linewidth=2,label="$|\lambda_"+str(m+1)+"|$")
 plt.legend()
 plt.xlabel('$\omega$')
+plt.ylim([0,2])
 plt.savefig(sys.argv[2]+"_1.pdf",bbox_inches='tight')
 
 ## Interpolating reflection coefficients
@@ -60,7 +61,7 @@ plt.figure(figsize=[5,4])
 plt.plot(omeganew1/(2*pi),S,label='Pearson Moskowitz Spectrum')
 plt.xlabel('$\omega$ (in Hz)')
 plt.ylabel('PSD')
-S1=np.loadtxt('/Users/balaje/data1.txt',delimiter=',')
+S1=np.loadtxt('/Users/balaje/inc_wave.txt',delimiter=',')
 plt.plot(S1[:,0],S1[:,1],label='Kristensen et al.')
 plt.legend()
 plt.savefig(sys.argv[2]+"_5.pdf",bbox_inches= 'tight')
@@ -80,16 +81,18 @@ plt.plot(omeganew/(2*pi),S*maxDisp[:,1],label="$u_y$")
 plt.legend()
 plt.xlabel('$\omega$')
 #plt.xlim([1/100,0.45])
+plt.ylim([0,4])
 plt.title('Displacements')
 plt.savefig(sys.argv[2]+"_3.pdf",bbox_inches='tight')
 
 
 plt.figure(figsize=[5,4])
 maxStrain=np.loadtxt("./strainVsFreq.dat")
-plt.plot(omeganew/(2*pi),S*maxStrain[:,0],label="$e_{xx}$")
-plt.plot(omeganew/(2*pi),S*maxStrain[:,1],label="$e_{xy}$")
-plt.plot(omeganew/(2*pi),S*maxStrain[:,2],label="$e_{yy}$")
+plt.plot(omeganew/(2*pi),S*maxStrain[:,0]**2,label="$e_{xx}$")
+plt.plot(omeganew/(2*pi),S*maxStrain[:,1]**2,label="$e_{xy}$")
+plt.plot(omeganew/(2*pi),S*maxStrain[:,2]**2,label="$e_{yy}$")
 plt.legend()
+#plt.ylim([0,0.001])
 plt.xlabel('$\omega$')
 plt.title('Strain')
 #plt.xlim([1/100,0.45])
