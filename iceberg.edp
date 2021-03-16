@@ -6,18 +6,24 @@ macro fspace 2//EOM"
 
 include "macros.idp"
 
-SolutionDir="2_ICEBERG/";
+SolutionDir=getARGV("-SolDir","1_ICEBERG/");
 
 setProblem;
 
-solveDispersion;
+real draft1=-0.9*tth, free1=0.1*tth;
+real draft2=-0.9*tth, free2=0.1*tth;
+real HH1=-HH, HH2=-HH;
+setLinearThickeningIce(draft1,draft2,free1,free2);
+setLinearThickeningCavity(HH1,HH2,draft1,draft2);
 
-int N1=getARGV("-N1",4);
-int[int] lbl=[3,1,1,1];
-ThIce=square(LL/tth*N1,N1,[LL*x,-dd+tth*y],label=lbl);
-int N2=getARGV("-N2",4);
-lbl=[1,5,3,4];
-ThCavity=square(LL/(HH-dd)*N2,N2,[LL*x,-HH+(HH-dd)*y],label=lbl);
+refineMesh;
+
+//Change numbering.
+int[int] lbl=[3,3,2,1,1,1,1,1]; 
+ThIce=change(ThIce,label=lbl);
+lbl=[1,1,6,5,3,3,4,4];
+ThCavity=change(ThCavity,label=lbl);
+
 
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
@@ -26,7 +32,14 @@ writeEigen(1,1);
 
 Wh<complex> chi1;
 matrix<complex> MQ1,MQ2;
+dd=abs(draft2);
+HH=abs(HH2);
+solveDispersion;
 getQphi(5,MQ2); //Outlet
+
+dd=abs(draft1);
+HH=abs(HH1);
+solveDispersion;
 getQphi(4,MQ1);
 getChi(chi1);
 
@@ -41,25 +54,23 @@ set(LHS,solver=sparsesolver);
 phih[]=LHS^-1*RHS[];
 phi0=phih;
 phi00=phi0;
-{
-    ofstream file1(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
-    complex Ref;
-    getRefCoeff(4,phi0,Ref);
-    file1<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-}
-{
-    ofstream file1(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refT"+iter+".dat");
-    complex Ref;
-    getRefModes(5,phi0,Ref);
-    file1<<real(Ref)<<"\t"<<imag(Ref)<<endl;
-}
+
+dd=abs(draft1);
+HH=abs(HH1);
+solveDispersion;
+getRefCoeff(4,phi0,RefC);
+dd=abs(draft2);
+HH=abs(HH2);
+solveDispersion;
+getRefModes(5,phi0,RefT);
+
 //savevtk(SolutionDir+"2_Potential/solDif.vtu",ThCavity,real(phi0),dataname="RePhi");
 
 Wh<complex> [int] phij(nev);
 WhBdy<complex>[int] phijj(nev);
 buildParti(nev);
 complex[int,int] PHIJ(WhBdy.ndof,nev), PHIJProc(WhBdy.ndof,partisize);
-complex[int] Refm(nev), RefmProc(nev), Reft(nev), ReftProc(nev);
+complex[int] RefmProc(nev), ReftProc(nev);
 for(int m=start; m<=stop; m++)
 {
     func fh=0;
@@ -70,7 +81,13 @@ for(int m=start; m<=stop; m++)
     phij[m]=phih;
     phijj[m]=phih;
     PHIJProc(:,m-start)=phijj[m][];
+    dd=abs(draft2);
+    HH=abs(HH2);
+    solveDispersion;
     getRefModes(5,phih,ReftProc[m]);
+    dd=abs(draft1);
+    HH=abs(HH1);
+    solveDispersion;
     getRefModes(4,phih,RefmProc[m]);
     if(mpirank==0){
         cout<<"Done Radiation Potential " <<m<<endl;
@@ -79,7 +96,7 @@ for(int m=start; m<=stop; m++)
 
 int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
 mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
-mpiAllReduce(RefmProc,Refm,mpiCommWorld,mpiSUM);
+mpiAllReduce(RefmProc,Refc,mpiCommWorld,mpiSUM);
 mpiAllReduce(ReftProc,Reft,mpiCommWorld,mpiSUM);
 
 for(int m=0; m<nev; m++)
@@ -106,20 +123,28 @@ mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
 mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
 
 if(mpirank==0)
-{
+{    
     phi=phi+phi0;
     int[int] Order1=[1,1,1],Order=[1,1];
     savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
     savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1);
 
-    complex RefT;
-    getRefModes(5,phi,RefT);
     complex RefR;
+    dd=abs(draft1);
+    HH=abs(HH1);    
+    solveDispersion;
     getRefCoeff(4,phi,RefR);
     
+    complex RefT;
+    dd=abs(draft2);
+    HH=abs(HH2);        
+    solveDispersion;  
+    getRefModes(5,phi,RefT);    
+
+    cout<<"Lc= "<<Lc<<"\t"<<"tc= "<<tc<<endl;
     cout<<RefR<<"\t"<<RefT<<endl;
     cout.precision(8);
-    cout<<"Reflection Coefficient = "<<(abs(RefR)^2+abs(RefT)^2)<<endl;
+    cout<<"Reflection Coefficient = "<<sqrt(abs(RefR)^2+abs(RefT)^2)<<endl;
     ofstream file(SolutionDir+"2_RefCoeff/rc"+iter+".dat");
     file<<real(RefR)<<"\t"<<imag(RefR)<<"\t"<<real(RefT)<<"\t"<<imag(RefT)<<endl;
 }

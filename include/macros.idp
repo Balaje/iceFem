@@ -67,6 +67,9 @@ complex omega, Ap, tt, alpha;
 bool isUniformIce, isUniformCav;
 string iter=getARGV("-iter","0");
 
+complex RefC, RefT;
+complex[int] Refc(nev), Reft(nev);
+
 complex [int] k(NModes+1), kd(NModes+1);
 complex [int,int] B(nev,nev), K(nev,nev), AB(nev,nev), Hmat(nev,nev);
 complex [int] F(nev);
@@ -80,7 +83,7 @@ macro setProblem()
     real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
     real EI = E*th^3/(12*(1-nu^2));
     Lc = (EI/(rhow*ag))^(1./4.);
-    tc = sqrt(rhow*Lc^6/(EI*H));
+    tc = sqrt(rhow*Lc^6/(EI*H));    
     real d = rhoi/rhow*th;
     omega = 2*pi/t;
     LL = L/Lc;
@@ -250,22 +253,60 @@ macro iceBEDMAP2(nborders, isBuild)
         }
         ThIce=movemesh(ThIce,[x*1./Lc,y*1./Lc]);
         ThCavity=movemesh(ThCavity,[x*1./Lc,y*1./Lc]);
-        savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
-        savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
+        savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.msh");
+        savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.msh");        
     }
     else
     {
-        ThCavity=readmeshN("Meshes/cavMeshBEDMAP.msh");
-        ThIce=readmeshN("Meshes/iceMeshBEDMAP.msh");
+        ThCavity=readmeshN(SolutionDir+"2_Modes/cavMesh.msh");
+        ThIce=readmeshN(SolutionDir+"2_Modes/iceMesh.msh");
     }
 }//This is a macro to obtain the ice-cavity profiles from BEDMAP2
+
+//Routine to construct linearly thickening ice-shelf with
+//1) Droughts (0,d1), (L,d2);
+//2) Freeboards (0,f1), (L,f2);
+//In non-dimensional units.
+macro setLinearThickeningIce(draft1, draft2, free1, free2)
+{
+    int N1 = getARGV("-N",3);
+    IFMACRO(dimension,3)
+    if(mpirank==0)
+    cout<<"Dimension should be 2 to use this routine"<<endl;
+    exit(0);
+    ENDIFMACRO
+    dd=abs(draft1);
+    real slope1=(free2-free1)/LL, slope2=(draft2-draft1)/LL;
+    real intercept1=free1, intercept2=draft1;    
+    border I01(t=0,LL) {x=t; y=slope2*t+intercept2; label=3;};
+    border I02(t=draft2,free2) {x=LL; y=t; label=2;};
+    border I03(t=LL,0) {x=t; y=slope1*t+intercept1; label=1;};
+    border I04(t=free1,draft1) {x=0; y=t; label=1;};    
+    ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(N1));   
+}//EOM"
+
+macro setLinearThickeningCavity(Height1, Height2, draft1, draft2)
+{
+    int N1 = getARGV("-N",3);
+    IFMACRO(dimension,3)
+    if(mpirank==0)
+    cout<<"Dimension should be 2 to use this routine"<<endl;
+    exit(0);
+    ENDIFMACRO        
+    real slope1=(draft2-draft1)/LL, slope2=(Height2-Height1)/LL;
+    real intercept1=draft1, intercept2=Height1;
+    border C01(t=0,LL) {x=t; y=slope2*t+intercept2+0*sin(pi*x/LL)*x/LL; label=1;};
+    border C02(t=Height2,draft2) {x=LL; y=t; label=6;};
+    border C03(t=LL,0) {x=t; y=slope1*t+intercept1; label=3;};
+    border C04(t=draft1,Height1) {x=0; y=t; label=4;};
+    ThCavity = buildmesh(C01(LL/tth*N1)+C02(N1)+C03(LL/tth*N1)+C04(LL/tth*N1));    
+}//EOM"
 
 macro solveDispersion()
 {
     k.resize(NModes+1);
-    kd.resize(NModes+1);
-    complex ndOmega = 2*pi/tt;
-    complex alpha = HH*ndOmega^2;
+    kd.resize(NModes+1);    
+    complex alpha = Lc*omega^2/ag;    
     k = dispersionfreesurface(alpha, NModes, HH);
     k[0] = -k[0];
     kd = dispersionfreesurface(alpha, NModes, HH-dd);
@@ -351,37 +392,15 @@ macro setMeshCav(midx, midy, endy)
     ENDIFMACRO
         }//This is a macro for creating the cavity Mesh using 3 point cubic spline.
 
+macro nonDimensionalMesh(){
+    ThIce=movemesh(ThIce,[x/Lc,y/Lc]);    
+    ThCavity=movemesh(ThCavity,[x/Lc,y/Lc]);
+}
 
 
 //MACROS to import sample 3D meshes
 macro setMeshIceCav3d()
 {
-    real L=100;
-    real BB=10, th=2.25;
-    real H=0.8*L;
-    real E, nu;
-    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
-    real EI = E*th^3/(12*(1-nu^2));
-    Lc = (EI/(rhow*ag))^(1./4.);
-    tc = sqrt(rhow*Lc^6/(EI*H));
-    LL=L/Lc;
-    dd=0;
-    HH=H/Lc;
-    real mu1=elasCons[0], lambda=elasCons[1];
-    muhat=mu1/Lc^2;
-    lambdahat=lambda/Lc^2;
-    gammahat = rhow/Lc;
-    deltahat = rhow*ag/Lc;
-    real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
-    complex t = Tr+1i*Ti;
-    omega = 2*pi/t;
-    Ap=(ag/(1i*omega))*Ad;
-    IFMACRO(dimension,2)
-        cout<<"Dimension should be 3 to use 3d meshes"<<endl;
-    exit(0);
-    ENDIFMACRO
-        int N1 = getARGV("-N",3);
-    int N2 = getARGV("-N",3);
     ThIce = readmesh3("MESHES/boat.mesh");
     ThCavity = readmesh3("MESHES/water.mesh");
     ThIce = movemesh(ThIce,[x/Lc,y/Lc,z/Lc]);
@@ -445,13 +464,15 @@ macro writeEigen(isVtk, isDat)
                 }
         if(isDat)
         {
+            Vh modeX=VX[m], modeY=VY[m];
             ofstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
-            fileX<<VX[m][];
+            fileX<<modeX[];
             ofstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
-            fileY<<VY[m][];
+            fileY<<modeY[];
             IFMACRO(dimension,3)
+                Vh modeZ=VZ[m];
                 ofstream fileZ(SolutionDir+"2_Modes/ModesZ"+m+".dat");
-            fileZ<<VZ[m][];
+                fileZ<<modeZ[];
             ENDIFMACRO
                 }
     }
@@ -496,7 +517,7 @@ macro refineMesh(){
             ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
         }
         cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
-        savemesh(ThIce,"Meshes/iceMeshBEDMAP.msh");
+        savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.msh");                
         plot(ThIce,wait=1);
     }
     else if(mpirank==1){
@@ -519,9 +540,9 @@ macro refineMesh(){
             ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
         }
         cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
-        savemesh(ThCavity,"Meshes/cavMeshBEDMAP.msh");
+        savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.msh");        
         plot(ThCavity,wait=1);
-    }
+    }        
     broadcast(processor(0),ThIce);
     broadcast(processor(1),ThCavity);
 }//EOM" (Macro to refine mesh).
@@ -643,19 +664,24 @@ macro solveEigenEB()
 macro getMat(A, f, g, MM, MMt){
     func complex innerproduct(complex k, complex kappa, real H, real d)
     {
-        if(abs(k-kappa) >= 1e-7)
-            return ( (kappa*sin(kappa*(H-d))*cos(k*(H-d)) - k*cos(kappa*(H-d))*sin(k*(H-d)))/(kappa^2-k^2) );
-        else
-            return ( (H-d)/2 + sin(2*k*(H-d))/(4*k)  );
+        if(abs(k-kappa) >= 1e-7){
+            complex V1=exp(-1i*k*d)*(exp(-2i*k*(H-d))+1)/(exp(-2i*k*H)+1);
+            complex V2=-1i*exp(-1i*k*d)*(-exp(-2i*k*(H-d))+1)/(exp(-2i*k*H)+1);
+            return ((kappa*tan(kappa*(H-d))*V1 - k*V2)/(kappa^2-k^2));            
+        }           
+        else{
+            complex V2=-1i*exp(-1i*k*d)*(-exp(-2i*k*(H-d))+1)/(exp(-2i*k*H)+1);            
+            return ( (2*exp(-1i*k*(2*H-d))*(H-d))/((1+exp(-2i*k*H))*(1+exp(-2i*k*(H-d)))) + 1/(2*k)*V2 );            
+        }           
     }
     A = 0.; MM = 0.; MMt = 0.; f = 0.; g = 0.;
     for(int m=0; m<NModes+1; m++)
     {
-        A(m,m) = k[m]*0.5*(cos(k[m]*HH)*sin(k[m]*HH) + k[m]*HH)/(k[m]*(cos(k[m]*HH))^2);
-        f(m) = Ap*innerproduct(k[0], kd[m], HH, dd)/(cos(kd[m]*(HH-dd))*cos(k[0]*(HH)));
+        A(m,m) = k[m]*innerproduct(k[m], k[m], HH, 0);
+        f(m) = Ap*innerproduct(k[0], kd[m], HH, dd);
         for(int n=0; n<NModes+1; n++)
         {
-            MM(m,n) = innerproduct(k[n], kd[m], HH, dd)/(cos(kd[m]*(HH-dd))*cos(k[n]*(HH)));
+            MM(m,n) = innerproduct(k[n], kd[m], HH, dd);
             MMt(n,m) = MM(m,n);
         }
     }
@@ -677,13 +703,13 @@ macro getQphi(bInd,MQ){
     for(int m=0; m<NModes+1; m++)
     {
         IFMACRO(dimension,2)
-            func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
         ENDIFMACRO
             IFMACRO(dimension,3)
-            func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
         ENDIFMACRO
 
-            varf boundaryip(unused,vh) = intN1(ThCavity,bInd,qforder=10)(eigenfunc*vh);
+        varf boundaryip(unused,vh) = intN1(ThCavity,bInd,qforder=10)(eigenfunc*vh);
         Wh<complex> ph;
         ph[] = boundaryip(0,Wh);
         pp(m,:) = ph[];
@@ -714,7 +740,7 @@ macro getChi(chi1){
     ctilde = Mg - Tf;
     
     for(int m=0; m<NModes+1; m++)
-        chi1=chi1+ctilde[m]*cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        chi1=chi1+ctilde[m]*exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
 }//EOM to compute ctilde"
 
 matrix<complex> STIMA,BMASSMA;
@@ -761,7 +787,7 @@ macro getLaplaceMatFunc(eta){
 macro getLaplaceMatDBC(a,b){
     Wh<complex> psih;
     varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=fh);
-    varf lh(unused,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
+    varf lh(phih,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih) + on(4,phih=fh);
     varf bMh(phih,psih) = intN1(ThCavity,4,qforder=10)(phih*psih*N.x);
     STIMA=ah(Wh,Wh);
     BMASSMA=bMh(Wh,Wh);
@@ -1057,6 +1083,15 @@ macro buildReducedSystemOptim(){
 
 }//EOM"
 
+/*Store the variables
+1) - RefC (Diffraction Reflection Coefficient)
+2) - RefT (Diffraction Transmission Coefficient)
+3) - Refc (Radiation Reflection Coefficients)
+4) - Reft (Radiation Transmission Coefficients)
+5) - H (Scattering matrix)
+6) - F (RHS Forcing vector)
+to the disk
+*/
 macro writeReducedSystem()
 {
     ofstream file1(SolutionDir+"2_ModesMatrix/ReH"+iter+".dat");
@@ -1065,18 +1100,25 @@ macro writeReducedSystem()
     ofstream file4(SolutionDir+"2_ModesMatrix/ImF"+iter+".dat");
     ofstream file5(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refC"+iter+".dat");
     ofstream file6(SolutionDir+"2_RefCoeff/RefCoeff_Rad/refT"+iter+".dat");
+    ofstream file7(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refC"+iter+".dat");
+    ofstream file8(SolutionDir+"2_RefCoeff/RefCoeff_Dif/refT"+iter+".dat");    
     file1.precision(16);
     file2.precision(16);
     file3.precision(16);
     file4.precision(16);
     file5.precision(16);
     file6.precision(16);
+    file7.precision(16);
+    file8.precision(16);
 
+
+    file7<<real(RefC)<<"\t"<<imag(RefC)<<endl;
+    file8<<real(RefT)<<"\t"<<imag(RefT)<<endl;
     for(int m=0; m<nev; m++)
     {
         file3<<real(F[m])<<endl;
         file4<<imag(F[m])<<endl;
-        file5<<real(Refm[m])<<"\t"<<imag(Refm[m])<<endl;
+        file5<<real(Refc[m])<<"\t"<<imag(Refc[m])<<endl;
         file6<<real(Reft[m])<<"\t"<<imag(Reft[m])<<endl;
         for(int n=0; n<nev; n++)
         {
@@ -1200,7 +1242,7 @@ macro getRefCoeff(bInd,phi,Ref){
     complex[int] aa(NModes+1), bb(NModes+1), c(NModes+1);
     for(int m=0; m<NModes+1; m++)
     {
-        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
         aa(m) = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
     }
     complex [int] f(NModes+1), g(NModes+1);
@@ -1226,7 +1268,7 @@ macro getRefModes(bInd,phi,Ref){
     complex [int] aa(NModes+1), bb(NModes+1);
     for(int m=0; m<NModes+1; m++)
     {
-        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
+        func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
         aa[m] = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
     }
     complex [int] c1(NModes+1);
@@ -1243,4 +1285,64 @@ macro getRefModes(bInd,phi,Ref){
     complex[int,int] AA=A^-1;
     c = AA*c1;
     Ref = c[0]/Ap;
+}//EOM"
+
+macro readFile(rows,cols,filename,array){
+    ifstream file(filename);
+    for(int m=0; m<rows; m++)
+        for(int n=0; n<cols; n++)
+            file>>array(m,n);
+}//Macro to read files.EOM"
+
+int nfreq=getARGV("-nfreq",199);
+complex[int,int] UXT(Vh.ndof,nfreq), UYT(Vh.ndof,nfreq);
+macro constructFineSpace(nfreq,extractIndx,dIndx,dIndy,Dir){
+    ThCavity=readmeshN(SolutionDir+"2_Modes/cavMesh.msh");
+    ThIce=readmeshN(SolutionDir+"2_Modes/iceMesh.msh");   
+    UXT.resize(Vh.ndof,nfreq);
+    UYT.resize(Vh.ndof,nfreq);    
+    complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
+    real[int] tmp(Vh.ndof);
+    for(int m=0; m<nev; m++)
+    {        
+        ifstream filex(SolutionDir+"2_Modes/MODESX"+m+".dat");
+        filex>>tmp;
+        mx(m,:).re=tmp;
+        ifstream filey(SolutionDir+"2_Modes/MODESY"+m+".dat");
+        filey>>tmp;
+        my(m,:).re=tmp;
+    }
+
+    complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
+    if(Dir!=-1)
+    {
+        readFile(nfreq,nev,Dir+"lambdaRe.dat",lambdaRe);
+        readFile(nfreq,nev,Dir+"lambdaIm.dat",lambdaIm);
+    }
+    else
+    {
+        readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat",lambdaRe);
+        readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat",lambdaIm);
+    }
+    complex[int,int] lambda=lambdaIm;
+    lambda*=1i;
+    lambda+=lambdaRe;
+    Vh<complex> ux,uy;
+    complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof);
+    UX=lambda*mx;
+    UY=lambda*my;
+    UXT=UX';
+    UYT=UY';
+    UXT=conj(UXT);
+    UYT=conj(UYT);
+    if(extractIndx>=0){        
+        dIndx=UXT(:,extractIndx);
+        dIndy=UYT(:,extractIndx);
+        int[int] Order=[1,1];
+        savevtk(SolutionDir+"/reconDisp"+iter+".vtu",ThIce,[real(dispX),real(dispY)],[imag(dispX),imag(dispY)], dataname="ReDisp ImDisp",order=Order);
+    }
+    else{
+        dIndx=0;
+        dIndy=0;
+    }
 }//EOM"
