@@ -28,13 +28,13 @@ bibliography: paper.bib
 # Summary
 
 Vibrations of ice-shelves in response to ocean waves were first
-investigated by [@holdsworth1978iceberg] who proposed that resonant
+investigated by @holdsworth1978iceberg who proposed that resonant
 vibrations lead to icebergs calving from the shelf front. Since then
 seismometric measurements on the Ross ice-shelf, the largest Antarctic
 ice-shelf, confirmed the presence of this ocean wave-induced ice-shelf
 vibration [@bromirski2015ross; @Massom2018]. The period of vibration
 ranged from the long infragravity/tsunami waves to shorter, swell
-waves. More recently, [@brunt2011antarctic] presented the first
+waves. More recently, @brunt2011antarctic presented the first
 observational evidence that a Northern Hemisphere tsunami triggered
 calving on the Sulzberger ice-shelf. Mathematical models based on
 linear wave theory have been proposed to study these ocean-wave
@@ -55,10 +55,9 @@ converted to the frequency domain by applying a transformation
   \right\},\quad
   \mathbf{u}(x,z,t) = \text{Re}\left\{ \eta(x,z)e^{-i \omega t} \right\}
 \end{equation}
-at a prescribed frequency $\omega$.
-
-The semi-infinite region is truncated by constructing analytic
-expressions and deriving a non-local boundary condition of the form
+at a prescribed frequency $\omega$. The semi-infinite region is
+truncated by constructing analytic expressions and deriving a
+non-local boundary condition of the form
 \begin{equation}
   \partial_x \phi = \mathbf{Q}\phi + \chi \quad \text{on} \quad \Gamma_f^{(4)}.
 \end{equation}
@@ -67,8 +66,8 @@ region where the finite element method is used to solve the resulting
 governing equations. The finite dimensional weak formulation of
 the coupled problem is to find $(\phi_h,\mathbf{w}_h) \in V_h\times
 W_h$ such that
-\begin{eqnarray}
-\left(\nabla\phi_h,\nabla\psi\right)_{\Omega_f}
+\begin{align}
+    \left(\nabla\phi_h,\nabla\psi\right)_{\Omega_f}
     &=-i\omega\left\langle\mathbf{w}_h,\psi\right\rangle_{\Gamma_f^{(3)}} +
     \left\langle\mathbf{Q}\phi_h,\psi\right\rangle_{\Gamma_f^{(4)}} +
     \left\langle\chi,\psi\right\rangle_{\Gamma_f^{(4)}} \label{eq:1new}\\
@@ -76,19 +75,22 @@ W_h$ such that
     &=\rho_s\omega^2\left(\mathbf{w}_h,\mathbf{v}\right)_{\Omega_s} +
     \left\langle\mathbf{w}_h,\mathbf{v}\cdot\mathbf{n}\right\rangle_{\Gamma_s^{(1)}}
     -i\omega\left\langle\phi_h,\mathbf{v}\right\rangle_{\Gamma_f^{(3)}}
-\end{eqnarray}
-where $V_h$ and $W_h$ are appropriate finite element spaces.
+\end{align}
+where $V_h$ and $W_h$ are appropriate finite element spaces. For more
+details on the construction of the non-local boundary condition, refer
+to @Ilyas2018.
 
-## Numerical Method
+## Solution Method
 
-The numerical method is based on the modal expansion technique. The
-displacement and the velocity potential can be written as
+The solution method is based on the modal expansion technique
+[@Ilyas2018; @kalyanaraman2020coupled]. The displacement and the
+velocity potential can be written as
 \begin{equation}\label{eq:2new}
  \phi_h(x,z) = \phi_0(x,z) +
   \sum_{j=1}^{M}\lambda_j\phi_j(x,z),\quad \mathbf{w}_h(x,z) = \sum_{j=1}^{M}
   \lambda_j\eta_j(x,z)
 \end{equation}
-where $\lambda_j$'s being the unknown dofs. Substituting equation
+where $\lambda_j$'s are the unknown dofs. Substituting equation
 \eqref{eq:2new} into the weak formulation of the linear elasticity
 equations \eqref{eq:1new}, we obtain
 \begin{align*}
@@ -141,9 +143,11 @@ element problem on a finer frequency grid.
 
 ## Example
 
-For the iceberg motion example in the program `iceberg.edp`, the
-following bash script solves a small set of problems using the finite
-element method for different values of incident wave frequencies:
+We consider the problem of simulating the vibrations of iceberg which
+is a modification of the ice-shelf vibration problem. This example is
+given in the program `iceberg.edp`. The following bash script solves a
+small set of the iceberg problem using the finite element method for
+different values of incident wave frequencies:
 
 ``` bash
 #!/bin/bash
@@ -181,15 +185,18 @@ the solutions for $\lambda$ on the finer grid is obtained,
 quantities like the reflection coefficients can be computed using the
 new solution and the diffraction and radiation reflection
 coefficients (\autoref{fig:1}). Several `MATLAB` routines are
-available in the `modules` folder to compute the coefficients and the
+available in the `modules` folder to compute the solution and the
 reflection coefficients in real and complex $\omega$ space. For
 example, to perform interpolation on the real $\omega$-space and
 obtain the solution $\lambda_j$, the function `interpolateFreq()`
-could be used. The [PDF
+could be used. An example script using `interpolateFreq()` to compute
+the reflection and transmission coefficients is given in
+`RealRefIce.m`. The [PDF
 manual](https://github.com/Balaje/iceFem/blob/ParIceFem/manual.pdf)
 contains more details on the `MATLAB` interface along with tutorials
-on the `macros` available within the package. More examples can be
-found in the [`README.md`](https://github.com/Balaje/iceFem#icefem).
+to use the `macros` available within the package. More examples can be
+found in the [`README.md`](https://github.com/Balaje/iceFem#icefem)
+file located in the repository.
 
 # Statement of need
 FreeFem [@ffpp] is an open-source domain specific language to implement
@@ -201,7 +208,7 @@ which are examples of automated differential equation solvers and more modern
 packages like Gridap [@Badia2020], based on Julia. `iceFEM` is a
 FreeFem package for simulating ice-shelf vibrations, heavily inspired
 by the `ffddm` module available in FreeFem for implementing the domain
-decomposition methods. Numerical Methods have been proposed to study
+decomposition methods. Numerical methods have been proposed to study
 the vibrations of these ice-shelves, predominantly based on the
 thickness averaged thin-plate model for the ice-shelf and the depth
 averaged shallow-water models for the fluid flow in the sub--shelf
@@ -232,6 +239,6 @@ releases. Real-life examples using the BEDMAP2 dataset can also be
 imported and solved using `iceFEM`. The finite element algorithms in
 the `iceFEM` package was validated using the thin-plate solutions
 obtained using the eigenfunction matching methods in
-[@KALYANARAMAN2019].
+@KALYANARAMAN2019.
 
 ## References
