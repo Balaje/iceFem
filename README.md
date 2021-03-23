@@ -1,4 +1,4 @@
-# iceFEM++
+# iceFEM [![DOI](https://zenodo.org/badge/256385996.svg)](https://zenodo.org/badge/latestdoi/256385996)
 
 ## Dependencies
 - [**FreeFem**](https://freefem.org):
