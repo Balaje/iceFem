@@ -1,17 +1,24 @@
-# iceFEM [![DOI](https://zenodo.org/badge/256385996.svg)](https://zenodo.org/badge/latestdoi/256385996)
-
+# iceFEM [![DOI](https://zenodo.org/badge/256385996.svg)](https://zenodo.org/badge/latestdoi/256385996) [![status](https://joss.theoj.org/papers/a75e3345a2565e1dcd114c965d7db1e7/status.svg)](https://joss.theoj.org/papers/a75e3345a2565e1dcd114c965d7db1e7)           
 ## Dependencies
 - [**FreeFem**](https://freefem.org):
     A high level multiphysics finite element software. Full version with the `MPI` implementation and the `ffddm` module is required. The full version can be downloaded from the official website.
 - [**Bedmap2 Toolbox**](https://au.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab):      
     To obtain real--life shelf/cavity data. This is available as a MATLAB toolbox.
-- **MATLAB**: This is really not a constraint if you are using the package without the BEDMAP2 plugin. Interpolation and related operations can be done using other packages. However, a list of `MATLAB` scripts are available for this purpose to make things easier.
-- **Unix based OS:** Currently this program is written assuming a Unix based Operating system. Future support for windows will be added.
+- **MATLAB**:
+  This is really not a constraint if you are using the package without the BEDMAP2 plugin. Interpolation and related operations can be done using other packages. However, a list of `MATLAB` scripts are available for this purpose to make things easier.
+- **Unix based OS:**
+  Currently this program is written assuming a Unix based Operating system. Future support for windows will be added.
 
 ## Introduction
 
-This iteration of iceFEM implements the algorithms in parallel with an aim to solve bigger problems. For this implementation, the program requires the ``MPI`` version of FreeFem installed. If the full program is installed, the parallel version is available by default. For the main branch visit the link [here](https://github.com/Balaje/iceFem/tree/master). The schematic and
-the governing equations remain the same as the previous version and is shown in the Figure below.
+This iteration of iceFEM implements the algorithms in parallel with an aim to solve bigger problems. For this implementation, the program requires the ``MPI`` version of FreeFem installed. If the full program is installed, the parallel version is available by default. For the main branch visit the link [here](https://github.com/Balaje/iceFem/tree/master). To download the package, use
+
+``` shell
+wget https://github.com/Balaje/iceFem/archive/refs/tags/v1.0.zip -O icefem.zip
+unzip -q icefem.zip
+```
+
+The schematic and the governing equations remain the same as the previous version and is shown in the Figure below.
 
 | ![Geo](./Images/iceGeo.png)
 | ----------------------------------
