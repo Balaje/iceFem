@@ -16,8 +16,8 @@ setProblem;
 
 //Construct linear meshes.
 real draft1=-0.9*tth, free1=0.1*tth;
-real draft2=-0.9*tth, free2=0.1*tth;
-real HH1=-HH, HH2=-HH;
+real draft2=-1.3*tth, free2=0.1*tth;
+real HH1=-HH, HH2=-0.9*HH;
 setLinearThickeningIce(draft1,draft2,free1,free2);
 setLinearThickeningCavity(HH1,HH2,draft1,draft2);
 
