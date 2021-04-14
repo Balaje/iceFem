@@ -5,7 +5,7 @@ clc
 H=800;
 L=10000;
 th=200;
-T=400;
+T=30;
 omega=2*pi/T;
 d=(rhoi/rhow)*th;
 NModes = 10;
@@ -29,11 +29,12 @@ u_fd = @(x) -(1/(1i*omega*Lc))*( sum(transpose(b(1:NModes+3)).*exp(-kappa.*x).*.
 xpts = linspace(0,LL,100);
 Ufd = zeros(1,length(xpts));
 for m=1:length(xpts)
-    Ufd(m)=real(u_fd(xpts(m)));
+    Ufd(m)=imag(u_fd(xpts(m)));
 end
 
 figure(1)
-plot(xpts,Ufd,'linewidth',3);
+subplot(2,1,1);
+plot(xpts,Ufd,'bo','linewidth',0.5);
 xlim([xpts(1),xpts(end)]);
 hold on
 grid on

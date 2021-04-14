@@ -8,7 +8,7 @@
 clc
 clear
 
-SolutionDir='2_ICEBERG/';
+SolutionDir='TEST/';
 
 %% From the finite element problems; (Sample Shell command to run the frequency domain solutions for iceberg.edp)
 npts=27;

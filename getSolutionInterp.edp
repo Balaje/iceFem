@@ -14,7 +14,7 @@ Description:
 - Extract the solution "index" from the frequency space and store in Vectors
 - Also saves a .vtk file corresponding to the disk.
 */
-constructFineSpace(nfreq,59,dispX[],dispY[],SolutionDir); 
+constructFineSpace(nfreq,59,dispX[],dispY[],-1); 
 
 
 //Do stuff with the full interpolated solution UXT, UYT.

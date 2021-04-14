@@ -3,11 +3,13 @@ macro dimension 2//EOM
 macro fspace 1//EOM
 include "macros.idp"
 
-SolutionDir="1_THIN";
+SolutionDir="1_THIN/";
 
 //Set Problem Parameters and solve the dispersion equation
 setProblem;
 solveDispersion;
+
+nev=20;
 
 //Set Meshes
 setMeshIce(0,0,0);
@@ -55,6 +57,8 @@ real gamma=densRat*tth;
 buildReducedSystemEB(mu, phi0, phij, alpha, beta, gamma);
 solveReducedSystem;
 
+if(mpirank==0)
+    cout<<xi<<endl;
 
 //Obtain the potential
 Wh<complex> phi=phi0;

@@ -4,90 +4,40 @@ macro dimension 2//EOM"
 macro fspace 2//EOM"
 
 include "macros.idp"
-string solDir="1_SIMPLE5/";
-
 
 macro Sigma(u,v)[2*muhat*dx(u)+lambdahat*(dx(u)+dy(v)),
                  2*muhat*dy(v)+lambdahat*(dx(u)+dy(v)),
                  muhat*(dy(u)+dx(v))]//EOM"
 
-/*
-//Gradient Recovery
-macro Sigma(ux,uy,vx,vy)[2*muhat*ux+lambdahat*(ux+vy),
-2*muhat*vy+lambdahat*(ux+vy),
-muhat*(uy+vx)]//EOM"
-
-macro buildGRmat(){
-varf vm(unused,v) = int2d(ThIce)(v);
-varf vdx(u,v) = int2d(ThIce)(dx(u)*v);
-varf vdy(u,v) = int2d(ThIce)(dy(u)*v);
-real [int] Mlump = vm(0,Vh);
-real [int] one(Vh.ndof); one = 1;
-real [int] M1 = one./Mlump;
-matrix dM1 = M1;
-matrix Mdx = vdx(Vh,Vh);
-Mx = dM1*Mdx;
-matrix Mdy = vdy(Vh,Vh);
-My = dM1*Mdy;
-}//EOM"
-*/
-
-macro readFile(rows,cols,filename,array){
-  ifstream file(filename);
-  for(int m=0; m<rows; m++)
-    for(int n=0; n<cols; n++)
-      file>>array(m,n);
-}//Macro to read files.EOM"
+    SolutionDir=getARGV("-SolDir","1_ICEBERG/");
 
 //Set the problem and build the meshes
 setProblem;
-real botRight=-3.*tth, midPX=3.7*LL/4, midPY=-2.5*tth;
-setMeshIce(botRight, midPX, midPY);
-real midx=LL/2., midy=-0.5*HH, endy=-HH;
-setMeshCav(midx, midy, endy);
+
+//Construct linear meshes.
+real draft1=-0.9*tth, free1=0.1*tth;
+real draft2=-0.9*tth, free2=0.1*tth;
+real HH1=-HH, HH2=-HH;
+setLinearThickeningIce(draft1,draft2,free1,free2);
+setLinearThickeningCavity(HH1,HH2,draft1,draft2);
+
 refineMesh;//Refine Mesh.
 
-Xh[int][VX,VY](nev);
-real[int] ev(nev);
-solveEigen;
-if(mpirank==0)
-  cout<<"Solved Eigenvalue Problem"<<endl;
+//Change the label for iceberg meshes.
+int[int] lbl=[3,3,2,1,1,1,1,1]; 
+ThIce=change(ThIce,label=lbl);
+lbl=[1,1,6,5,3,3,4,4];
+ThCavity=change(ThCavity,label=lbl);
 
-complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
-for(int m=0; m<nev; m++)
-  {
-    Vh VX1=VX[m], VY1=VY[m];
-    mx(m,:).re=VX1[];
-    my(m,:).re=VY1[];
-  }
+//Construct the fine frequency space and get the solution in UXT, UYT
+Vh<complex> dispX, dispY; 
+constructFineSpace(nfreq,59,dispX[],dispY[],-1); //-1 for the default directory.
 
-
-//Import the interpolated coefficients.
-int nfreq=getARGV("-nfreq",200);
-complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
-for(int m=0; m<nfreq; m++)
-  {
-    ifstream file(solDir+"2_ModesMatrix/lambdaj"+m+".dat");
-    for(int n=0; n<nev; n++)
-      file>>lambdaRe(m,n)>>lambdaIm(m,n);         
-  }
-complex[int,int] lambda=lambdaIm;
-lambda*=1i;
-lambda+=lambdaRe;
-
-//Construct the solution again.
-Vh<complex> ux,uy;
-complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof);
-UX=lambda*mx;
-UY=lambda*my;
-complex[int,int] UXT=UX', UYT=UY';
-UXT=conj(UXT);
-UYT=conj(UYT);
-
+//Time domain data from FAmp.dat
 complex[int,int] FAmp(3,nfreq);
 readFile(3, nfreq,  "FAmp.dat", FAmp);
 //Write time domain solution
-real dt=50, T=10000;
+real dt=0.4, T=80;
 real[int] time=-T:dt:T;
 
 complex[int] domega(nfreq), omegaNew(nfreq);
@@ -101,12 +51,12 @@ complex[int] randn(nfreq);
 randn=FAmp(2,:);
 //Find the complex solution.
 complex[int] omegaVec(nfreq), u3x(Vh.ndof), u3y(Vh.ndof);
-int parti=time.n/mpisize;
 
 mesh Th1=emptymesh(ThIce);
 fespace Vh1(Th1,P1);
 buildParti(time.n);
 real[int] RMSStrain(time.n), RMSStrainProc(partisize);
+cout<<"Partisize = "<<partisize<<"\t Start = "<<start<<"\t"<<"Stop = "<<stop<<endl;
 for(int n=start; n<=stop; n++)
   {
     omegaVec=(-1i)*omegaNew;
@@ -120,18 +70,12 @@ for(int n=start; n<=stop; n++)
     u3x=UXT*omegaVec;
     u3y=UYT*omegaVec;    
 
-    Vh<complex> etax=u3x, etay=u3y;
-    RMSStrainProc[n]=sqrt(abs(intN(ThIce)(epsilon(u3x,uy)'*epsilon(u3x,u3y))));
+    Vh<complex> etax=u3x, etay=u3y;    
+
+    int[int] Order1=[1,1,1],Order=[1,1];
+    savevtk(SolutionDir+"/time_"+n+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+    savevtk(SolutionDir+"/time-stress_"+n+".vtk",ThIce,[real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],[imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],dataname="ReSigma ImSigma",order=Order);
 	    
     if(mpirank==0)
       cout<<"Time t="<<n<<endl;
   }
-int[int] rcounts1=rcounts*WhBdy.ndof, dspls1=dspls*WhBdy.ndof;
-mpiAllgatherv(RMSStrainProc,RMSStrain,rcounts1,dspls1);
-
-//Write the time domain L2--average.
-{
-  ofstream file(SolutionDir+"RMSStrain.dat");
-  for(int m=0; m<time.n; m++)
-    file<<time[m]<<"\t"<<RMSStrain[m]<<endl;
-}
