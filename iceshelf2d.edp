@@ -1,6 +1,6 @@
 //Example problem to solve the frequency domain problem of iceshelf/iceberg.
 //Always set the dimension and fspace order.
-macro dimension 3//EOM"
+macro dimension 2//EOM"
 macro fspace 1//EOM"
 
 include "macros.idp"
@@ -10,17 +10,21 @@ SolutionDir="ICESHELF3/";
 setProblem; //To setup an example problem.
 
 //Set linear thickening ice. Default is the iceshelf mesh with one clamped condition
+/*
 real d1=-0.9*tth, f1=0.1*tth;
 real d2=-0.9*tth, f2=0.1*tth;
 real H1=-HH, H2=-HH;
 setLinearThickeningIce(d1, d2, f1, f2);
 setLinearThickeningCavity(H1, H2, d1, d2);
+*/
+
+iceBEDMAP2(6,1);
 
 //Change to iceberg with the simple macro
-iceshelf2iceberg;
+//iceshelf2iceberg;
 
 //Uniform mesh refinement
-//refineMesh;
+refineMesh;
 
 //Solve the eigenvalue problem associated with the ice.
 solveEigen;
@@ -73,4 +77,3 @@ if(mpirank==0)
      //savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order); 
      //savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1); 
  }
-
