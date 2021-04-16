@@ -11,10 +11,10 @@
 
 ## Introduction
 
-This iteration of iceFEM implements the algorithms in parallel with an aim to solve bigger problems. For this implementation, the program requires the ``MPI`` version of FreeFem installed. If the full program is installed, the parallel version is available by default. For the main branch visit the link [here](https://github.com/Balaje/iceFem/tree/master). To download the package, use
+This iteration of iceFEM implements the algorithms in parallel with an aim to solve bigger problems. For this implementation, the program requires the ``MPI`` version of FreeFem installed. If the full program is installed, the parallel version is available by default. For the main branch visit the link [here](https://github.com/Balaje/iceFem/tree/master). To download the latest release (this could be a development release and some components may not work properly) package, use
 
 ``` shell
-wget https://github.com/Balaje/iceFem/archive/refs/tags/v1.0.zip -O icefem.zip
+wget https://github.com/Balaje/iceFem/archive/refs/tags/v1.0.2.zip -O icefem.zip
 unzip -q icefem.zip
 ```
 
