@@ -1,9 +1,9 @@
 # iceFEM [![DOI](https://zenodo.org/badge/256385996.svg)](https://zenodo.org/badge/latestdoi/256385996) [![status](https://joss.theoj.org/papers/a75e3345a2565e1dcd114c965d7db1e7/status.svg)](https://joss.theoj.org/papers/a75e3345a2565e1dcd114c965d7db1e7)           
 ## Dependencies
 - [**FreeFem**](https://freefem.org):
-    A high level multiphysics finite element software. Full version with the `MPI` implementation and the `ffddm` module is required. The full version can be downloaded from the official website.
-- [**Bedmap2 Toolbox**](https://au.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab):      
-    To obtain real--life shelf/cavity data. This is available as a MATLAB toolbox.
+  A high level multiphysics finite element software. Full version with the `MPI` implementation and the `ffddm` module is required. The full version can be downloaded from the official website.
+- [**Bedmap2 Toolbox**](https://au.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab):  
+  To obtain real--life shelf/cavity data. This is available as a MATLAB toolbox.
 - **MATLAB**:
   This is really not a constraint if you are using the package without the BEDMAP2 plugin. Interpolation and related operations can be done using other packages. However, a list of `MATLAB` scripts are available for this purpose to make things easier.
 - **Unix based OS:**
@@ -30,7 +30,7 @@ export FF_INCLUDEPATH="$PWD/include" #Add the include/ folder into the FreeFem++
 ./genDir.sh [YOUR_DIRECTORY NAME]
 ```
 
-The `genDir.sh` script creates the directory structure used by the package to write the relevant files. This assumes that the `MATLAB` scripts in the `modules` folder is being used. For example running
+The `genDir.sh` script creates the directory structure used by the package to write the relevant files.
 
 ```shell
 ./genDir.sh 1_SIMPLE5
@@ -52,9 +52,16 @@ produces the following directories inside.
 │   └── RefCoeff_Rad # [FEM] To store the Radiation reflection coefficients
 └── 2_Stresses # [FEM] To store the stresses
 ```
-The default directory name can be changed in the FreeFem code by setting the variable `SolutionDir`. Run
+The working directory can be setup directly from the code using the `setupWorkingDir` macro.
+
+```cpp
+setupWorkingDir("1_SIMPLE5/")
+SolutionDir="1_SIMPLE5/";
+```
+
+The default directory name can be changed in the FreeFem code by setting the variable `SolutionDir` in the program. Run
 ```shell
-mpirun -np 2 FreeFem++-mpi -v 0 iceshelf2d.edp -nev 16 -Tr 80 -hsize 0.05 -notchHeight 0.0 -isUniRef 0 -isSplit 1 -N 15
+mpirun -np 2 FreeFem++-mpi -v 0 iceshelf2d.edp -nev 8 -Tr 80 -hsize 0.05 -isUniRef 0 -isSplit 1 -N 15
 ```
 This command command computes the solution for a default uniform ice-shelf and cavity with
 
@@ -66,20 +73,16 @@ This command command computes the solution for a default uniform ice-shelf and c
 To specify more inputs, one can use the following command
 
 ```shell
-mpirun -np 2 FreeFem++-mpi -ne -v 0 simple5.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS OF ICE]
+mpirun -np 2 FreeFem++-mpi -ne -v 0 iceshelf2d.edp -L [LENGTH] -H [DEPTH OF CAVITY] -h [THICKNESS OF ICE]
                                  -N [MESH PARAM]
                                  -Tr [REAL(period)] -Ti [IMAG(period)]
-                                 -iter [SOL. INDEX]
-                                 -isUniIce [ON/OFF UNIFORM/NON UNIFORM ICE]
-                                 -isUniCav [ON/OFF UNIFORM/NON UNIFORM CAVITY]
+                                 -iter [SOL. INDEX]    
                                  -isSplit [ON/OFF DOMAIN SPLITTING]
                                  -notchHeight [HEIGHT_FRAC_THICKNESS]
                                  -notchWidth [HEIGHT_FRAC_THICKNESS]
-                                 -notchLoc [LOC_FRAC_LENGTH]   
-                                 -isUniRef [ON/OFF Uniform Refinement]                              
+                                 -notchLoc [LOC_FRAC_LENGTH]         
 ```
-
-The non-uniform refinement is performed proportional to shelf thickness. To specify the dimension of the problem and the polynomial order of approximation, define the following macros in the code
+The notch dimensions are only available in the `iceBEDMAP2` macro. To specify the dimension of the problem and the polynomial order of approximation, define the following macros in the code
 
 ```cpp
 macro dimension 2//EOM" (dim=2)
@@ -88,11 +91,11 @@ macro fspace 2//EOM" (fespace=P2)
 
 to solve a 2D problem using quadratic triangular elements. Note that FreeFem offers support only for triangles/tetrahedrons. The non-local boundary condition has been extended to accommodate  more general cases.
 
+The same code can be used to solve a variety of problems, including 2D/3D icebergs, ice-shelves
 
 **Example 1: Ice shelf motion**
 
 ```shell
-./genDir.sh 1_SIMPLE5
 mpirun -np 4 FreeFem++-mpi -ne -v 0 iceshelf2d.edp -L 10000 -H 800 -h 200 -N 10 -Tr 200 -Ti 0 -iter 0 -hsize 0.04 -isSplit 1
 ```
 
@@ -117,20 +120,28 @@ All the visualization is performed using Paraview. The code produces the followi
 
 **Example 2: Floating elastic plate Motion**
 
+The same code can used to model motion of icebergs. Add the line
+
+```cpp
+iceshelf2iceberg;
+```
+
+to switch the mesh to an iceberg. This simply replaces the clamped condition on  the ice-shelf to a free-boundary condition (`label=2` to `label=1`) and the no-flow boundary on the clamped end of the cavity is replaced by the outlet boundary condition (`label=6` to `label=5`).
+
 Run:
 ```shell
-./genDir.sh 2_ICEBERG
-mpirun -np 2 FreeFem++-mpi -v 0 iceberg.edp -N1 20 -N2 30 -Tr 40 -L 3000 -H 2000 -h 200 -nev 8 -iter test
+mpirun -np 4 FreeFem++-mpi -ne -v 0 iceshelf2d.edp -L 10000 -H 800 -h 200 -N 10 -Tr 80 -Ti 0 -iter 0 -hsize 0.04 -isSplit 1
 ```
-solves the floating elastic plate vibration problem for an incident period of ``T=40s``. The output is shown in the Figure below:
+solves the floating elastic plate vibration problem for an incident period of ``T=80s``. The output will be something similar to the Figure below:
 
-![Displacement](./Images/iceberg1.png)
+| ![Displacement](./Images/iceberg1.png)
+| -----------
 
 The reflection (`R`) and transmission (`T`) coefficients are shown in the Table below:
 
 T(in s) | `R`(omega) | `T`(omega) | abs(`R`)^2+abs(`T`)^2 |
 --- | --- | --- | --- |
-T=40 s | (0.475792,-0.647576) | (0.479653,0.352414) | 1.00000 |
+T=40 s | (0.0975578,-0.0654793) | (-0.553401,-0.82469) | 1.00009 |
 
 which verifies the energy conservation result. Note that the transmission coefficient `T=0` in ice--shelf case since there is no transmission. The Q-operator boundary condition is applied on both the ends while the wave forcing function is applied only on the left hand side (inlet boundary).
 
@@ -139,17 +150,26 @@ which verifies the energy conservation result. Note that the transmission coeffi
 
 Real-life ice-shelf profiles can be obtained using the BEDMAP2 dataset to generate the finite element meshes. Download the BEDMAP2 dataset [here](https://www.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab). The BEDMAP2 dataset is integrated with the code in a similar fashion to the [main branch](https://github.com/Balaje/iceFem/tree/master#bedmap2-integration). The profiles are generated using the MATLAB code ```bedMapProfile.m```. Once the profiles are generated, the resulting problem could be solved using the FreeFem code.
 
-A sample profile has been added in the ```Meshes/BEDMAP2/``` folder. The sample profiles include the cavity region beyond the ice shelf. To generate the directories for BEDMAP2. Run
+A sample profile has been added in the ```Meshes/BEDMAP2/``` folder. The sample profiles include the cavity region beyond the ice shelf. Again the same script can be used to model a BEDMAP2 problem. Instead of the code block to set linear thicknening ice, we use the `iceBEDMAP2()` macro instead.
 
-```shell
-./genDir.sh 1_BEDMAP2
+``` cpp
+/*
+setProblem; //To setup an example problem.
+real d1=-0.9*tth, f1=0.1*tth;
+real d2=-0.9*tth, f2=0.1*tth;
+real H1=-HH, H2=-HH;
+setLinearThickeningIce(d1, d2, f1, f2);
+setLinearThickeningCavity(H1, H2, d1, d2);
+*/
+
+iceBEDMAP2(6,1); //6 indicates the number of borders in the cavity mesh.
+                 //4 if the mesh is restricted under the shelf.
 ```
 
- Run the following command to generate the solution for two incident wave periods.
-
-```shell
-mpirun -np 2 FreeFem++-mpi -ne -v 0 solveBEDMAP2.edp -isMesh 1 -iter 1 -hsize 0.08 -Tr 200 -notchHeight 0.0 -N 5
-mpirun -np 2 FreeFem++-mpi -ne -v 0 solveBEDMAP2.edp -isMesh 0 -iter 1 -hsize 0.08 -Tr 4000 -notchHeight 0.0 -N 5
+Then run without specifying the dimensions of the ice-shelf
+``` shell
+mpirun -np 4 FreeFem++-mpi -v 0 iceshelf2d.edp -Tr 200 -isSplit 1 -iter 0
+mpirun -np 4 FreeFem++-mpi -v 0 iceshelf2d.edp -Tr 4000 -isSplit 1 -iter 0
 ```
 
 and it produces the following outputs. Note the scales along the ``y`` axis is exaggerated for better visualization.
@@ -162,13 +182,38 @@ The reflection coefficients are tabulated below:
 
 T | Reflection Coefficient, `R` | abs(`R`) |
 ---| ---- | ---- |
-200 s| (-0.823879,-0.566776) |  1.000006|
-4000 s | (-0.987549,-0.157312) | 1.000000 |
+200 s| (-0.12685,-0.991929) |  1.00001|
+4000 s | (-0.983021,-0.183491) | 1.00000 |
 
 
-## 3D Problems
+## 3D Problems (Ongoing work)
 
 3D problems are much more challenging to solve that 2D problems. The eigenmode decomposition of the ice-shelf typically consists of lower order vibration modes in the third direction. The modal decomposition often yield these vibration modes in an arbitrary order and thus simple solutions to the frequency domain problems are often harder to approximate. Hence, more analysis (including validation) is required to study these problems in detail. Nevertheless, preliminary support has been extended to 3D cases as well.
+
+Change/Add/Comment following lines in the 2D code:
+
+```cpp
+macro dimension 3//EOM" Set dimension 3
+macro fspace 1//EOM" Set fspace 1. fspace 2 does not work due to some bug.
+//refineMesh; //Comment out refineMesh.
+```
+
+Run the code, for example
+
+``` shell
+mpirun -np 2 FreeFem++-mpi -ne -v 0 iceshelf2d.edp -L 10000 -H 800 -h 200 -N 3 -Tr 200 -Ti 0 -iter 0 -isSplit 1
+```
+
+should solve the problem and return
+
+Reflection coefficient, R | abs(R) |
+-- | -- |
+(-0.475759,0.882548) | 1.00261 |
+
+
+### Old example:
+
+*Checkout the branch `ParIceFem` for the following example.*
 
 All the macros should work if the correct dimension has been specified and the correct meshes are being used. Example meshes are available in ```Meshes/*.mesh```. The associated FreeFem script is `iceshelf3d.edp`.
 
@@ -188,4 +233,4 @@ This is joint work with my supervisors:
 - [Luke Bennetts](https://luke-bennetts.com/), University of Adelaide.
 
 ## Contact:
-- Balaje K,  [balaje6@gmail.com](mailto:balaje6@gmail.com)
+- If there are any issues contact, Balaje K,  [balaje6@gmail.com](mailto:balaje6@gmail.com), or use the issue tracker to raise an issue.
