@@ -12,35 +12,47 @@
 macro setLinearThickeningIce(draft1, draft2, free1, free2)
 {
     int N1 = getARGV("-N",3);
-    IFMACRO(dimension,3)
-        if(mpirank==0)
-            cout<<"Dimension should be 2 to use this routine"<<endl;
-        exit(0);
-    ENDIFMACRO
     dd=abs(draft1);
-    real slope1=(free2-free1)/LL, slope2=(draft2-draft1)/LL;
-    real intercept1=free1, intercept2=draft1;
-    border I01(t=0,LL) {x=t; y=slope2*t+intercept2; label=3;};
-    border I02(t=draft2,free2) {x=LL; y=t; label=2;};
-    border I03(t=LL,0) {x=t; y=slope1*t+intercept1; label=1;};
-    border I04(t=free1,draft1) {x=0; y=t; label=1;};
-    ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(N1));
+    IFMACRO(dimension,3)
+        if(mpirank==0){
+            cout<<"Dimension should be 2 to use this routine with linear thickening. I am returning a uniform version instead."<<endl;
+        }
+    
+        int[int] lb1=[3,2,1,1,1,1];
+        ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth)*y,tth*z],label=lb1); 
+    ENDIFMACRO
+    IFMACRO(dimension,2)
+        real slope1=(free2-free1)/LL, slope2=(draft2-draft1)/LL;
+        real intercept1=free1, intercept2=draft1;
+        border I01(t=0,LL) {x=t; y=slope2*t+intercept2; label=3;};
+        border I02(t=draft2,free2) {x=LL; y=t; label=2;};
+        border I03(t=LL,0) {x=t; y=slope1*t+intercept1; label=1;};
+        border I04(t=free1,draft1) {x=0; y=t; label=1;};
+        ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(N1));
+    ENDIFMACRO
+    savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.mesh");        
 }//EOM"
 macro setLinearThickeningCavity(Height1, Height2, draft1, draft2)
 {
     int N1 = getARGV("-N",3);
     IFMACRO(dimension,3)
-        if(mpirank==0)
-            cout<<"Dimension should be 2 to use this routine"<<endl;
-        exit(0);
+        if(mpirank==0){
+            cout<<"Dimension should be 2 to use this routine with linear thickening. I am returning a uniform version instead."<<endl;
+        }
+        int[int] lb1=[1,6,3,4,1,1];
+        ThCavity=cube(LL/tth*N1,N1,N1,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb1); 
     ENDIFMACRO
-    real slope1=(draft2-draft1)/LL, slope2=(Height2-Height1)/LL;
-    real intercept1=draft1, intercept2=Height1;
-    border C01(t=0,LL) {x=t; y=slope2*t+intercept2+0*sin(pi*x/LL)*x/LL; label=1;};
-    border C02(t=Height2,draft2) {x=LL; y=t; label=6;};
-    border C03(t=LL,0) {x=t; y=slope1*t+intercept1; label=3;};
-    border C04(t=draft1,Height1) {x=0; y=t; label=4;};
-    ThCavity = buildmesh(C01(LL/tth*N1)+C02(N1)+C03(LL/tth*N1)+C04(LL/tth*N1));
+        
+    IFMACRO(dimension,2)
+        real slope1=(draft2-draft1)/LL, slope2=(Height2-Height1)/LL;
+        real intercept1=draft1, intercept2=Height1;
+        border C01(t=0,LL) {x=t; y=slope2*t+intercept2+0*sin(pi*x/LL)*x/LL; label=1;};
+        border C02(t=Height2,draft2) {x=LL; y=t; label=6;};
+        border C03(t=LL,0) {x=t; y=slope1*t+intercept1; label=3;};
+        border C04(t=draft1,Height1) {x=0; y=t; label=4;};
+        ThCavity = buildmesh(C01(LL/tth*N1)+C02(N1)+C03(LL/tth*N1)+C04(LL/tth*N1));
+    ENDIFMACRO
+    savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.mesh");        
 }//EOM"
 
 
@@ -65,7 +77,7 @@ macro iceBEDMAP2(nborders, isBuild)
 {
     IFMACRO(dimension,3)
         cout<<"dimension should be 2 to use BEDMAP2 "<<endl;
-        exit(0);
+        exit(1);
     ENDIFMACRO
     ifstream file("./Meshes/BEDMAP2/iceDat.dat");
     ifstream file1("./Meshes/BEDMAP2/iceCavInt_Breaks.dat");
@@ -328,11 +340,7 @@ macro splitMesh(isSplit)
 ENDIFMACRO
 
 macro iceshelf2iceberg()
-{
-    IFMACRO(dimension, 3)
-        cout<<"Function works only for 2d at the moment"<<endl;
-        exit(1);
-    ENDIFMACRO
+{    
     int[int] lbl=[3,3,2,1,1,1,1,1];
     ThIce=change(ThIce,label=lbl);
     lbl=[1,1,6,5,3,3,4,4];

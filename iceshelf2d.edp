@@ -1,11 +1,11 @@
-//Example problem to solve the frequency domain problem of iceshelf.
+//Example problem to solve the frequency domain problem of iceshelf/iceberg.
 //Always set the dimension and fspace order.
-macro dimension 2//EOM"
-macro fspace 2//EOM"
+macro dimension 3//EOM"
+macro fspace 1//EOM"
 
 include "macros.idp"
 setupWorkingDir("ICESHELF2/")
-SolutionDir="ICESHELF2/";
+SolutionDir="ICESHELF3/";
     
 setProblem; //To setup an example problem.
 
@@ -17,10 +17,10 @@ setLinearThickeningIce(d1, d2, f1, f2);
 setLinearThickeningCavity(H1, H2, d1, d2);
 
 //Change to iceberg with the simple macro
-//iceshelf2iceberg;
+iceshelf2iceberg;
 
 //Uniform mesh refinement
-refineMesh;
+//refineMesh;
 
 //Solve the eigenvalue problem associated with the ice.
 solveEigen;
@@ -69,8 +69,8 @@ if(mpirank==0)
      cout<<"Transmission Coeff = "<<RefT<<endl;
      cout<<"Energy conservation = "<<sqrt(abs(RefR)^2+abs(RefT)^2)<<endl;
 
-     int[int] Order1=[1,1,1],Order=[1,1];
-     savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order); 
-     savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1); 
+     //int[int] Order1=[1,1,1],Order=[1,1];
+     //savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order); 
+     //savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1); 
  }
 

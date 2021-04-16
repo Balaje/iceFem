@@ -89,7 +89,12 @@ int nfreq=getARGV("-nfreq",199);
 complex[int,int] UXT(Vh.ndof,nfreq), UYT(Vh.ndof,nfreq);
 
 //Finite element function corresponding to the invacuo modes
+IFMACRO(dimension,2)
 Xh[int][VX,VY](nev);
+ENDIFMACRO
+IFMACRO(dimension,3)
+Xh[int][VX,VY,VZ](nev);
+ENDIFMACRO
 real[int] ev(nev);
 //Diffraction and radiation potentials
 Wh<complex> phi0;
