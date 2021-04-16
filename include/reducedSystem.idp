@@ -224,7 +224,7 @@ macro solveReducedSystem(){
     xi.resize(nev);    
     matrix<complex> Kmat, Bmat, ABmat;
     Kmat=K;  Bmat=B; ABmat=AB;
-    HHmat=Kmat+Bmat+ABmat;
+    matrix<complex> HHmat=Kmat+Bmat+ABmat;
     set(HHmat,solver=UMFPACK,eps=1e-20);
     xi=HHmat^-1*F;
     ofstream file1(SolutionDir+"/2_ModesMatrix/lambdaj"+iter+".dat");
@@ -266,8 +266,8 @@ macro writeReducedSystem()
     file8.precision(16);
 
 
-    file7<<real(DifRef)<<"\t"<<imag(DifTra)<<endl;
-    file8<<real(DifRef)<<"\t"<<imag(DifTra)<<endl;
+    file7<<real(DifRef)<<"\t"<<imag(DifRef)<<endl;
+    file8<<real(DifTra)<<"\t"<<imag(DifTra)<<endl;
     for(int m=0; m<nev; m++)
     {
         file3<<real(F[m])<<endl;
@@ -280,4 +280,28 @@ macro writeReducedSystem()
             file2<<imag(B(m,n)+K(m,n)+AB(m,n))<<endl;
         }
     }
+}//EOM"
+
+//Macro to build the solution from the coefficients.
+macro buildFinalSolution()
+{
+    buildPartiCPU(nev);
+    Vh<complex> etaxProc, etayProc, etazProc;
+    Wh<complex> phiProc;
+    for(int m=start; m<=stop; m++)
+    {
+        phiProc = phiProc + xi[m]*phij[m];
+        etaxProc = etaxProc + xi[m]*VX[m];
+        etayProc = etayProc + xi[m]*VY[m];
+        IFMACRO(dimension,3)
+            etazProc = etazProc + xi[m]*VZ[m];
+        ENDIFMACRO        
+    }
+    mpiReduce(phiProc[],phi[],processor(0),mpiSUM);
+    mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
+    mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
+    IFMACRO(dimension,3)
+        mpiReduce(etazProc[],etaz[],processor(0),mpiSUM);
+    ENDIFMACRO        
+   phi=phi+phi0;
 }//EOM"

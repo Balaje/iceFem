@@ -3,6 +3,8 @@
 */
 macro solveDispersion()
 {
+    if(mpirank==0)    
+        cout<<"\nDepth H = "<<HH<<"\t Draft d = "<<dd<<endl<<"Solving dispersion equation ..."<<endl;
     k.resize(NModes+1);
     kd.resize(NModes+1);
     complex alpha = Lc*omega^2/ag;

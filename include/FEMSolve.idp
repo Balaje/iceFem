@@ -175,10 +175,10 @@ macro getLaplaceMatDBC(a,b,c){
     IFMACRO(dimension,3)
         varf lh(phih,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih) + on(4,phih=fh);
     ENDIFMACRO
-        IFMACRO(dimension,2)
+    IFMACRO(dimension,2)
         varf lh(phih,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih) + on(4,phih=fh);
     ENDIFMACRO
-        varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
+    varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
     STIMA=ah(Wh,Wh);
     BMASSMA=bMh(Wh,Wh);
     RHS[]=lh(0,Wh);
@@ -193,3 +193,55 @@ macro getLaplaceMatEBdbc(m,rad){
     BMASSMA=bMh(Wh,Wh);
     RHS[]=lh(0,Wh);
 }//Same as above but for EB DBC.
+
+
+/* 
+Special macros for solving the diffraction and radiation problems. 
+Only linear elasticity implemented. 
+[TODO] Thin-beam
+*/
+macro solveDiffractionProblem(BCMAT, chi1){
+    if(mpirank==0)
+        cout<<"\nSolve diffraction problem"<<endl;
+    func fh=chi1;
+    getLaplaceMat(0,0,0);
+    BMASSMA=alpha*BMASSMA;
+    LHS=STIMA+BCMAT+(BMASSMA);
+    set(LHS,solver=sparsesolver);
+    phi0[]=LHS^-1*RHS[];
+    getRefCoeff(4,phi0,DifRef);
+    getRefModes(5,phi0,DifTra);
+}//EOM"
+
+macro solveRadiationProblem(BCMAT){
+    if(mpirank==0)
+        cout<<"\nSolve radiation problems"<<endl;
+    buildPartiCPU(nev);
+    complex[int] RadRefProc(nev), RadTraProc(nev);
+    complex[int,int] PHIJ(Wh.ndof, nev), PHIJProc(Wh.ndof,partisize);
+    Wh<complex> phih;
+    for(int m=start; m<=stop; m++)
+    {
+        func fh=0;
+        IFMACRO(dimension, 2)
+            getLaplaceMat(VX[m],VY[m],0);
+        ENDIFMACRO
+        IFMACRO(dimension, 3)
+            getLaplaceMat(VX[m],VY[m],VZ[m]);
+        ENDIFMACRO
+        BMASSMA=alpha*BMASSMA;        
+        LHS=STIMA+(BCMAT)+BMASSMA;
+        set(LHS,solver=sparsesolver);
+        phih[]=LHS^-1*RHS[];
+        phij[m]=phih;
+        getRefModes(5,phih,RadTraProc[m]);
+        getRefModes(4,phih,RadRefProc[m]);
+        PHIJProc(:,m-start) = phij[m][];        
+    }    
+    mpiAllReduce(RadRefProc, RadRef, mpiCommWorld, mpiSUM);
+    mpiAllReduce(RadTraProc, RadTra, mpiCommWorld, mpiSUM);
+    int[int] rcounts1=rcounts*Wh.ndof, dspls1=dspls*Wh.ndof;
+    mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
+    for(int m=0; m<nev; m++)
+        phij[m][]=PHIJ(:,m);
+}//EOM"

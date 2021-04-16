@@ -2,7 +2,8 @@
 
 
 //Compute the reflection coefficient of the Diffraction problem
-macro getRefCoeff(bInd,phi,Ref){
+//TODO - varying draft in the case of iceberg.
+macro getRefCoeff(bInd,phi,Ref){   
     complex[int] aa(NModes+1), bb(NModes+1), c(NModes+1);
     for(int m=0; m<NModes+1; m++)
     {

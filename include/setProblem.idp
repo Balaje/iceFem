@@ -91,6 +91,12 @@ complex[int,int] UXT(Vh.ndof,nfreq), UYT(Vh.ndof,nfreq);
 //Finite element function corresponding to the invacuo modes
 Xh[int][VX,VY](nev);
 real[int] ev(nev);
+//Diffraction and radiation potentials
+Wh<complex> phi0;
+Wh<complex>[int] phij(nev);
+//Shelf displacements and final velocity potential
+Vh<complex> etax, etay, etaz;
+Wh<complex> phi;
 
 //Main macro to set the problem parameters
 macro setProblem()
