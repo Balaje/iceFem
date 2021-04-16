@@ -1,0 +1,99 @@
+/*
+  Module to implement dispersion equations and nonlocal boundary conditions
+*/
+macro solveDispersion()
+{
+    k.resize(NModes+1);
+    kd.resize(NModes+1);
+    complex alpha = Lc*omega^2/ag;
+    k = dispersionfreesurface(alpha, NModes, HH);
+    k[0] = -k[0];
+    kd = dispersionfreesurface(alpha, NModes, HH-dd);
+    kd[0] = -kd[0];
+}//Macro to solve the dispersion equations. Updates the keywords k, kd
+
+//Macro to construct the matrices associated with the non-local boundary condition
+macro getMat(A, f, g, MM, MMt){
+    func complex innerproduct(complex k, complex kappa, real H, real d)
+    {
+        if(abs(k-kappa) >= 1e-7){
+            complex V1=exp(-1i*k*d)*(exp(-2i*k*(H-d))+1)/(exp(-2i*k*H)+1);
+            complex V2=-1i*exp(-1i*k*d)*(-exp(-2i*k*(H-d))+1)/(exp(-2i*k*H)+1);
+            return ((kappa*tan(kappa*(H-d))*V1 - k*V2)/(kappa^2-k^2));
+        }
+        else{
+            complex V2=-1i*exp(-1i*k*d)*(-exp(-2i*k*(H-d))+1)/(exp(-2i*k*H)+1);
+            return ( (2*exp(-1i*k*(2*H-d))*(H-d))/((1+exp(-2i*k*H))*(1+exp(-2i*k*(H-d)))) + 1/(2*k)*V2 );
+        }
+    }
+    A = 0.; MM = 0.; MMt = 0.; f = 0.; g = 0.;
+    for(int m=0; m<NModes+1; m++)
+    {
+        A(m,m) = k[m]*innerproduct(k[m], k[m], HH, 0);
+        f(m) = Ap*innerproduct(k[0], kd[m], HH, dd);
+        for(int n=0; n<NModes+1; n++)
+        {
+            MM(m,n) = innerproduct(k[n], kd[m], HH, dd);
+            MMt(n,m) = MM(m,n);
+        }
+    }
+    g(0) = -Ap*A(0,0);
+}//EOM"
+
+//Non-local boundary condition
+//Label - 3, Wetted Surface
+//Label - 4, Inlet boundary
+//Label - 5, Ocean surface (if any)
+macro getQphi(bInd,MQ){
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    int nbv = ThCavity.nv;
+    getMat(A, f, g, MM, MMt);
+    complex [int,int] pp(NModes+1,Wh.ndof), ppt(Wh.ndof,NModes+1);
+    pp = 0;
+    ppt = 0;
+    for(int m=0; m<NModes+1; m++)
+    {
+        IFMACRO(dimension,2)
+            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
+        ENDIFMACRO
+            IFMACRO(dimension,3)
+            func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
+        ENDIFMACRO
+
+            varf boundaryip(unused,vh) = intN1(ThCavity,bInd,qforder=10)(eigenfunc*vh);
+        Wh<complex> ph;
+        ph[] = boundaryip(0,Wh);
+        pp(m,:) = ph[];
+        ppt(:,m) = ph[];
+    }
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    complex [int,int] tP = T*pp;
+    matrix<complex> ttP=tP;
+    matrix<complex> pt=ppt;
+    MQ=pt*ttP;
+}//EOM to compute Qphi"
+
+//Reserved keyword for source function
+macro getChi(chi1){
+    ctilde.resize(NModes+1);
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    getMat(A, f, g, MM, MMt);
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    complex [int] Mg = MMtinv*g;
+    complex [int] Tf = T*f;
+    ctilde = Mg - Tf;
+
+    for(int m=0; m<NModes+1; m++)
+        chi1=chi1+ctilde[m]*exp(1i*kd[m]*(y+dd))*((1+exp(-2i*kd[m]*(y+HH)))/(1+exp(-2i*kd[m]*(-dd+HH))));
+}//EOM to compute ctilde"
+
+
+/* END OF MODULE TO DO NON-LOCAL BOUNDARY CONDITION */

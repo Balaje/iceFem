@@ -1,0 +1,196 @@
+//--- BEGIN idp file containing the problem setup.
+load "lapack"
+load "iovtk"
+load "medit"
+include "getARGV.idp"
+include "functions.idp"
+//From the domain decomposition module
+include "macro_ddm.idp"
+include "ffddm_parameters.idp"
+include "ffddm_partitioning.idp"
+macro def(u) u//EOM
+macro init(u) u//EOM
+
+//Definition of the empty finite element spaces and gradient-divergence macros.
+IFMACRO(dimension,2)
+macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
+macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
+macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
+cout<<"Dimension : 2"<<endl;
+macro minimalMesh()square(2,2)//EOM
+meshN ThIce=minimalMesh;
+meshN ThCavity=minimalMesh;
+IFMACRO(fspace,1)
+fespace Vh(ThIce,P1);
+fespace Xh(ThIce,[P1,P1]);
+fespace Wh(ThCavity,P1);
+ENDIFMACRO
+IFMACRO(fspace,2)
+fespace Vh(ThIce,P2);
+fespace Xh(ThIce,[P2,P2]);
+fespace Wh(ThCavity,P2);
+ENDIFMACRO
+ENDIFMACRO
+
+// For 3 dimensions
+IFMACRO(dimension,3)
+macro grad(u) [dx(u),dy(u),dz(u)]//EOM" //Gradient
+macro epsilon(u,v,w)[dx(u),dy(v),dz(w),1/sqrt(2.)*(dy(u)+dx(v)),1/sqrt(2.)*(dz(u)+dx(w)),1/sqrt(2.)*(dz(v)+dy(w))]//Eom"
+macro div(u,v,w)(dx(u)+dy(v)+dz(w))//Eom"
+cout<<"Dimension : 3"<<endl;
+macro minimalMesh()cube(1,1,1)//EOM
+meshN ThIce=minimalMesh;
+meshN ThCavity=minimalMesh;
+IFMACRO(fspace,1)
+fespace Vh(ThIce,P1);
+fespace Xh(ThIce,[P1,P1,P1]);
+fespace Wh(ThCavity,P1);
+ENDIFMACRO
+IFMACRO(fspace,2)
+fespace Vh(ThIce,P2);
+fespace Xh(ThIce,[P2,P2,P2]);
+fespace Wh(ThCavity,P2);
+ENDIFMACRO
+ENDIFMACRO
+
+
+//Material/Problem Constants
+//These are keywords which can be set manually by the user. Will also be set by the setProblem() macro.
+real lambdahat, muhat, gammahat, deltahat, densRat; 
+real rhoi, rhow, Ad; 
+real Lc, tc; //Non dim-parameters.
+string SolutionDir; //Working Directory set by the user.
+int NModes=getARGV("-NModes",3);
+int nev=getARGV("-nev",16);
+real LL, HH, dd, tth, ag; //Non dimensional spatial parameters
+complex omega, Ap, tt, alpha; //Complex wave-periods and frequencies.
+string iter=getARGV("-iter","0"); //Solution name.
+real[int] mu(nev); //The eigenvalues corresponding to the thin-plate problem
+complex[int] k(NModes+1), kd(NModes+1); //Wave-numbers corresponding to the original ocean depth and submergence.
+complex[int] ctilde(NModes+1); //Right-hand side source function corresponding to the non-local boundary condition
+//Matrix-vector to store the linear system of the Poisson equation
+matrix<complex> STIMA, BMASSMA;
+matrix<complex> LHS;
+Wh<complex> RHS, phih; //Cavity finite element space.
+func fh=0; //Forcing function corresponding to ctilde.
+//Keywords for the components of the reduced system.
+complex[int,int] B(nev,nev), K(nev,nev), AB(nev,nev);
+complex[int] F(nev);
+matrix<complex> HMat;
+complex[int] xi(nev);
+//Keywords for the reflection and transmission coefficients
+complex DifRef, DifTra;
+complex[int] RadRef(nev), RadTra(nev);
+//Partitioning for parallel solve
+int[int] rcounts(mpisize), dspls(mpisize);
+int parti, rem, start, stop, partisize;
+//Variables for extracting the interpolated solutions
+int nfreq=getARGV("-nfreq",199);
+complex[int,int] UXT(Vh.ndof,nfreq), UYT(Vh.ndof,nfreq);
+
+//Finite element function corresponding to the invacuo modes
+Xh[int][VX,VY](nev);
+real[int] ev(nev);
+
+//Main macro to set the problem parameters
+macro setProblem()
+{
+    real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
+    real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
+    complex t = Tr+1i*Ti;
+    real E, nu;
+    real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
+    real EI = E*th^3/(12*(1-nu^2));
+    Lc = (EI/(rhow*ag))^(1./4.);
+    tc = sqrt(rhow*Lc^6/(EI*H));    
+    real d = rhoi/rhow*th;
+    omega = 2*pi/t;
+    LL = L/Lc;
+    HH = H/Lc;
+    dd = d/Lc;
+    tth = th/Lc;
+    tt = t/tc;
+    complex ndOmega = 2*pi/tt;
+    alpha = HH*ndOmega^2;
+    Ap = ag/(1i*omega)*Ad;
+    real mu1 = elasCons[0], lambda = elasCons[1];
+    muhat = mu1/Lc^2;
+    lambdahat = lambda/Lc^2;
+    gammahat = rhow/Lc;
+    deltahat = rhow*ag/Lc;
+    densRat = rhoi/rhow;
+}//This is a macro for getting the parameters to set the problem
+
+macro setupWorkingDir(DirName) {
+    string CMD="./genDir.sh "+DirName;    
+    system(CMD);
+}//EOM"
+
+
+macro buildPartiCPU(len){
+    parti = len/mpisize;
+    rem = len%mpisize;
+    if(mpirank < rem){
+        start=mpirank*(parti+1);
+        stop=start+parti;
+    }
+    else{
+        start=mpirank*parti+rem;
+        stop=start+(parti-1);
+    }
+    partisize=stop-start+1;
+    int[int] dsplsProc(mpisize), rcountsProc(mpisize);
+    rcountsProc[mpirank]=((stop-start)+1);
+    dsplsProc[mpirank]=start;
+    mpiAllReduce(dsplsProc,dspls,mpiCommWorld,mpiSUM);
+    mpiAllReduce(rcountsProc,rcounts,mpiCommWorld,mpiSUM);    
+}//EOM to build CPU partitioning for parallel computation.
+
+macro readFile(rows,cols,filename,array){
+    ifstream file(filename);
+    for(int m=0; m<rows; m++)
+        for(int n=0; n<cols; n++)
+            file>>array(m,n);
+}//Macro to read files.EOM"
+
+/*
+This macro reads the latest mesh from the working directory and the corresponding invacuo modes.
+Then the interpolated solution is read from the working directory and reconstructs the solution.
+The mesh and eigenspace needs to be defined properly.
+If the user needs to solve and save the eigenvalue problem, set iseigen=true
+*/
+macro constructFineSpace(nfreq, iseigen)
+{
+    if(iseigen){
+        solveEigen;
+        writeEigen(false,true);        
+    }
+    UXT.resize(Vh.ndof,nfreq);
+    UYT.resize(Vh.ndof,nfreq);    
+    complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
+    real[int] tmp(Vh.ndof);
+    for(int m=0; m<nev; m++)
+    {        
+        ifstream filex(SolutionDir+"2_Modes/MODESX"+m+".dat");
+        filex>>tmp;
+        mx(m,:).re=tmp;
+        ifstream filey(SolutionDir+"2_Modes/MODESY"+m+".dat");
+        filey>>tmp;
+        my(m,:).re=tmp;
+    }
+    complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
+    readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat",lambdaRe);
+    readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat",lambdaIm);
+    complex[int,int] lambda=lambdaIm;
+    lambda*=1i;
+    lambda+=lambdaRe;
+    complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof);
+    UX=lambda*mx;
+    UY=lambda*my;
+    UXT=UX';
+    UYT=UY';
+    UXT=conj(UXT);
+    UYT=conj(UYT);
+}//Macro to extract the solution in the fine-frequency space. EOM"
+
+//--- END OF setProblem.idp
