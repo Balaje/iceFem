@@ -188,4 +188,4 @@ This is joint work with my supervisors:
 - [Luke Bennetts](https://luke-bennetts.com/), University of Adelaide.
 
 ## Contact:
-- Balaje K,  [balaje6@gmail.com](mailto:balaje6@gmail.com)
+- If there are any issues contact Balaje K,  [balaje6@gmail.com](mailto:balaje6@gmail.com), or use the issue tracker to raise an issue.
