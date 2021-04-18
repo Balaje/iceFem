@@ -41,6 +41,13 @@ real dOmegaFine=(omega1-omega0)/(nFreqFine);
 complex[int] omegaFine=omega0:dOmegaFine:omega1;
 complex[int,int] HFine(nev^2,nFreqFine), FFine(nev,nFreqFine);
 macro interpolateFreqReal(){
+    ofstream HRe(SolutionDir+"2_ModesMatrix/Interpolated_H/ReH.dat");
+    ofstream HIm(SolutionDir+"2_ModesMatrix/Interpolated_H/ImH.dat");
+    ofstream FRe(SolutionDir+"2_ModesMatrix/Interpolated_F/ReF.dat");
+    ofstream FIm(SolutionDir+"2_ModesMatrix/Interpolated_F/ImF.dat");
+    ofstream lamRe(SolutionDir+"2_ModesMatrix/Interpolated_L/lambdajRe.dat");
+    ofstream lamIm(SolutionDir+"2_ModesMatrix/Interpolated_L/lambdajIm.dat");
+    
     for(int m=0; m<nev^2; m++)
     {
         if(m<nev)
@@ -55,7 +62,7 @@ macro interpolateFreqReal(){
                 FFine(m,n)=FSplineRe(real(omegaFine[n]));
                 real tmp=FSplineIm(real(omegaFine[n]));
                 FFine(m,n)+=1i*tmp;
-            }
+            }            
         }
         complex[int] H1=HCoarse(m,:);
         real[int,int] DRe(2, H1.n), DIm(2, H1.n);
@@ -66,7 +73,34 @@ macro interpolateFreqReal(){
         for(int n=0; n<nFreqFine; n++){
             HFine(m,n)=HSplineRe(real(omegaFine[n]));
             real tmp=HSplineIm(real(omegaFine[n]));
-            HFine(m,n)+=1i*tmp;
+            HFine(m,n)+=1i*tmp;            
+        }        
+    }
+    for(int m=0; m<nFreqFine; m++)
+    {
+        complex[int,int] Hmat(nev,nev);
+        complex[int] Fmat(nev), lambda(nev);
+        for(int n=0; n<nev^2; n++)
+        {
+            HRe<<real(HFine(n,m))<<"\t";
+            HIm<<imag(HFine(n,m))<<"\t";
+            if(n<nev)
+            {
+                FRe<<real(FFine(n,m))<<"\t";
+                FIm<<imag(FFine(n,m))<<"\t";
+                Fmat[n]=FFine(n,m);
+            }
+            Hmat(n%nev, n/nev)=HFine(n,m);
         }
+        matrix<complex>HHmat=Hmat;        
+        set(HHmat,solver=sparsesolver);
+        lambda=HHmat^-1*Fmat;
+        for(int n=0; n<nev; n++)
+        {
+            lamRe<<real(lambda[n])<<"\t";
+            lamIm<<imag(lambda[n])<<"\t";
+        }
+        HRe<<"\n"; HIm<<"\n"; FRe<<"\n"; FIm<<"\n";
+        lamRe<<"\n"; lamIm<<"\n";
     }
 }//EOM"

@@ -107,7 +107,8 @@ Wh<complex> phi;
 macro setProblem()
 {
     real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
-    real Tr = getARGV("-Tr",200.), Ti = getARGV("-Ti",0.);
+    real omegar=getARGV("-omegar",2*pi/200), omegai=getARGV("-omegai",0);
+    real Tr = 2*pi/omegar, Ti=(omegai==0) ? 0 : 2*pi/omegai;
     complex t = Tr+1i*Ti;
     real E, nu;
     real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
