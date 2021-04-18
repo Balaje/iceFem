@@ -1,0 +1,72 @@
+//IDP file to perform interpolation on the frequency space.
+load "gsl"
+//Get the parameters from the user.
+int nFreqCoarse=getARGV("-nfreqcoarse",10);
+real omega0=getARGV("-omega0",2*pi*0.01);
+real omega1=getARGV("-omega1",2*pi*0.1);
+real dOmega=(omega1-omega0)/(nFreqCoarse);
+complex[int] omegaCoarse=omega0:dOmega:omega1;
+int startindx=getARGV("-startindx",1), endindx=getARGV("-endindx",10);
+if(nFreqCoarse != (endindx-startindx+1)) exit(1);
+complex[int,int] HCoarse(nev^2, nFreqCoarse), FCoarse(nev, nFreqCoarse);
+
+//Macro Read all the files and store in arrays. Updates HCoarse, FCoarse
+macro readCoarseFreq(){
+    HCoarse.resize(nev^2,nFreqCoarse);
+    FCoarse.resize(nev,nFreqCoarse);
+    for(int m=0; m<nFreqCoarse; m++)
+    {
+        ifstream HRe(SolutionDir+"2_ModesMatrix/ReH"+(m+startindx)+".dat");
+        ifstream HIm(SolutionDir+"2_ModesMatrix/ImH"+(m+startindx)+".dat");
+        ifstream FRe(SolutionDir+"2_ModesMatrix/ReF"+(m+startindx)+".dat");
+        ifstream FIm(SolutionDir+"2_ModesMatrix/ImF"+(m+startindx)+".dat");
+        for(int n=0; n<nev^2; n++)
+        {
+            HRe>>HCoarse(n,m);
+            real tmp; HIm>>tmp;
+            HCoarse(n,m)+=1i*tmp;
+            if(n<nev)
+            {
+                FRe>>FCoarse(n,m);
+                real tmp; FIm>>tmp;
+                FCoarse(n,m)+=1i*tmp;
+            }
+        }
+    }
+}//EOM"
+
+int nFreqFine=getARGV("-nfreqfine",200);
+if(nFreqFine==1) exit(1);
+real dOmegaFine=(omega1-omega0)/(nFreqFine);
+complex[int] omegaFine=omega0:dOmegaFine:omega1;
+complex[int,int] HFine(nev^2,nFreqFine), FFine(nev,nFreqFine);
+macro interpolateFreqReal(){
+    for(int m=0; m<nev^2; m++)
+    {
+        if(m<nev)
+        {
+            complex[int] F1=FCoarse(m,:);
+            real[int,int] DRe(2, F1.n), DIm(2, F1.n);
+            DRe(0,:)=omegaCoarse.re; DRe(1,:)=F1.re;
+            DIm(0,:)=omegaCoarse.re; DIm(1,:)=F1.im;
+            gslspline FSplineRe(gslinterplinear, DRe);
+            gslspline FSplineIm(gslinterplinear, DIm);
+            for(int n=0; n<nFreqFine; n++){
+                FFine(m,n)=FSplineRe(real(omegaFine[n]));
+                real tmp=FSplineIm(real(omegaFine[n]));
+                FFine(m,n)+=1i*tmp;
+            }
+        }
+        complex[int] H1=HCoarse(m,:);
+        real[int,int] DRe(2, H1.n), DIm(2, H1.n);
+        DRe(0,:)=omegaCoarse.re; DRe(1,:)=H1.re;
+        DIm(0,:)=omegaCoarse.re; DIm(1,:)=H1.im;
+        gslspline HSplineRe(gslinterplinear, DRe);
+        gslspline HSplineIm(gslinterplinear, DIm);
+        for(int n=0; n<nFreqFine; n++){
+            HFine(m,n)=HSplineRe(real(omegaFine[n]));
+            real tmp=HSplineIm(real(omegaFine[n]));
+            HFine(m,n)+=1i*tmp;
+        }
+    }
+}//EOM"

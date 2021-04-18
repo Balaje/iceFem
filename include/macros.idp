@@ -5,5 +5,6 @@ include "nonlocal.idp"
 include "FEMSolve.idp"
 include "reducedSystem.idp"
 include "refcoeff.idp"
+include "interpolateFreq.idp"
 
 //If the user wants to add new packages, add them here ...
