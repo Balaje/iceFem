@@ -181,7 +181,7 @@ T | Reflection Coefficient, `R` | abs(`R`) |
 200 s| (-0.12685,-0.991929) |  1.00001|
 4000 s | (-0.983021,-0.183491) | 1.00000 |
 
-## Time Domain simulations
+## Time domain simulations
 
 Simple time-domain simulations can be run using the current version. Create a raw file **(Eg. FAmp.dat)** containing 3 columns - the frequency space, the amplitude as a function of frequency and the phase associated with the frequency. Then use the routine
 
@@ -191,10 +191,11 @@ real[int] time=-T:dt:T;
 constructTimeDomainSol("FAmp.dat",time)
 ```
 
-where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample comparing an ice-shelf and an iceberg motion subject to the same incident wave forcing. 
+where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample comparing an ice-shelf and an iceberg motion subject to the same incident wave forcing.
 
-https://user-images.githubusercontent.com/4852064/115147929-992ce580-a0a0-11eb-9cca-19d7f2bf8eb6.mp4 
+[![Time domain](https://img.youtube.com/vi/_YZ0QhyVzbs/0.jpg)](https://www.youtube.com/watch?v=_YZ0QhyVzbs)
 
+A script to generate the time-domain files is given in `timeDomain.edp`. A detailed tutorial will be provided in the manual soon.
 
 ## 3D Problems (Ongoing work)
 

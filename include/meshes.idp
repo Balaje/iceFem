@@ -250,14 +250,14 @@ macro refineMesh()
         real metricFuncIce=getARGV("-hsize",0.1);
         ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);        
         cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
-        savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.msh");        
+        savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.mesh");        
     }
     else if(mpirank==1){
         cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;       
         real metricFuncCav=getARGV("-hsize",0.1);
         ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);   
         cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
-        savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.msh");
+        savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.mesh");
     }
     broadcast(processor(0),ThIce);
     broadcast(processor(1),ThCavity);

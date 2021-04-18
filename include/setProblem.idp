@@ -85,8 +85,9 @@ complex[int] RadRef(nev), RadTra(nev);
 int[int] rcounts(mpisize), dspls(mpisize);
 int parti, rem, start, stop, partisize;
 //Variables for extracting the interpolated solutions
-int nfreq=getARGV("-nfreq",199);
-complex[int,int] UXT(Vh.ndof,nfreq), UYT(Vh.ndof,nfreq);
+int nFreqCoarse=getARGV("-nfreqcoarse",10);
+int nFreqFine=getARGV("-nfreqfine",200);
+complex[int,int] UXT(Vh.ndof,nFreqFine), UYT(Vh.ndof,nFreqFine);
 
 //Finite element function corresponding to the invacuo modes
 IFMACRO(dimension,2)
@@ -130,7 +131,7 @@ macro setProblem()
     lambdahat = lambda/Lc^2;
     gammahat = rhow/Lc;
     deltahat = rhow*ag/Lc;
-    densRat = rhoi/rhow;
+    densRat = rhoi/rhow;    
 }//This is a macro for getting the parameters to set the problem
 
 macro setupWorkingDir(DirName) {
