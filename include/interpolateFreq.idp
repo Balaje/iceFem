@@ -4,7 +4,7 @@ load "gsl"
 int nFreqCoarse=getARGV("-nfreqcoarse",10);
 real omega0=getARGV("-omega0",2*pi*0.01);
 real omega1=getARGV("-omega1",2*pi*0.1);
-real dOmega=(omega1-omega0)/(nFreqCoarse);
+real dOmega=(omega1-omega0)/(nFreqCoarse-1);
 complex[int] omegaCoarse=omega0:dOmega:omega1;
 int startindx=getARGV("-startindx",1), endindx=getARGV("-endindx",10);
 if(nFreqCoarse != (endindx-startindx+1)) exit(1);
@@ -37,7 +37,7 @@ macro readCoarseFreq(){
 
 int nFreqFine=getARGV("-nfreqfine",200);
 if(nFreqFine==1) exit(1);
-real dOmegaFine=(omega1-omega0)/(nFreqFine);
+real dOmegaFine=(omega1-omega0)/(nFreqFine-1);
 complex[int] omegaFine=omega0:dOmegaFine:omega1;
 complex[int,int] HFine(nev^2,nFreqFine), FFine(nev,nFreqFine);
 macro interpolateFreqReal(){
@@ -104,3 +104,43 @@ macro interpolateFreqReal(){
         lamRe<<"\n"; lamIm<<"\n";
     }
 }//EOM"
+
+/*
+This macro reads the latest mesh from the working directory and the corresponding invacuo modes.
+Then the interpolated solution is read from the working directory and reconstructs the solution.
+The mesh and eigenspace needs to be defined properly.
+If the user needs to solve and save the eigenvalue problem, set iseigen=true
+*/
+macro constructFineSpace(nfreq, iseigen)
+{
+    if(iseigen){
+        solveEigen;
+        writeEigen(false,true);        
+    }
+    UXT.resize(Vh.ndof,nfreq);
+    UYT.resize(Vh.ndof,nfreq);    
+    complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
+    real[int] tmp(Vh.ndof);
+    for(int m=0; m<nev; m++)
+    {        
+        ifstream filex(SolutionDir+"2_Modes/MODESX"+m+".dat");
+        filex>>tmp;
+        mx(m,:).re=tmp;
+        ifstream filey(SolutionDir+"2_Modes/MODESY"+m+".dat");
+        filey>>tmp;
+        my(m,:).re=tmp;
+    }
+    complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
+    readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdajRe.dat",lambdaRe);
+    readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdajIm.dat",lambdaIm);
+    complex[int,int] lambda=lambdaIm;
+    lambda*=1i;
+    lambda+=lambdaRe;
+    complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof);
+    UX=lambda*mx;
+    UY=lambda*my;
+    UXT=UX';
+    UYT=UY';
+    UXT=conj(UXT);
+    UYT=conj(UYT);
+}//Macro to extract the solution in the fine-frequency space. EOM"

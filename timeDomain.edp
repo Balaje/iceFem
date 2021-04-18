@@ -1,9 +1,14 @@
 macro dimension 2//EOM
-macro fspace 1//EOM
+macro fspace 2//EOM
 
 include "macros.idp"
 SolutionDir="ICESHELF3/";
+
+//Set the mesh for obtaining displacements
+ThIce=readmeshN(SolutionDir+"2_Modes/iceMesh.msh");
+ThCavity=readmeshN(SolutionDir+"2_Modes/cavMesh.msh");
+
 readCoarseFreq;
 interpolateFreqReal;
 
-
+constructFineSpace(nFreqFine,0); //This constructs the displacements in the fine-frequency space.

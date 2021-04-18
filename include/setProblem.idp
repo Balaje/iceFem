@@ -165,44 +165,4 @@ macro readFile(rows,cols,filename,array){
             file>>array(m,n);
 }//Macro to read files.EOM"
 
-/*
-This macro reads the latest mesh from the working directory and the corresponding invacuo modes.
-Then the interpolated solution is read from the working directory and reconstructs the solution.
-The mesh and eigenspace needs to be defined properly.
-If the user needs to solve and save the eigenvalue problem, set iseigen=true
-*/
-macro constructFineSpace(nfreq, iseigen)
-{
-    if(iseigen){
-        solveEigen;
-        writeEigen(false,true);        
-    }
-    UXT.resize(Vh.ndof,nfreq);
-    UYT.resize(Vh.ndof,nfreq);    
-    complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
-    real[int] tmp(Vh.ndof);
-    for(int m=0; m<nev; m++)
-    {        
-        ifstream filex(SolutionDir+"2_Modes/MODESX"+m+".dat");
-        filex>>tmp;
-        mx(m,:).re=tmp;
-        ifstream filey(SolutionDir+"2_Modes/MODESY"+m+".dat");
-        filey>>tmp;
-        my(m,:).re=tmp;
-    }
-    complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
-    readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaRe.dat",lambdaRe);
-    readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdaIm.dat",lambdaIm);
-    complex[int,int] lambda=lambdaIm;
-    lambda*=1i;
-    lambda+=lambdaRe;
-    complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof);
-    UX=lambda*mx;
-    UY=lambda*my;
-    UXT=UX';
-    UYT=UY';
-    UXT=conj(UXT);
-    UYT=conj(UYT);
-}//Macro to extract the solution in the fine-frequency space. EOM"
-
 //--- END OF setProblem.idp
