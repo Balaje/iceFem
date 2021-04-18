@@ -1,13 +1,9 @@
 # iceFEM [![DOI](https://zenodo.org/badge/256385996.svg)](https://zenodo.org/badge/latestdoi/256385996) [![status](https://joss.theoj.org/papers/a75e3345a2565e1dcd114c965d7db1e7/status.svg)](https://joss.theoj.org/papers/a75e3345a2565e1dcd114c965d7db1e7)           
 ## Dependencies
-- [**FreeFem**](https://freefem.org):
-  A high level multiphysics finite element software. Full version with the `MPI` implementation and the `ffddm` module is required. The full version can be downloaded from the official website.
-- [**Bedmap2 Toolbox**](https://au.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab):  
-  To obtain real--life shelf/cavity data. This is available as a MATLAB toolbox.
-- **MATLAB**:
-  This is really not a constraint if you are using the package without the BEDMAP2 plugin. Interpolation and related operations can be done using other packages. However, a list of `MATLAB` scripts are available for this purpose to make things easier.
-- **Unix based OS:**
-  Currently this program is written assuming a Unix based Operating system. Future support for windows will be added.
+- [**FreeFem**](https://freefem.org): A high level multiphysics finite element software. Full version with the `MPI` implementation and the `ffddm` module is required. The full version can be downloaded from the official website.
+- [**Bedmap2 Toolbox**](https://au.mathworks.com/matlabcentral/fileexchange/42353-bedmap2-toolbox-for-matlab): To obtain real--life shelf/cavity data. This is available as a MATLAB toolbox.
+- **MATLAB**: This is really not a constraint if you are using the package without the BEDMAP2 plugin. Interpolation and related operations can be done using other packages. However, a list of `MATLAB` scripts are available for this purpose to make things easier.
+- **Unix based OS:** Currently this program is written assuming a Unix based Operating system. Future support for windows will be added.
 
 ## Introduction
 
@@ -184,6 +180,20 @@ T | Reflection Coefficient, `R` | abs(`R`) |
 ---| ---- | ---- |
 200 s| (-0.12685,-0.991929) |  1.00001|
 4000 s | (-0.983021,-0.183491) | 1.00000 |
+
+## Time Domain simulations
+
+Simple time-domain simulations can be run using the current version. Create a raw file **(Eg. FAmp.dat)** containing 3 columns - the frequency space, the amplitude as a function of frequency and the phase associated with the frequency. Then use the routine
+
+```cpp
+real dt=1, T=100;
+real[int] time=-T:dt:T;
+constructTimeDomainSol("FAmp.dat",time)
+```
+
+where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample comparing an ice-shelf and an iceberg motion subject to the same incident wave forcing. 
+
+https://user-images.githubusercontent.com/4852064/115147929-992ce580-a0a0-11eb-9cca-19d7f2bf8eb6.mp4 
 
 
 ## 3D Problems (Ongoing work)
