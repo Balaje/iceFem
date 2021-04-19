@@ -191,9 +191,9 @@ real[int] time=-T:dt:T;
 constructTimeDomainSol("FAmp.dat",time)
 ```
 
-where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample comparing an ice-shelf and an iceberg motion subject to the same incident wave forcing.
+where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample movie (click on it!) comparing an ice-shelf and an iceberg motion along with the von-mises stress, subject to the same incident wave forcing.
 
-| [![Time domain](https://img.youtube.com/vi/_YZ0QhyVzbs/maxresdefault.jpg)](https://www.youtube.com/watch?v=_YZ0QhyVzbs)
+| [![Time domain](https://img.youtube.com/vi/bk8VWGwTi48/maxresdefault.jpg)](https://www.youtube.com/watch?v=bk8VWGwTi48)
 | --
 
 A script to generate the time-domain files is given in `timeDomain.edp`. A detailed tutorial will be provided in the manual soon.

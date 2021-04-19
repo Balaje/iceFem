@@ -155,6 +155,9 @@ macro constructTimeDomainSol(ampFile,time)
     complex[int] randn(nFreqFine);
     randn=FAmp(2,:);
     complex[int] omegaVec(nFreqFine), u3x(Vh.ndof), u3y(Vh.ndof);
+    IFMACRO(dimension,3)
+        complex[int] u3z(Vh.ndof);
+    ENDIFMACRO
     buildPartiCPU(time.n);
     for(int n=start; n<=stop; n++)
     {
@@ -166,13 +169,40 @@ macro constructTimeDomainSol(ampFile,time)
         omegaVec=omegaVec.*domega;
         omegaVec*=(2*omegaNew.n/pi);
         u3x=UXT*omegaVec;
-        u3y=UYT*omegaVec;
-        Vh<complex> etax=u3x, etay=u3y;
-        int[int] Order1=[1,1,1],Order=[1,1];
-        savevtk(SolutionDir+"/time_"+n+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+        u3y=UYT*omegaVec;        
+        IFMACRO(dimension,2)
+            Vh<complex> etax=u3x, etay=u3y;
+            int[int] Order1=[1,1,1],Order=[1,1];
+            savevtk(SolutionDir+"/time_"+n+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+            computeStressField;                          
+            savevtk(SolutionDir+"/time-stress_"+n+".vtk",ThIce,
+                    [real(Sigma(etax,etay)[0]), real(Sigma(etax,etay)[1]), real(Sigma(etax,etay)[2])],
+                    [imag(Sigma(etax,etay)[0]), imag(Sigma(etax,etay)[1]), imag(Sigma(etax,etay)[2])],
+                    dataname="ReSigma ImSigma",order=Order);
+        ENDIFMACRO
+        IFMACRO(dimension,3)
+            u3z=UZT*omegaVec;
+            Vh<complex> etax=u3x, etay=u3y, etaz=u3z;
+            int[int] Order1=[1,1,1,1,1,1],Order=[1,1,1];
+            savevtk(SolutionDir+"/time_"+n+".vtu",ThIce,[real(etax),real(etay),real(etaz)],[imag(etax),imag(etay),imag(etaz)], dataname="ReDisp ImDisp",order=Order);
+            computeStressField;            
+            savevtk(SolutionDir+"/time-stress_"+n+".vtu",ThIce,
+                    [real(Sigma(etax,etay,etaz)[0]), real(Sigma(etax,etay,etaz)[1]), real(Sigma(etax,etay,etaz)[2]), real(Sigma(etax,etay,etaz)[3]), real(Sigma(etax,etay,etaz)[4]), real(Sigma(etax,etay,etaz)[5])],                   
+                    [imag(Sigma(etax,etay,etaz)[0]), imag(Sigma(etax,etay,etaz)[1]), imag(Sigma(etax,etay,etaz)[2]), imag(Sigma(etax,etay,etaz)[3]), imag(Sigma(etax,etay,etaz)[4]), imag(Sigma(etax,etay,etaz)[5])],
+                    dataname="ReSigma ImSigma",order=Order1);
+
+        ENDIFMACRO
         if(mpirank==0)
             cout<<"Time t="<<n<<endl;
     }
 }//EOM"
 
 //Macro to compute the stress field TODO
+macro computeStressField()
+{
+    ifstream fin(SolutionDir+"2_Modes/iceCav.dat");
+    real L, H, th, E, nu, mu1, lambda;   
+    fin>>L>>H>>th>>E>>nu>>Lc>>tc>>mu1>>lambda>>rhoi>>rhow>>ag;
+    lambdahat=lambda/Lc^2;
+    muhat=mu1/Lc^2;               
+}//EOM"

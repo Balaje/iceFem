@@ -16,6 +16,9 @@ IFMACRO(dimension,2)
 macro grad(u) [dx(u),dy(u)]//EOM" //Gradient
 macro div(u,v)(dx(u)+dy(v))//EOM" //Divergence of a vector field
 macro epsilon(u,v)[dx(u), dy(v), (dy(u)+dx(v))/sqrt(2.)]//EOM" //Strain tensor components
+macro Sigma(u,v)[2*muhat*dx(u) + lambdahat*(dx(u)+dy(v)),
+                 2*muhat*dy(v) + lambdahat*(dx(u)+dy(v)),
+                 muhat*(dy(u) + dx(v))]//EOM"
 cout<<"Dimension : 2"<<endl;
 macro minimalMesh()square(2,2)//EOM
 meshN ThIce=minimalMesh;
@@ -37,6 +40,12 @@ IFMACRO(dimension,3)
 macro grad(u) [dx(u),dy(u),dz(u)]//EOM" //Gradient
 macro epsilon(u,v,w)[dx(u),dy(v),dz(w),1/sqrt(2.)*(dy(u)+dx(v)),1/sqrt(2.)*(dz(u)+dx(w)),1/sqrt(2.)*(dz(v)+dy(w))]//Eom"
 macro div(u,v,w)(dx(u)+dy(v)+dz(w))//Eom"
+macro Sigma(u,v,w)[2*muhat*dx(u) + lambdahat*(dx(u)+dy(v)+dz(w)),
+                   2*muhat*dy(v) + lambdahat*(dx(u)+dy(v)+dz(w)),
+                   2*muhat*dz(w) + lambdahat*(dx(u)+dy(v)+dz(w)),
+                   muhat*(dy(u)+dx(v)),
+                   muhat*(dz(u)+dx(w)),
+                   muhat*(dz(v)+dy(w))]//EOM"
 cout<<"Dimension : 3"<<endl;
 macro minimalMesh()cube(1,1,1)//EOM
 meshN ThIce=minimalMesh;
@@ -87,8 +96,7 @@ int parti, rem, start, stop, partisize;
 //Variables for extracting the interpolated solutions
 int nFreqCoarse=getARGV("-nfreqcoarse",10);
 int nFreqFine=getARGV("-nfreqfine",200);
-complex[int,int] UXT(Vh.ndof,nFreqFine), UYT(Vh.ndof,nFreqFine);
-
+complex[int,int] UXT(Vh.ndof,nFreqFine), UYT(Vh.ndof,nFreqFine), UZT(Vh.ndof,nFreqFine);
 //Finite element function corresponding to the invacuo modes
 IFMACRO(dimension,2)
 Xh[int][VX,VY](nev);
@@ -131,7 +139,10 @@ macro setProblem()
     lambdahat = lambda/Lc^2;
     gammahat = rhow/Lc;
     deltahat = rhow*ag/Lc;
-    densRat = rhoi/rhow;    
+    densRat = rhoi/rhow;
+
+    ofstream fout(SolutionDir+"2_Modes/iceCav.dat");
+    fout<<L<<"\n"<<H<<"\n"<<th<<"\n"<<E<<"\n"<<nu<<"\n"<<Lc<<"\n"<<tc<<"\n"<<mu1<<"\n"<<lambda<<"\n"<<rhoi<<"\n"<<rhow<<"\n"<<ag<<endl;
 }//This is a macro for getting the parameters to set the problem
 
 macro setupWorkingDir(DirName) {
