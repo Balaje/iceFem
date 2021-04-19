@@ -117,6 +117,10 @@ macro constructFineSpace(nfreq, iseigen)
     }
     UXT.resize(Vh.ndof,nfreq);
     UYT.resize(Vh.ndof,nfreq);
+    IFMACRO(dimension,3)
+        UZT.resize(Vh.ndof,nfreq);
+        complex[int,int] mz(nev,Vh.ndof);
+    ENDIFMACRO
     complex[int,int] mx(nev,Vh.ndof), my(nev,Vh.ndof);
     real[int] tmp(Vh.ndof);
     for(int m=0; m<nev; m++)
@@ -126,7 +130,12 @@ macro constructFineSpace(nfreq, iseigen)
         mx(m,:).re=tmp;
         ifstream filey(SolutionDir+"2_Modes/MODESY"+m+".dat");
         filey>>tmp;
-        my(m,:).re=tmp;        
+        my(m,:).re=tmp;
+        IFMACRO(dimension,3)
+            ifstream filez(SolutionDir+"2_Modes/MODESZ"+m+".dat");
+            filez>>tmp;
+            mz(m,:).re=tmp;
+        ENDIFMACRO
     }
     complex[int,int] lambdaRe(nfreq,nev), lambdaIm(nfreq,nev);
     readFile(nfreq,nev,SolutionDir+"2_ModesMatrix/Interpolated_L/lambdajRe.dat",lambdaRe);
@@ -134,13 +143,18 @@ macro constructFineSpace(nfreq, iseigen)
     complex[int,int] lambda=lambdaIm;
     lambda*=1i;
     lambda+=lambdaRe;
-    complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof);
+    complex[int,int] UX(nfreq,Vh.ndof), UY(nfreq,Vh.ndof), UZ(nfreq,Vh.ndof);
     UX=lambda*mx;
-    UY=lambda*my;
+    UY=lambda*my;    
     UXT=UX';
     UYT=UY';
     UXT=conj(UXT);
     UYT=conj(UYT);
+    IFMACRO(dimension,3)
+        UZ=lambda*mz;
+        UZT=UZ';
+        UZT=conj(UZT);    
+    ENDIFMACRO
 }//Macro to extract the solution in the fine-frequency space. EOM"
 
 //Construct the time-domain solution and write it in the main directory.

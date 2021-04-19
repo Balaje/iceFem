@@ -191,7 +191,7 @@ real[int] time=-T:dt:T;
 constructTimeDomainSol("FAmp.dat",time)
 ```
 
-where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample movie (click on it!) comparing an ice-shelf and an iceberg motion along with the von-mises stress, subject to the same incident wave forcing.
+where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample movie **(click on the image!)** comparing an ice-shelf and an iceberg motion along with the von-mises stress, subject to the same incident wave forcing.
 
 | [![Time domain](https://img.youtube.com/vi/bk8VWGwTi48/maxresdefault.jpg)](https://www.youtube.com/watch?v=bk8VWGwTi48)
 | --
@@ -223,19 +223,14 @@ Reflection coefficient, R | abs(R) |
 (-0.475759,0.882548) | 1.00261 |
 
 
-### Old example:
+#### An Example:
 
-*Checkout the branch `ParIceFem` for the following example.*
+*Checkout the branch [`ParIceFem`](https://github.com/Balaje/iceFem/tree/ParIceFem#3d-problems) for another example.*
 
-All the macros should work if the correct dimension has been specified and the correct meshes are being used. Example meshes are available in ```Meshes/*.mesh```. The associated FreeFem script is `iceshelf3d.edp`.
+This is an example time-domain simulation ran using the package. **Click on the image to view the movie.**
 
-| Floating boat | 3D ice-shelf |
-| --- | --- |
-| ![BEDMAP 1](./Images/boatCav1.png) | ![BEDMAP 2](./Images/iceCav2.png) |
-
-The first example is that of a floating boat which is an extension to an elastic plate problem in 2D. A detailed description of the geometry and the solution method can be found in this link here. The inlet and the outlet faces are prescribed by the user by specifying the appropriate labels. In this case, there is exactly one inlet (front plane, outward from the plane of the paper) and one outlet boundary (back, into the plane of the paper). No normal flow is prescribed on the sides and the bottom. The top surface is assigned as a free-surface.
-
-The second example is that of a classic ice-shelf vibration problem. The example here shows the vibration of a uniform ice-shelf of length 20 km and 200 m thick placed over a cavity of depth 500 m. The shelf is subjected to an incident wave forcing of 4000 s. The gray surface shows the 2D elasticity solution obtained using the same code. As mentioned earlier, there is a little bit of in-plane displacement along the third direction due to the contribution of the in-plane modes. Nevertheless, a good qualitative agreement is observed for the lower modes. This repository will be updated as more studies are conducted.
+| [![Time domain](https://img.youtube.com/vi/cZX5naD8r5I/maxresdefault.jpg)](https://youtu.be/cZX5naD8r5I)
+| --
 
 ## Acknowledgement
 This is joint work with my supervisors:
