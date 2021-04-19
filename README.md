@@ -10,7 +10,7 @@
 This iteration of iceFEM implements the algorithms in parallel with an aim to solve bigger problems. For this implementation, the program requires the ``MPI`` version of FreeFem installed. If the full program is installed, the parallel version is available by default. For the main branch visit the link [here](https://github.com/Balaje/iceFem/tree/master). To download the latest release (this could be a development release and some components may not work properly) package, use
 
 ``` shell
-wget https://github.com/Balaje/iceFem/archive/refs/tags/v1.0.2.zip -O icefem.zip
+wget https://github.com/Balaje/iceFem/archive/refs/tags/v2.0.zip -O icefem.zip
 unzip -q icefem.zip
 ```
 
@@ -193,8 +193,12 @@ constructTimeDomainSol("FAmp.dat",time)
 
 where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample comparing an ice-shelf and an iceberg motion subject to the same incident wave forcing.
 
-| [![Time domain](https://img.youtube.com/vi/_YZ0QhyVzbs/0.jpg)](https://www.youtube.com/watch?v=_YZ0QhyVzbs)
-| --
+<iframe>
+  src="https://www.youtube.com/watch?v=_YZ0QhyVzbs"
+  width="100%"
+  frameborder="3"
+  allowfullscreen="">
+</iframe>
 
 A script to generate the time-domain files is given in `timeDomain.edp`. A detailed tutorial will be provided in the manual soon.
 
