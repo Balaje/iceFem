@@ -193,12 +193,8 @@ constructTimeDomainSol("FAmp.dat",time)
 
 where `time` is the input time. This writes a series of files `time_0.vtk`, `time_1.vtk`, etc. in the working directory. Paraview can then be used to create movies to visualize the time domain solution. Here is a sample comparing an ice-shelf and an iceberg motion subject to the same incident wave forcing.
 
-<iframe>
-  src="https://www.youtube.com/watch?v=_YZ0QhyVzbs"
-  width="100%"
-  frameborder="3"
-  allowfullscreen="">
-</iframe>
+| [![Time domain](https://img.youtube.com/vi/_YZ0QhyVzbs/maxresdefault.jpg)](https://www.youtube.com/watch?v=_YZ0QhyVzbs)
+| --
 
 A script to generate the time-domain files is given in `timeDomain.edp`. A detailed tutorial will be provided in the manual soon.
 
