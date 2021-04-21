@@ -8,8 +8,6 @@ include "functions.idp"
 include "macro_ddm.idp"
 include "ffddm_parameters.idp"
 include "ffddm_partitioning.idp"
-macro def(u) u//EOM
-macro init(u) u//EOM
 
 //Definition of the empty finite element spaces and gradient-divergence macros.
 IFMACRO(dimension,2)
