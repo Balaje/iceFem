@@ -1,0 +1,30 @@
+//Program to demonstrate Eigensolve using PETSc
+
+macro dimension 2//EOM
+macro fspace 1//EOM
+
+include "setProblem.idp"
+include "meshes.idp"
+include "FEMSolvePETSc.idp"
+include "FEMSolve.idp"
+
+SolutionDir="ICESHELF2/";
+
+setProblem;
+
+real d1=-0.9*tth, f1=0.1*tth;
+real d2=-0.9*tth, f2=0.1*tth;
+real H1=-HH, H2=-HH;
+setLinearThickeningIce(d1, d2, f1, f2);
+setLinearThickeningCavity(H1, H2, d1, d2);
+
+//Solve using PETSc;
+solveEigenPETSc(nev);
+if(mpirank==0)
+    cout<<ev<<endl;
+
+//Solve Directly.
+solveEigen;
+if(mpirank==0)
+    cout<<ev<<endl;
+
