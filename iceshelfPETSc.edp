@@ -18,6 +18,10 @@ real H1=-HH, H2=-HH;
 setLinearThickeningIce(d1, d2, f1, f2);
 setLinearThickeningCavity(H1, H2, d1, d2);
 
+refineMesh;
+
+//iceshelf2iceberg;
+
 //Solve using PETSc;
 solveEigenPETSc(nev);
 if(mpirank==0)

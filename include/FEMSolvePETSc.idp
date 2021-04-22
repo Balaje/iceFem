@@ -21,7 +21,7 @@ int s=getARGV("-split",1);
 int Npts=getARGV("-Npts",200);
 //The construction of the global matrix is the same,
 //And we use the global matrix to construct the local matrices.
-string ssparams="-eps_nev " +nev+" -eps_type arpack -st_type sinvert -eps_target 0.0 -eps_largest_magnitude";
+string ssparams="-eps_nev " +nev+" -eps_type krylovschur -st_type sinvert -eps_target 0.0 -eps_largest_magnitude";
 
 
 //Splitting the mesh and define the local spaces
@@ -59,14 +59,17 @@ func real[int] solveEigenPETSc(int nev)
         varf a([u,uB],[v,vB]) = intN(ThLocalIce)(lambdahat*divPETSc(u)*divPETSc(v) + 2*muhat*epsilonPETSc(u)'*epsilonPETSc(v)) + on(2,u=0, uB=0);
         varf b([u,uB],[v,vB]) = intN(ThLocalIce)((u*v+uB*vB));
         matrix stima = a(XhLocal,XhLocal,solver=Crout,factorize=1);
-        matrix massma = b(XhLocal,XhLocal,solver=CG,eps=1e-20);
+        matrix massma = b(XhLocal,XhLocal,solver=CG,eps=1e-20);        
         Mat DistStima(stima, intersectionIce, POUnityIce, clean=true);
         Mat DistMassma(DistStima, massma, clean=true);
         real[int,int] space(DistStima.n,1);
         space=1;
-        int kkk=EPSSolve(DistStima, DistMassma, vectors=VXLocal, values=ev, sparams=ssparams, deflation=space);
+        int kkk=EPSSolve(DistStima, DistMassma, vectors=VXLocal, values=ev, sparams=ssparams, deflation=space);        
     ENDIFMACRO
-
+    //Sometimes the number of converged values are more than nev.
+    kkk=min(kkk,nev);
+    ev.resize(kkk);
+    VXLocal.resize(kkk);
     return ev;
  }//EOM"
 
