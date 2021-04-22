@@ -26,6 +26,9 @@ macro getRefCoeff(bInd,phi,Ref){
     complex[int,int] AA=A^-1;
     c = AA*c;
     Ref = c[0]/Ap;
+    ofstream fout(SolutionDir+"2_RefCoeff/open"+bInd+"bdy"+iter+".dat");
+    for(int m=0; m<NModes+1; m++)
+        fout<<c[m]/Ap<<endl;
 }//EOM"
 //Reflection Coefficient of the Radiation problems
 macro getRefModes(bInd,phi,Ref){
@@ -49,4 +52,7 @@ macro getRefModes(bInd,phi,Ref){
     complex[int,int] AA=A^-1;
     c = AA*c1;
     Ref = c[0]/Ap;
+    ofstream fout(SolutionDir+"2_RefCoeff/open"+bInd+"bdy"+iter+".dat");
+    for(int m=0; m<NModes+1; m++)
+        fout<<c[m]/Ap<<endl;
 }//EOM"
