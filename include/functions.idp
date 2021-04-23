@@ -118,7 +118,7 @@ func complex[int] dispersionfreesurface(complex alph, int N1, real H)
 
 func real[int] getProps(real &E, real &nu, real &rhoi, real &rhow, real &ag, real &Ad)
 {
-    E = getARGV("-Youngs",2*10^9);
+    E = getARGV("-Youngs",2e9);
     nu = getARGV("-Poisson",0.33);
     rhoi = getARGV("-rhoi",922.5);
     rhow = getARGV("-rhow",1025);
