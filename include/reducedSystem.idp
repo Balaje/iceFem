@@ -345,15 +345,22 @@ macro writeReducedSystem()
     file7.precision(16);
     file8.precision(16);
 
-
-    file7<<real(DifRef)<<"\t"<<imag(DifRef)<<endl;
-    file8<<real(DifTra)<<"\t"<<imag(DifTra)<<endl;
+    for(int m=0; m<NModes+1; m++)
+    {    
+        file7<<real(DifRef[m])<<"\t"<<imag(DifRef[m])<<endl;
+        file8<<real(DifTra[m])<<"\t"<<imag(DifTra[m])<<endl;
+    }
     for(int m=0; m<nev; m++)
     {
         file3<<real(F[m])<<endl;
         file4<<imag(F[m])<<endl;
-        file5<<real(RadRef[m])<<"\t"<<imag(RadRef[m])<<endl;
-        file6<<real(RadTra[m])<<"\t"<<imag(RadTra[m])<<endl;
+        for(int n=0; n<NModes+1; n++)
+        {
+            file5<<real(RadRef(m,n))<<"\t"<<imag(RadRef(m,n))<<"\t";
+            file6<<real(RadTra(m,n))<<"\t"<<imag(RadTra(m,n))<<"\t";
+        }
+        file5<<endl;
+        file6<<endl;
         for(int n=0; n<nev; n++)
         {
             file1<<real(B(m,n)+K(m,n)+AB(m,n))<<endl;

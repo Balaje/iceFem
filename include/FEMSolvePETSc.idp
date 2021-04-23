@@ -47,15 +47,15 @@ macro buildCavPartition()
 }//EOM"
 
 func real[int] solveEigenPETSc(int nev)
-{
+{    
     VX.resize(nev);
     ev.resize(nev);
-    VXLocal.resize(nev);
-    
+    VXLocal.resize(nev);    
     IFMACRO(dimension,2)
         macro def(i) def1(i) //EOM
         macro init(i) init1(i) //EOM
         buildIcePartition;
+        cout<<"Number of points in submesh "<<mpirank<<" = "<<ThLocalIce.nv<<endl;
         varf a([u,uB],[v,vB]) = intN(ThLocalIce)(lambdahat*divPETSc(u)*divPETSc(v) + 2*muhat*epsilonPETSc(u)'*epsilonPETSc(v)) + on(2,u=0, uB=0);
         varf b([u,uB],[v,vB]) = intN(ThLocalIce)((u*v+uB*vB));
         matrix stima = a(XhLocal,XhLocal,solver=Crout,factorize=1);

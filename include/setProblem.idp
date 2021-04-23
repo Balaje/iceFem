@@ -86,8 +86,8 @@ complex[int] F(nev);
 matrix<complex> HMat;
 complex[int] xi(nev);
 //Keywords for the reflection and transmission coefficients
-complex DifRef, DifTra;
-complex[int] RadRef(nev), RadTra(nev);
+complex[int] DifRef(NModes+1), DifTra(NModes+1);
+complex[int,int] RadRef(nev,NModes+1), RadTra(nev,NModes+1);
 //Partitioning for parallel solve
 int[int] rcounts(mpisize), dspls(mpisize);
 int parti, rem, start, stop, partisize;

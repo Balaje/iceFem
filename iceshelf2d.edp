@@ -64,12 +64,12 @@ buildFinalSolution;
 
 if(mpirank==0)
  {
-     complex RefR, RefT;
+     complex[int] RefR(NModes+1), RefT(NModes+1);
      getRefCoeff(4, phi, RefR);
      getRefModes(5, phi, RefT);
-     cout<<"\nReflection Coeff = "<<RefR<<endl;
-     cout<<"Transmission Coeff = "<<RefT<<endl;
-     cout<<"Energy conservation = "<<sqrt(abs(RefR)^2+abs(RefT)^2)<<endl;
+     cout<<"\nReflection Coeff = "<<RefR[0]<<endl;
+     cout<<"Transmission Coeff = "<<RefT[0]<<endl;
+     cout<<"Energy conservation = "<<sqrt(abs(RefR[0])^2+abs(RefT[0])^2)<<endl;
 
      int[int] Order1=[1,1,1],Order=[1,1];
      savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);

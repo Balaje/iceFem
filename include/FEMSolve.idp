@@ -217,7 +217,7 @@ macro solveRadiationProblem(BCMAT){
     if(mpirank==0)
         cout<<"\nSolve radiation problems"<<endl;
     buildPartiCPU(nev);
-    complex[int] RadRefProc(nev), RadTraProc(nev);
+    complex[int,int] RadRefProc(nev,NModes+1), RadTraProc(nev,NModes+1);
     complex[int,int] PHIJ(Wh.ndof, nev), PHIJProc(Wh.ndof,partisize);
     Wh<complex> phih;
     for(int m=start; m<=stop; m++)
@@ -234,8 +234,8 @@ macro solveRadiationProblem(BCMAT){
         set(LHS,solver=sparsesolver);
         phih[]=LHS^-1*RHS[];
         phij[m]=phih;
-        getRefModes(5,phih,RadTraProc[m]);
-        getRefModes(4,phih,RadRefProc[m]);
+        getRefModes(5,phih,RadTraProc(m,:));
+        getRefModes(4,phih,RadRefProc(m,:));
         PHIJProc(:,m-start) = phij[m][];        
     }    
     mpiAllReduce(RadRefProc, RadRef, mpiCommWorld, mpiSUM);
