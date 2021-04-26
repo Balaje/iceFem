@@ -9,6 +9,7 @@
 //1) Droughts (0,d1), (L,d2);
 //2) Freeboards (0,f1), (L,f2);
 //In non-dimensional units.
+//This macro does not save the mesh
 macro setLinearThickeningIce(draft1, draft2, free1, free2)
 {
     int N1 = getARGV("-N",3);
@@ -30,7 +31,6 @@ macro setLinearThickeningIce(draft1, draft2, free1, free2)
         border I04(t=free1,draft1) {x=0; y=t; label=1;};
         ThIce = buildmesh(I01(LL/tth*N1)+I02(N1)+I03(LL/tth*N1)+I04(N1));
     ENDIFMACRO
-    savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.mesh");        
 }//EOM"
 macro setLinearThickeningCavity(Height1, Height2, draft1, draft2)
 {
@@ -52,7 +52,6 @@ macro setLinearThickeningCavity(Height1, Height2, draft1, draft2)
         border C04(t=draft1,Height1) {x=0; y=t; label=4;};
         ThCavity = buildmesh(C01(LL/tth*N1)+C02(N1)+C03(LL/tth*N1)+C04(LL/tth*N1));
     ENDIFMACRO
-    savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.mesh");        
 }//EOM"
 
 
@@ -241,7 +240,7 @@ macro iceBEDMAP2(nborders, isBuild)
   True: Uniform refinement over the meshes
   False: To refine with the thickness of the ice. Start with a small value.
 */
-macro refineMesh()
+macro refineMesh(isWriteFile)
 {
     if(mpirank==0){        
         cout<<"Imported Ice Mesh (proc 0)..."<<endl;
@@ -250,14 +249,16 @@ macro refineMesh()
         real metricFuncIce=getARGV("-hsize",0.1);
         ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);        
         cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
-        savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.mesh");        
+	if(isWriteFile)
+	  savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.mesh");        
     }
     else if(mpirank==1){
         cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;       
         real metricFuncCav=getARGV("-hsize",0.1);
         ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);   
         cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
-        savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.mesh");
+	if(isWriteFile)
+	  savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.mesh");
     }
     broadcast(processor(0),ThIce);
     broadcast(processor(1),ThCavity);

@@ -9,7 +9,7 @@ SolutionDir="ICESHELF3/";
 
 //Set linear thickening ice. Default is the iceshelf mesh with one clamped condition
 
-setProblem; //To setup an example problem.
+setProblem(false); //To setup an example problem.
 real d1=-0.9*tth, f1=0.1*tth;
 real d2=-0.9*tth, f2=0.1*tth;
 real H1=-HH, H2=-HH;
@@ -19,15 +19,15 @@ setLinearThickeningCavity(H1, H2, d1, d2);
 //iceBEDMAP2(6,1);
 
 //Change to iceberg with the simple macro
-//iceshelf2iceberg;
+iceshelf2iceberg;
 
 //Uniform mesh refinement
-refineMesh;
+refineMesh(false);
 
 //Solve the eigenvalue problem associated with the ice.
 solveEigen;
 //Store the eigenvalue problem
-writeEigen(1,1);
+//writeEigen(1,1);
 
 //SplitMesh for domain decomposition between processors
 splitMesh(isSplit);
@@ -71,7 +71,7 @@ if(mpirank==0)
      cout<<"Transmission Coeff = "<<RefT[0]<<endl;
      cout<<"Energy conservation = "<<sqrt(abs(RefR[0])^2+abs(RefT[0])^2)<<endl;
 
-     int[int] Order1=[1,1,1],Order=[1,1];
-     savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
-     savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1); 
+     //     int[int] Order1=[1,1,1],Order=[1,1];
+     //     savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+     //     savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1); 
  }

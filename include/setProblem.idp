@@ -111,10 +111,10 @@ Vh<complex> etax, etay, etaz;
 Wh<complex> phi;
 
 //Main macro to set the problem parameters
-macro setProblem()
+macro setProblem(writeData)
 {
     real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
-    real omegar=getARGV("-omegar",2*pi/200), omegai=getARGV("-omegai",0);
+    real omegar=getARGV("-omegar",2*pi/200), omegai=getARGV("-omegai",0.);
     real Tr = 2*pi/omegar, Ti=(omegai==0) ? 0 : 2*pi/omegai;
     complex t = Tr+1i*Ti;
     real E, nu;
@@ -139,8 +139,10 @@ macro setProblem()
     deltahat = rhow*ag/Lc;
     densRat = rhoi/rhow;
 
-    ofstream fout(SolutionDir+"2_Modes/iceCav.dat");
-    fout<<L<<"\n"<<H<<"\n"<<th<<"\n"<<E<<"\n"<<nu<<"\n"<<Lc<<"\n"<<tc<<"\n"<<mu1<<"\n"<<lambda<<"\n"<<rhoi<<"\n"<<rhow<<"\n"<<ag<<endl;
+    if(writeData){
+      ofstream fout(SolutionDir+"2_Modes/iceCav.dat");
+      fout<<L<<"\n"<<H<<"\n"<<th<<"\n"<<E<<"\n"<<nu<<"\n"<<Lc<<"\n"<<tc<<"\n"<<mu1<<"\n"<<lambda<<"\n"<<rhoi<<"\n"<<rhow<<"\n"<<ag<<endl;
+    }
 }//This is a macro for getting the parameters to set the problem
 
 macro setupWorkingDir(DirName) {
