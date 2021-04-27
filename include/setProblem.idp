@@ -115,8 +115,8 @@ macro setProblem(writeData)
 {
     real L = getARGV("-L",20000.), H = getARGV("-H",500.), th = getARGV("-h",200.);
     real omegar=getARGV("-omegar",2*pi/200), omegai=getARGV("-omegai",0.);
-    real Tr = 2*pi/omegar, Ti=(omegai==0) ? 0 : 2*pi/omegai;
-    complex t = Tr+1i*Ti;
+    omega=omegar+1i*omegai;
+    complex t=2*pi/omega;
     real E, nu;
     real[int] elasCons = getProps(E, nu, rhoi, rhow, ag, Ad);
     real EI = E*th^3/(12*(1-nu^2));

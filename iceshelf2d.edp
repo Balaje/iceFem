@@ -4,8 +4,8 @@ macro dimension 2//EOM"
 macro fspace 2//EOM"
 
 include "macros.idp"
-setupWorkingDir("ICESHELF3/")
-SolutionDir="ICESHELF3/";
+setupWorkingDir("ICESHELF1/")
+SolutionDir="ICESHELF1/";
 
 //Set linear thickening ice. Default is the iceshelf mesh with one clamped condition
 
