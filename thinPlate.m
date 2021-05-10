@@ -2,10 +2,10 @@ clear
 clc
 
 [~,~,~,~,E,nu,rhow,rhoi,g,~]=getProperties();
-H=800;
-L=10000;
+H=500;
+L=40000;
 th=200;
-T=30;
+T=20;
 omega=2*pi/T;
 d=(rhoi/rhow)*th;
 NModes = 10;
@@ -29,12 +29,12 @@ u_fd = @(x) -(1/(1i*omega*Lc))*( sum(transpose(b(1:NModes+3)).*exp(-kappa.*x).*.
 xpts = linspace(0,LL,100);
 Ufd = zeros(1,length(xpts));
 for m=1:length(xpts)
-    Ufd(m)=imag(u_fd(xpts(m)));
+    Ufd(m)=real(u_fd(xpts(m)));
 end
 
 figure(1)
 subplot(2,1,1);
-plot(xpts,Ufd,'bo','linewidth',0.5);
+plot(xpts,Ufd,'b-o','linewidth',0.5);
 xlim([xpts(1),xpts(end)]);
 hold on
 grid on

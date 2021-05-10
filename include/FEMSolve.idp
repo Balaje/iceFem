@@ -13,12 +13,13 @@ macro solveEigen()
     ev.resize(nev);
     IFMACRO(dimension,2)
         if(mpirank==0){
+            real sigma=getARGV("-shift",0);
             Xh [u,v],[uu,vv];
-            varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
+            varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)-sigma*(u*uu + v*vv)) + on(2,u=0,v=0);
             varf b([u,v],[uu,vv]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv));
             matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
             matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
-            int kkk = EigenValue(stima,massma,sym=true,sigma=0,value=ev,vector=VX,tol=1e-10);
+            int kkk = EigenValue(stima,massma,sym=true,sigma=sigma,value=ev,vector=VX,tol=1e-10);
         }
     ENDIFMACRO
         IFMACRO(dimension,3)
