@@ -250,13 +250,13 @@ macro buildReducedSystemOptim(){
             BProcY(m,n)=VY2aTh(:,n)'*TY(:,m);
 
             tmpre=VY1aTh(:,n)'*Txx(:,m);
-            tmpre=-1*tmpre;
+            tmpre=-0*tmpre;
             tmpre+=phiMaTh(:,n).re'*Txx(:,m);
             tmpim=phiMaTh(:,n).im'*Txx(:,m);
             KProcX(m,n)=tmpre+1i*tmpim;
 
             tmpre=VY1aTh(:,n)'*Tyy(:,m);
-            tmpre=-1*tmpre;
+            tmpre=-0*tmpre;
             tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
             tmpim=phiMaTh(:,n).im'*Tyy(:,m);
             KProcY(m,n)=tmpre+1i*tmpim;
@@ -264,7 +264,7 @@ macro buildReducedSystemOptim(){
             IFMACRO(dimension,3)
                 BProcZ(m,n)=VZ2aTh(:,n)'*TZ(:,m);
                 tmpre=VY1aTh(:,n)'*Tzz(:,m);
-                tmpre=-1*tmpre;
+                tmpre=-0*tmpre;
                 tmpre+=phiMaTh(:,n).re'*Tzz(:,m);
                 tmpim=phiMaTh(:,n).im'*Tzz(:,m);
                 KProcZ(m,n)=tmpre+1i*tmpim;

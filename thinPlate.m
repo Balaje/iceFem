@@ -1,11 +1,12 @@
 clear
 clc
 
-[~,~,~,~,E,nu,rhow,rhoi,g,~]=getProperties();
+[~,~,~,~,E,nu,rhow,rhoi,~,~]=getProperties();
+g=9.8;
 H=500;
 L=40000;
 th=200;
-T=20;
+T=200;
 omega=2*pi/T;
 d=(rhoi/rhow)*th;
 NModes = 10;
@@ -26,7 +27,7 @@ u_fd = @(x) -(1/(1i*omega*Lc))*( sum(transpose(b(1:NModes+3)).*exp(-kappa.*x).*.
     (-kappa).*tan(kappa*(HH-dd))) + ...
     sum(transpose(b(NModes+4:end)).*exp(kappa.*(x-LL)).*...
     (-kappa).*tan(kappa*(HH-dd))) );
-xpts = linspace(0,LL,100);
+xpts = linspace(0,LL,1000);
 Ufd = zeros(1,length(xpts));
 for m=1:length(xpts)
     Ufd(m)=real(u_fd(xpts(m)));

@@ -15,11 +15,11 @@ macro solveEigen()
         if(mpirank==0){
             real sigma=getARGV("-shift",0);
             Xh [u,v],[uu,vv];
-            varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)-sigma*(u*uu + v*vv)) + on(2,u=0,v=0);
+            varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)-sigma*(u*uu + v*vv)) - intN1(ThIce,3)(deltahat*v*(uu*N.x+vv*N.y)) + on(2,u=0,v=0);
             varf b([u,v],[uu,vv]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv));
             matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
             matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
-            int kkk = EigenValue(stima,massma,sym=true,sigma=sigma,value=ev,vector=VX,tol=1e-10);
+            int kkk = EigenValue(stima,massma,sym=true,sigma=sigma,value=ev,vector=VX,maxit=5000,mode=3);
         }
     ENDIFMACRO
         IFMACRO(dimension,3)
