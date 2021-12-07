@@ -7,7 +7,7 @@
 //Macro to split the meshes using the FFDDM module
 //Toggle splitting on and off using -isSplit option
 
-//Define the macros 
+//Define the macros
 macro def(u) u//EOM
 macro init(u) u//EOM
 
@@ -103,7 +103,7 @@ macro buildReducedSystem(VX,VY,phi0,phij)
         for(int n=0; n<nev; n++)
         {
             B(m,n) = (ev[m]-rhoi*omega^2)*intN(ThIce)(VX[m]*VX[n] + VY[m]*VY[n]);
-            
+
             IFMACRO(dimension,2)
                 K(n,m) = intN1(ThIce,3,qforder=10)((-VY[m]*deltahat + phij[m]*(1i*omega*gammahat))*(VX[n]*N.x+VY[n]*N.y));
             ENDIFMACRO
@@ -225,7 +225,7 @@ macro buildReducedSystemOptim(){
     {
         Txx(:,m)=massMax*VXaTh(:,m);
         Tyy(:,m)=massMay*VYaTh(:,m);
-        
+
         TX(:,m)=massMa*VX2aTh(:,m);
         TY(:,m)=massMa*VY2aTh(:,m);
 
@@ -250,13 +250,13 @@ macro buildReducedSystemOptim(){
             BProcY(m,n)=VY2aTh(:,n)'*TY(:,m);
 
             tmpre=VY1aTh(:,n)'*Txx(:,m);
-            tmpre=-0*tmpre;
+            tmpre=-1*tmpre;
             tmpre+=phiMaTh(:,n).re'*Txx(:,m);
             tmpim=phiMaTh(:,n).im'*Txx(:,m);
             KProcX(m,n)=tmpre+1i*tmpim;
 
             tmpre=VY1aTh(:,n)'*Tyy(:,m);
-            tmpre=-0*tmpre;
+            tmpre=-1*tmpre;
             tmpre+=phiMaTh(:,n).re'*Tyy(:,m);
             tmpim=phiMaTh(:,n).im'*Tyy(:,m);
             KProcY(m,n)=tmpre+1i*tmpim;
@@ -264,7 +264,7 @@ macro buildReducedSystemOptim(){
             IFMACRO(dimension,3)
                 BProcZ(m,n)=VZ2aTh(:,n)'*TZ(:,m);
                 tmpre=VY1aTh(:,n)'*Tzz(:,m);
-                tmpre=-0*tmpre;
+                tmpre=-1*tmpre;
                 tmpre+=phiMaTh(:,n).re'*Tzz(:,m);
                 tmpim=phiMaTh(:,n).im'*Tzz(:,m);
                 KProcZ(m,n)=tmpre+1i*tmpim;
@@ -301,7 +301,7 @@ macro buildReducedSystemOptim(){
 
 
 macro solveReducedSystem(){
-    xi.resize(nev);    
+    xi.resize(nev);
     matrix<complex> Kmat, Bmat, ABmat;
     Kmat=K;  Bmat=B; ABmat=AB;
     matrix<complex> HHmat=Kmat+Bmat+ABmat;
@@ -346,7 +346,7 @@ macro writeReducedSystem()
     file8.precision(16);
 
     for(int m=0; m<NModes+1; m++)
-    {    
+    {
         file7<<real(DifRef[m])<<"\t"<<imag(DifRef[m])<<endl;
         file8<<real(DifTra[m])<<"\t"<<imag(DifTra[m])<<endl;
     }
@@ -382,13 +382,13 @@ macro buildFinalSolution()
         etayProc = etayProc + xi[m]*VY[m];
         IFMACRO(dimension,3)
             etazProc = etazProc + xi[m]*VZ[m];
-        ENDIFMACRO        
+        ENDIFMACRO
     }
     mpiReduce(phiProc[],phi[],processor(0),mpiSUM);
     mpiReduce(etaxProc[],etax[],processor(0),mpiSUM);
     mpiReduce(etayProc[],etay[],processor(0),mpiSUM);
     IFMACRO(dimension,3)
         mpiReduce(etazProc[],etaz[],processor(0),mpiSUM);
-    ENDIFMACRO        
+    ENDIFMACRO
    phi=phi+phi0;
 }//EOM"
