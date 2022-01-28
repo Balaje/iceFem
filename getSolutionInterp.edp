@@ -1,0 +1,42 @@
+//Example to reconstruct fine solution
+verbosity=0;
+macro dimension 2//EOM"
+macro fspace 1//EOM"
+include "macros.idp"
+SolutionDir=getARGV("-SolDir","ICEBERG1/");
+
+setProblem(false);
+real d1=-0.9*tth, f1=0.1*tth;
+real d2=-0.9*tth, f2=0.1*tth;
+real H1=-HH, H2=-HH;
+setLinearThickeningIce(d1, d2, f1, f2);
+setLinearThickeningCavity(H1, H2, d1, d2);
+
+//Change to iceberg with the simple macro
+iceshelf2iceberg;
+//Uniform mesh refinement
+
+refineMesh(false);
+
+int nfreq = nFreqFine;
+readCoarseFreq;
+interpolateFreqReal;
+constructFineSpace(nfreq, false);
+
+//Do stuff with the full interpolated solution UXT, UYT.
+Vh<complex> dispX, dispY;
+complex[int] disp(Vh.ndof);
+ofstream file1(SolutionDir+"/dispVsFreq.dat");
+ofstream file2(SolutionDir+"/strainVsFreq.dat");
+for(int m=0; m<nfreq; m++)
+{
+    dispX[]=UXT(:,m);
+    dispY[]=UYT(:,m);
+
+    Vh absDispX=abs(dispX), absDispY=abs(dispY);
+    Vh absexx=abs(epsilon(dispX,dispY)[0])/Lc,abseyy=abs(epsilon(dispX,dispY)[2])/Lc,absexy=abs(epsilon(dispX,dispY)[1])/Lc;
+    {
+        file1<<absDispX[].max<<"\t"<<absDispY[].max<<endl;
+        file2<<absexx[].max<<"\t"<<abseyy[].max<<"\t"<<absexy[].max<<endl;
+    }
+}
