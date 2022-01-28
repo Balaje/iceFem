@@ -1,7 +1,7 @@
 //Example to reconstruct fine solution
 verbosity=0;
 macro dimension 2//EOM"
-macro fspace 1//EOM"
+macro fspace 2//EOM"
 include "macros.idp"
 SolutionDir=getARGV("-SolDir","ICEBERG1/");
 

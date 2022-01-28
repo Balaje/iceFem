@@ -1,7 +1,7 @@
 //Example problem to solve the frequency domain problem of iceshelf/iceberg.
 //Always set the dimension and fspace order.
 macro dimension 2//EOM"
-macro fspace 1//EOM"
+macro fspace 2//EOM"
 
 include "macros.idp"
 SolutionDir=getARGV("-solDir", "ICEBERG1/");

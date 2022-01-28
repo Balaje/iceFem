@@ -17,8 +17,8 @@ macro solveEigen()
             Xh [u,v],[uu,vv];
             varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
             varf b([u,v],[uu,vv]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv));
-            matrix stima = a(Xh,Xh,solver=sparsesolver);
-            matrix massma = b(Xh,Xh,solver=sparsesolver);
+            matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
+            matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
             int kkk = EigenValue(stima,massma,sym=true,sigma=sigma,value=ev,vector=VX);
         }
     ENDIFMACRO
