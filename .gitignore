@@ -5,12 +5,10 @@
 *.avi
 *.m4v
 *.mp4
-Beamers/AMSI
-Ignored/*
 *.mat
 *.pdf
 *.eps
 *.zip
 *.txt
 *.m~
-*/__pycache__
+*__pycache__
