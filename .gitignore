@@ -13,3 +13,4 @@ Ignored/*
 *.zip
 *.txt
 *.m~
+*/__pycache__
