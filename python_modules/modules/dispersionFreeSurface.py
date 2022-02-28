@@ -1,3 +1,12 @@
+###############################################################################
+# Module containing functions to compute the roots of the dispersion equation
+#
+# Principal function:
+#        k = dispersion_free_surface(alpha, N, H)
+#    solves the transcendental equation
+#        -k*tan(k*H) = alpha
+#    for N roots
+##############################################################################
 import numpy as np
 import cmath
 

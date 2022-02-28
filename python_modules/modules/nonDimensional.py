@@ -1,3 +1,6 @@
+##############################################
+# Function to non-dimensionalize the problem
+##############################################
 import numpy as np
 
 def nonDimensionalize(L, H, h, E, omega):
