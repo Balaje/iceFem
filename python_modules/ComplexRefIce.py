@@ -54,7 +54,7 @@ for m in range(0,npts):
              ' -Youngs 2e9 -L 3630 -H 500 -h 280 -nev 10 -iter ' +str(count)+
              ' -solDir '+SolutionDir+' -hsize 0.01 -isSplit 1 > /dev/null')
         #print(cmd)
-        #a=system(cmd)
+        a=system(cmd)
         print("Done running",count)
         count=count+1
 
