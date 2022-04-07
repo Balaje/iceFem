@@ -1,0 +1,52 @@
+//IDP file containing the modules to compute the reflection coefficients
+
+
+//Compute the reflection coefficient of the Diffraction problem
+//TODO - varying draft in the case of iceberg.
+macro getRefCoeff(bInd,phi,Ref){   
+    complex[int] aa(NModes+1), bb(NModes+1), c(NModes+1);
+    for(int m=0; m<NModes+1; m++)
+    {
+        func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
+        aa(m) = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
+    }
+    complex [int] f(NModes+1), g(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    int nbv = ThCavity.nv;
+    getMat(A, f, g, MM, MMt);
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    complex [int] Mg = MMtinv*g;
+    complex [int] Tf = T*f,ctilde(NModes+1);
+
+    bb = T*aa; bb = bb+Mg; bb = bb-Tf;
+    c = MMt*bb; c = c - g;
+    complex[int,int] AA=A^-1;
+    c = AA*c;
+    Ref = c/Ap;
+}//EOM"
+//Reflection Coefficient of the Radiation problems
+macro getRefModes(bInd,phi,Ref){
+    complex [int] aa(NModes+1), bb(NModes+1);
+    for(int m=0; m<NModes+1; m++)
+    {
+        func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
+        aa[m] = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
+    }
+    complex [int] c1(NModes+1);
+    complex [int] f(NModes+1), g(NModes+1), c(NModes+1);
+    complex [int,int] A(NModes+1,NModes+1), MM(NModes+1,NModes+1), MMt(NModes+1,NModes+1);
+    int nbv = ThCavity.nv;
+    getMat(A, f, g, MM, MMt);
+    complex [int,int] MMinv = MM^-1;
+    complex [int,int] MMtinv = MMt^-1;
+    complex [int,int] TT = (MMtinv*A);
+    complex [int,int] T = TT*MMinv;
+    bb = T*aa;
+    c1 = MMt*bb;
+    complex[int,int] AA=A^-1;
+    c = AA*c1;
+    Ref = c/Ap;
+}//EOM"

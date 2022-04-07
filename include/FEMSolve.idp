@@ -1,0 +1,248 @@
+/*
+  File containing all the solver routines.
+  - Elasticity eigenvalue problem - solving, reading and writing to disk
+  - Thin-plate eigenvalue problem
+*/
+
+/* --- Begin eigenvalue solving routines */
+//Solve for the in-vacuo mode.
+//Set the boundary label 2-for clamped condition.
+macro solveEigen()
+{
+    VX.resize(nev);
+    ev.resize(nev);
+    IFMACRO(dimension,2)
+        if(mpirank==0){
+            real sigma=getARGV("-shift",0);
+            Xh [u,v],[uu,vv];
+            varf a([u,v],[uu,vv]) = intN(ThIce)(lambdahat*div(u,v)*div(uu,vv) + 2*muhat*epsilon(u,v)'*epsilon(uu,vv)) + on(2,u=0,v=0);
+            varf b([u,v],[uu,vv]) = intN(ThIce,qft=qf1pTlump)((u*uu + v*vv));
+            matrix stima = a(Xh,Xh,solver=Crout,factorize=1);
+            matrix massma = b(Xh,Xh,solver=CG,eps=1e-20);
+            int kkk = EigenValue(stima,massma,sym=true,sigma=sigma,value=ev,vector=VX);
+        }
+    ENDIFMACRO
+        IFMACRO(dimension,3)
+        if(mpirank==0){
+            Xh [u,v,w],[uu,vv,ww];
+            varf a([u,v,w],[uu,vv,ww]) = intN(ThIce,qforder=1)(lambdahat*div(u,v,w)*div(uu,vv,ww) + 2*muhat*epsilon(u,v,w)'*epsilon(uu,vv,ww)) + on(2,u=0,v=0,w=0);
+            varf b([u,v,w],[uu,vv,ww]) = intN(ThIce,qforder=1)((u*uu + v*vv + w*ww));
+            matrix stima = a(Xh,Xh,solver=sparsesolver);
+            matrix massma = b(Xh,Xh,solver=sparsesolver);
+            int kkk = EigenValue(stima,massma,value=ev,vector=VX,tol=1e-10);
+        }
+    ENDIFMACRO
+        for(int m=0; m<nev; m++){
+            broadcast(processor(0),VX[m][]);
+        }
+    broadcast(processor(0),ev);
+}//This is a macro for solving the elasticity Eigenvalue problem.
+macro writeEigen(isVtk, isDat)
+{
+    int[int] Order1=[1,1];
+    ofstream fileEigen(SolutionDir+"/2_Modes/eval.dat");
+    for(int m=0; m<nev; m++)
+    {
+        fileEigen<<ev[m]<<endl;
+        if(isVtk)
+        {
+            Vh modeX=VX[m],modeY=VY[m];
+            IFMACRO(dimension,2)
+                savevtk(SolutionDir+"2_Modes/Modes"+m+".vtk",ThIce,[modeX,modeY],dataname="ReMode",order=Order1);
+            ENDIFMACRO
+
+                IFMACRO(dimension,3)
+                int[int] Order1=[1,1,1];
+            Vh modeZ=VZ[m];
+            savevtk(SolutionDir+"2_Modes/Modes"+m+".vtu",ThIce,[modeX,modeY,modeZ],dataname="ReMode",order=Order1);
+            ENDIFMACRO
+                }
+        if(isDat)
+        {
+            Vh modeX=VX[m], modeY=VY[m];
+            ofstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
+            fileX<<modeX[];
+            ofstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
+            fileY<<modeY[];
+            IFMACRO(dimension,3)
+                Vh modeZ=VZ[m];
+            ofstream fileZ(SolutionDir+"2_Modes/ModesZ"+m+".dat");
+            fileZ<<modeZ[];
+            ENDIFMACRO
+                }
+    }
+}//Macro to write the Eigenfunctions to a file.
+macro readEigen()
+{
+    if(mpirank==0){
+        ifstream fileEigen(SolutionDir+"2_Modes/eval.dat");
+        for(int m=0; m<nev; m++)
+        {
+            fileEigen>>ev[m];
+            ifstream fileX(SolutionDir+"2_Modes/ModesX"+m+".dat");
+            fileX>>VX[m][];
+            ifstream fileY(SolutionDir+"2_Modes/ModesY"+m+".dat");
+            fileY>>VY[m][];
+        }
+    }
+    broadcast(processor(0),ev);
+    for(int m=0; m<nev; m++)
+        broadcast(processor(0),VX[m][]);
+}//EOM To read eigenfunctions from a file"
+macro solveEigenEB()
+{
+    mu.resize(nev);
+    func real[int] EBroots(int nev, real L)
+    {
+        real[int] RR(nev);
+        real xbar = pi/(2.*L);
+        RR=0.;
+        int count=1;
+
+        real f,difff;
+        while(1>=0)
+        {
+            real tol=1e-9, error=1;
+            real r=xbar, rr;
+            while(error>tol)
+            {
+                f=cos(r*L)+2*exp(-r*L)/(1+exp(-r*L));
+                difff=(2*L*exp(-2*L*r))/(exp(-L*r) + 1)^2 - (2*L*exp(-L*r))/(exp(-L*r) + 1) - L*sin(L*r);
+                rr=r-f/difff;
+                error=abs(r-rr);
+                r=rr;
+            }
+
+            real eps=1e-10;
+            if(abs(r-RR[count-1]) > eps)
+            {
+                RR[count-1]=r;
+                count=count+1;
+            }
+            xbar=(count-0.5)*pi/L;
+            if(count==nev+1)
+                break;
+        }
+        return RR;
+    }
+    mu=EBroots(nev,LL);
+}//This is a marco to compute the eigenmodes of the Euler Bernoulli equation
+/* --- End eigenvalue solving routines --- */
+
+/* Begin velocity potential routines
+   1) getLaplaceMat(a, b, c): Velocity potential for the mth elasticity in-vacuo mode but for NBC fh in 4
+   2) getLaplaceMatEB(m, rad) : Velocity potential for the mth Euler-Bernoulli in-vacuo mode
+   3) getLaplaceMatFunc(eta): Velocity potential for the EB in-vacuo mode
+   4) getLaplaceMatDBC(a, b, c): Velocity potential for the elasticity in-vacuo mode but for DBC fh in 4
+   5) getLaplaceMatEBdbc(m, rad): Velocity potential for the Euler-Bernoulli in-vacuo mode but for DBC fh in 4
+*/
+macro getLaplaceMat(a,b,c){
+    Wh<complex> psih;
+    varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih));
+    IFMACRO(dimension,2)
+        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih);
+    ENDIFMACRO
+        IFMACRO(dimension,3)
+        varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(-fh*psih)+ intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih);
+    ENDIFMACRO
+        varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
+    STIMA=ah(Wh,Wh);
+    BMASSMA=bMh(Wh,Wh);
+    RHS[]=lh(0,Wh);
+}//Macro to compute the STIFFNESS,MASS matrices and the RHS vector for the LE modes.
+macro getLaplaceMatEB(m,rad){
+    Wh<complex> psih;
+    func etaj = rad*((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+
+    varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih));
+    varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(fh*psih*N.x)+ int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*etaj*psih);
+    varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
+    STIMA=ah(Wh,Wh);
+    BMASSMA=bMh(Wh,Wh);
+    RHS[]=lh(0,Wh);
+}//Macro to compute the STIFFNESS,MASS matrices and the RHS vector for the EB modes.
+macro getLaplaceMatFunc(eta){
+    Wh<complex> psih;
+    varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih));
+    varf lh(unused,psih) = intN1(ThCavity,4,qforder=10)(fh*psih*N.x) + int1d(ThCavity,3,qforder=10)(-1i*omega*Lc*eta*psih);
+    varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
+    STIMA=ah(Wh,Wh);
+    BMASSMA=bMh(Wh,Wh);
+    RHS[]=lh(0,Wh);
+}//Same as before, but for a general 1D function eta
+macro getLaplaceMatDBC(a,b,c){
+    Wh<complex> psih;
+    varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=fh);
+    IFMACRO(dimension,3)
+        varf lh(phih,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y+c*N.z)*psih) + on(4,phih=fh);
+    ENDIFMACRO
+    IFMACRO(dimension,2)
+        varf lh(phih,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*(a*N.x+b*N.y)*psih) + on(4,phih=fh);
+    ENDIFMACRO
+    varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
+    STIMA=ah(Wh,Wh);
+    BMASSMA=bMh(Wh,Wh);
+    RHS[]=lh(0,Wh);
+}//Same as above but for DBC.
+macro getLaplaceMatEBdbc(m,rad){
+    Wh<complex> psih;
+    func etaj = rad*((cos(LL*mu[m]) + cosh(LL*mu[m]))*(sin(mu[m]*x) + sinh(mu[m]*x)) - (sin(LL*mu[m]) + sinh(LL*mu[m]))*(cos(mu[m]*x) + cosh(mu[m]*x)))/(cos(LL*mu[m]) + cosh(LL*mu[m]));
+    varf ah(phih,psih) = intN(ThCavity)(grad(phih)'*grad(psih)) + on(4,phih=fh);
+    varf lh(unused,psih) = intN1(ThCavity,3,qforder=10)(-1i*omega*Lc*etaj*psih);
+    varf bMh(phih,psih) = intN1(ThCavity,2,qforder=10)(phih*psih);
+    STIMA=ah(Wh,Wh);
+    BMASSMA=bMh(Wh,Wh);
+    RHS[]=lh(0,Wh);
+}//Same as above but for EB DBC.
+
+
+/*
+Special macros for solving the diffraction and radiation problems.
+Only linear elasticity implemented.
+[TODO] Thin-beam
+*/
+macro solveDiffractionProblem(BCMAT, chi1){
+    if(mpirank==0)
+        cout<<"\nSolve diffraction problem"<<endl;
+    func fh=chi1;
+    getLaplaceMat(0,0,0);
+    BMASSMA=alpha*BMASSMA;
+    LHS=STIMA+BCMAT+(BMASSMA);
+    set(LHS,solver=sparsesolver);
+    phi0[]=LHS^-1*RHS[];
+    getRefCoeff(4,phi0,DifRef);
+    getRefModes(5,phi0,DifTra);
+}//EOM"
+
+macro solveRadiationProblem(BCMAT){
+    if(mpirank==0)
+        cout<<"\nSolve radiation problems"<<endl;
+    buildPartiCPU(nev);
+    complex[int,int] RadRefProc(nev,NModes+1), RadTraProc(nev,NModes+1);
+    complex[int,int] PHIJ(Wh.ndof, nev), PHIJProc(Wh.ndof,partisize);
+    Wh<complex> phih;
+    for(int m=start; m<=stop; m++)
+    {
+        func fh=0;
+        IFMACRO(dimension, 2)
+            getLaplaceMat(VX[m],VY[m],0);
+        ENDIFMACRO
+        IFMACRO(dimension, 3)
+            getLaplaceMat(VX[m],VY[m],VZ[m]);
+        ENDIFMACRO
+        BMASSMA=alpha*BMASSMA;
+        LHS=STIMA+(BCMAT)+BMASSMA;
+        set(LHS,solver=sparsesolver);
+        phih[]=LHS^-1*RHS[];
+        phij[m]=phih;
+        getRefModes(5,phih,RadTraProc(m,:));
+        getRefModes(4,phih,RadRefProc(m,:));
+        PHIJProc(:,m-start) = phij[m][];
+    }
+    mpiAllReduce(RadRefProc, RadRef, mpiCommWorld, mpiSUM);
+    mpiAllReduce(RadTraProc, RadTra, mpiCommWorld, mpiSUM);
+    int[int] rcounts1=rcounts*Wh.ndof, dspls1=dspls*Wh.ndof;
+    mpiAllgatherv(PHIJProc,PHIJ,rcounts1,dspls1);
+    for(int m=0; m<nev; m++)
+        phij[m][]=PHIJ(:,m);
+}//EOM"

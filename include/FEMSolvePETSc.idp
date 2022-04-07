@@ -1,0 +1,75 @@
+//Module to add the fully distributed version of FEMSolve;
+load "PETSc"
+load "SLEPc"
+IFMACRO(fspace, 2)
+func pk=P2;
+ENDIFMACRO
+IFMACRO(fspace, 1)
+func pk=P1;
+ENDIFMACRO
+
+macro def1(i)[i, i#B]//EOM"
+macro init1(i)[i,i]//EOM"
+macro def2(i) i//EOM"
+macro init2(i) i//EOM"
+
+
+macro divPETSc(u)(dx(u)+dy(u#B))//EOM"
+macro epsilonPETSc(u)[dx(u), dy(u#B), 1/sqrt(2.)*(dy(u)+dx(u#B))]//EOM"
+
+int s=getARGV("-split",1);
+int Npts=getARGV("-Npts",200);
+//The construction of the global matrix is the same,
+//And we use the global matrix to construct the local matrices.
+string ssparams="-eps_nev " +nev+" -eps_type krylovschur -st_type sinvert -eps_target 0.0 -eps_largest_magnitude";
+
+
+//Splitting the mesh and define the local spaces
+meshN ThLocalIce;
+meshN ThLocalCavity;
+func PkV=[pk,pk];
+fespace XhLocal(ThLocalIce,PkV);
+XhLocal[int][VXLocal,VYLocal](nev);    //Local Eigenfunctions
+int[int][int] intersectionIce, intersectionCavity;
+real[int] POUnityIce, POUnityCavity;
+
+
+macro buildIcePartition()
+{
+    ThLocalIce=ThIce;    
+    build(ThLocalIce, s, intersectionIce, POUnityIce, PkV, mpiCommWorld);        
+}//EOM"
+
+macro buildCavPartition()
+{
+    ThLocalCavity=ThCavity;
+    build(ThLocalCavity, s, intersectionCavity, POUnityCavity, pk, mpiCommWorld);        
+}//EOM"
+
+func real[int] solveEigenPETSc(int nev)
+{    
+    VX.resize(nev);
+    ev.resize(nev);
+    VXLocal.resize(nev);    
+    IFMACRO(dimension,2)
+        macro def(i) def1(i) //EOM
+        macro init(i) init1(i) //EOM
+        buildIcePartition;
+        cout<<"Number of points in submesh "<<mpirank<<" = "<<ThLocalIce.nv<<endl;
+        varf a([u,uB],[v,vB]) = intN(ThLocalIce)(lambdahat*divPETSc(u)*divPETSc(v) + 2*muhat*epsilonPETSc(u)'*epsilonPETSc(v)) + on(2,u=0, uB=0);
+        varf b([u,uB],[v,vB]) = intN(ThLocalIce)((u*v+uB*vB));
+        matrix stima = a(XhLocal,XhLocal,solver=Crout,factorize=1);
+        matrix massma = b(XhLocal,XhLocal,solver=CG,eps=1e-20);        
+        Mat DistStima(stima, intersectionIce, POUnityIce, clean=true);
+        Mat DistMassma(DistStima, massma, clean=true);
+        real[int,int] space(DistStima.n,1);
+        space=1;
+        int kkk=EPSSolve(DistStima, DistMassma, vectors=VXLocal, values=ev, sparams=ssparams, deflation=space);        
+    ENDIFMACRO
+    //Sometimes the number of converged values are more than nev.
+    kkk=min(kkk,nev);
+    ev.resize(kkk);
+    VXLocal.resize(kkk);
+    return ev;
+ }//EOM"
+

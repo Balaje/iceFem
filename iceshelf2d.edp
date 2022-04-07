@@ -1,0 +1,77 @@
+//Example problem to solve the frequency domain problem of iceshelf/iceberg.
+//Always set the dimension and fspace order.
+macro dimension 2//EOM"
+macro fspace 2//EOM"
+
+include "macros.idp"
+SolutionDir=getARGV("-solDir", "ICEBERG1/");
+setupWorkingDir(SolutionDir)
+
+//Set linear thickening ice. Default is the iceshelf mesh with one clamped condition
+
+setProblem(false); //To setup an example problem.
+real d1=-0.9*tth, f1=0.1*tth;
+real d2=-0.9*tth, f2=0.1*tth;
+real H1=-HH, H2=-HH;
+setLinearThickeningIce(d1, d2, f1, f2);
+setLinearThickeningCavity(H1, H2, d1, d2);
+
+//iceBEDMAP2(6,1);
+
+//Change to iceberg with the simple macro
+iceshelf2iceberg;
+
+//Uniform mesh refinement
+refineMesh(false);
+
+//Solve the eigenvalue problem associated with the ice.
+solveEigen;
+//Store the eigenvalue problem
+writeEigen(1,1);
+
+//SplitMesh for domain decomposition between processors
+splitMesh(isSplit);
+
+//Solve the dispersion equation for the values HH and dd
+solveDispersion;
+
+//Construct the non-local boundary condition for the inlet
+Wh<complex> chi1;
+matrix<complex> MQ1;
+getQphi(4,MQ1); //Matrix associated with Qphi
+getChi(chi1); //Vector associated with chi
+//Construct the non-local boundary condition for the outlet
+matrix<complex> MQ2;
+getQphi(5,MQ2);
+
+matrix<complex> BCMAT=MQ1+MQ2; //Add up all the boundary contributions
+
+//Diffraction problem requires the boundary matrix and forcing vector.
+solveDiffractionProblem(BCMAT, chi1);
+
+//Radition problems require only the in-vacuo modes and the boundary matrix
+solveRadiationProblem(BCMAT);
+
+//Build and solve reduced system
+buildReducedSystemOptim;
+
+if(mpirank==0)
+    writeReducedSystem;
+
+solveReducedSystem;
+
+buildFinalSolution;
+
+if(mpirank==0)
+ {
+     complex[int] RefR(NModes+1), RefT(NModes+1);
+     getRefCoeff(4, phi, RefR);
+     getRefModes(5, phi, RefT);
+     cout<<"\nReflection Coeff = "<<RefR[0]<<endl;
+     cout<<"Transmission Coeff = "<<RefT[0]<<endl;
+     cout<<"Energy conservation = "<<sqrt(abs(RefR[0])^2+abs(RefT[0])^2)<<endl;
+
+     int[int] Order1=[1,1,1],Order=[1,1];
+     savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+     savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1);
+ }
