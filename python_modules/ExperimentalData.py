@@ -15,9 +15,10 @@ import matplotlib.pyplot as plt
 
 ## Frequency bin
 #a=0.047
-#b=0.055
-a=0.094
-b=0.1
+a=0.055
+b=0.088
+#a=0.094
+#b=0.1
 
 D2=np.loadtxt('inc_wave.txt',delimiter=',')
 fexp=abs(D2[:,0])
@@ -44,8 +45,8 @@ f=abs(D2[:,0])
 psd=abs(D2[:,1])
 fig=plt.figure(figsize=[5,4])
 plt.plot(f,psd)
-a=0.085
-b=0.1317
+#a=0.085
+#b=0.1317
 fq=np.linspace(a,b,2000)
 psdfun=interpolate.PchipInterpolator(f,psd)
 psdq=psdfun(fq)
