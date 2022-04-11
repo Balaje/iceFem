@@ -40,14 +40,14 @@ for i in range(1, len(sys.argv)):
     strain2Srms = rolling_rms(omeganew/(2*np.pi), strain2S, num_samples)
     if(i==1):
         ax1 = plt.subplot(2,1,1)
-        plt.semilogy(omeganew/(2*np.pi), strain2S, 'r-', linewidth=2, label="E = "+sys.argv[i][7:]+" GPa $(E_{opt})$")
+        plt.plot(omeganew/(2*np.pi), strain2S, 'r-', linewidth=2, label="E = "+sys.argv[i][7:]+" GPa $(E_{opt})$")
         ax2 = plt.subplot(2,1,2)
-        plt.semilogy(omeganew[num_samples::]/(2*np.pi), strain2Srms, 'r-', linewidth=2, label="E = "+sys.argv[i][7:]+" GPa $(E_{opt})$")
+        plt.plot(omeganew[num_samples::]/(2*np.pi), strain2Srms, 'r-', linewidth=2, label="E = "+sys.argv[i][7:]+" GPa $(E_{opt})$")
     else:
         ax1 = plt.subplot(2,1,1)
-        plt.semilogy(omeganew/(2*np.pi), strain2S, label="E = "+sys.argv[i][7:]+" GPa", linewidth=1)
+        plt.plot(omeganew/(2*np.pi), strain2S, label="E = "+sys.argv[i][7:]+" GPa", linewidth=1)
         ax2 = plt.subplot(2,1,2)
-        plt.semilogy(omeganew[num_samples::]/(2*np.pi), strain2Srms, label="E = "+sys.argv[i][7:]+" GPa")
+        plt.plot(omeganew[num_samples::]/(2*np.pi), strain2Srms, label="E = "+sys.argv[i][7:]+" GPa")
 
 
 # Load the experimental strain data
@@ -55,7 +55,7 @@ D2=np.loadtxt('strain.txt',delimiter=',');
 f=abs(D2[:,0])
 psd=abs(D2[:,1])
 ax1=plt.subplot(2,1,1)
-plt.semilogy(f, psd, '--k', linewidth=1, label="Exp.")
+plt.plot(f, psd, '--k', linewidth=1, label="Exp.")
 plt.axvline(x=1/10, color='black', linewidth=0.5, linestyle='--')
 plt.axvline(x=1/15, color='black', linewidth=0.5, linestyle='--')
 plt.axvline(x=1/35, color='black', linewidth=0.5, linestyle='--')
@@ -64,12 +64,13 @@ ax1.text(1/15-0.006, 0.5e-7, "$T=15$ s")
 ax1.text(1/35-0.006, 0.5e10, "$T=35$ s")
 plt.xlabel("$\omega/2\pi$ (in s$^{-1}$)")
 plt.ylabel("$\\varepsilon^2 \,PSD$ (microstrain$^2$ s)")
-#plt.xlim(0.01,0.125)
+plt.xlim(0.01,0.4)
+plt.ylim(0, 40)
 num_samples=5
 psdRms = rolling_rms(f, psd, num_samples)
 
 ax2 = plt.subplot(2,1,2)
-plt.semilogy(f[num_samples::], psdRms, '--k', linewidth=1, label="Exp.")
+plt.plot(f[num_samples::], psdRms, '--k', linewidth=1, label="Exp.")
 plt.axvline(x=1/10, color='black', linewidth=0.5, linestyle='--')
 plt.axvline(x=1/15, color='black', linewidth=0.5, linestyle='--')
 plt.axvline(x=1/35, color='black', linewidth=0.5, linestyle='--')
@@ -78,6 +79,8 @@ ax2.text(1/15-0.006, 1e-4, "$T=15$ s")
 ax2.text(1/35-0.006, 1e4, "$T=35$ s")
 plt.xlabel("$\omega/2\pi$ (in s$^{-1}$)")
 plt.ylabel("$\\varepsilon_{RMS}$ (microstrain)")
+plt.xlim(0.01,0.4)
+plt.ylim(0, 20)
 
 ax1.legend(loc='upper right')
 ax2.legend(loc='upper right')

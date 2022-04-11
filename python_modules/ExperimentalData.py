@@ -14,11 +14,12 @@ from scipy import interpolate
 import matplotlib.pyplot as plt
 
 ## Frequency bin
-#a=0.047
-a=0.055
-b=0.088
-#a=0.094
-#b=0.1
+#a=0.013
+#b=0.045
+a=0.05
+b=0.084
+#a=0.088
+#b=0.125
 
 D2=np.loadtxt('inc_wave.txt',delimiter=',')
 fexp=abs(D2[:,0])

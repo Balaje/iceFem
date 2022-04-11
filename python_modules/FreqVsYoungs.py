@@ -19,7 +19,7 @@ pi = np.pi
 
 
 def solve_one_ice_problem(E, omega):
-    solveFreeFemProblem('iceshelf2d.edp', 3630, 500, 280, 12, omega, E, 10, '0', 'ICEBERG_COMPLEX/', 0.01, 1)
+    solveFreeFemProblem('iceshelf2d.edp', 3630, 500, 280, 12, omega, E, 10, '0', 'ICEBERG_COMPLEX/', 0.005, 1)
     H = read_H_matrix('0')
     return H
 
@@ -54,14 +54,14 @@ def computeResonanceFrequency(E, omega0, tol, ind):
 ######################################################
 # Real part of resonance freq. vs Young's Modulus
 ######################################################
-Es = np.linspace(2.5, 5, 20)
+Es = np.linspace(1, 5, 30)
 #omega0 = 2*pi*0.012 + 0*1j
 #omega0 = 2*pi*0.022 + 0*1j
 #omega0 = 2*pi*0.051 + 0*1j
 omega0 = 2*pi*0.1 + 0*1j
 omegar = []
 for m in range(0, np.size(Es)):
-    omega0s = computeResonanceFrequency(Es[m]*1e9, omega0, 1e-8, 100)
+    omega0s = computeResonanceFrequency(Es[m]*1e9, omega0, 1e-6, 100)
     omegar.append(omega0s[-1])
     omega0 = omega0s[-1].real
     H0 = solve_one_ice_problem(Es[m]*1e9, omegar[m])
@@ -72,12 +72,12 @@ np.savetxt("ICEBERG_COMPLEX/omegar_vs_youngs.txt", np.array(omegar),delimiter="\
 omegar0 = np.genfromtxt("ICEBERG_COMPLEX/omegar_vs_youngs0.txt", dtype=complex)/(2*pi)
 omegar1 = np.genfromtxt("ICEBERG_COMPLEX/omegar_vs_youngs1.txt", dtype=complex)/(2*pi)
 omegar2 = np.genfromtxt("ICEBERG_COMPLEX/omegar_vs_youngs2.txt", dtype=complex)/(2*pi)
-#omegar3 = np.genfromtxt("ICEBERG_COMPLEX/omegar_vs_youngs3.txt", dtype=complex)/(2*pi)
+omegar3 = np.genfromtxt("ICEBERG_COMPLEX/omegar_vs_youngs3.txt", dtype=complex)/(2*pi)
 omegar3 = omegar
 
 omega_exp3 = np.ones((30,))*(2*pi*(1/10))/(2*pi)
 omega_exp2 = np.ones((30,))*(2*pi*(1/15))/(2*pi)
-omega_exp1 = np.ones((30,))*(2*pi*(1/50))/(2*pi)
+omega_exp1 = np.ones((30,))*(2*pi*(1/35))/(2*pi)
 
 plt.figure(figsize = [13,6])
 ax = plt.subplot(1,2,1)
@@ -85,7 +85,7 @@ ax = plt.subplot(1,2,1)
 # omega1
 plt.plot(Es, omegar1.real, 'r-', linewidth=2)
 plt.plot(Es, omega_exp1, 'k--', linewidth=1.5)
-plt.text(2.1, omega_exp1[1].real+0.003, "$T_{exp} = 50$ s", usetex=True)
+plt.text(2.1, omega_exp1[1].real+0.003, "$T_{exp} = 35$ s", usetex=True)
 # omega2
 plt.plot(Es, omegar2.real, 'b-', linewidth=2)
 plt.plot(Es, omega_exp2, 'k-.', linewidth=1.5)
@@ -95,8 +95,12 @@ plt.plot(Es, omegar3.real, 'g-', linewidth=2)
 plt.plot(Es, omega_exp3, 'k-o', linewidth=1.5)
 plt.text(2.1, omega_exp3[1].real+0.003, "$T_{exp} = 10$ s", usetex=True)
 # Range of omega
-plt.fill_between(Es, 0, 1, where= (Es >= 1) & (Es <= 3.5),
-                 color='green', alpha = 0.3, transform=ax.get_xaxis_transform())
+# plt.fill_between(Es, 0, 1, where= (Es >= 1) & (Es <= 3.5),
+#                  color='green', alpha = 0.3, transform=ax.get_xaxis_transform())
+plt.fill_between(Es, 0.013, 0.045, color='red', alpha = 0.3)
+plt.fill_between(Es, 0.05, 0.084, color='green', alpha = 0.3)
+plt.fill_between(Es, 0.088, 0.125, color='blue', alpha = 0.3)
+
 plt.ylim(0,0.15)
 plt.xlim(Es[0], Es[-1])
 plt.xlabel("Young's modulus $E$ (in GPa)", usetex=True)
