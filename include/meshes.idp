@@ -18,9 +18,9 @@ macro setLinearThickeningIce(draft1, draft2, free1, free2)
         if(mpirank==0){
             cout<<"Dimension should be 2 to use this routine with linear thickening. I am returning a uniform version instead."<<endl;
         }
-    
+
         int[int] lb1=[3,2,1,1,1,1];
-        ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth)*y,tth*z],label=lb1); 
+        ThIce=cube(LL/tth*N1,N1,N1,[LL*x,-dd+(tth)*y,tth*z],label=lb1);
     ENDIFMACRO
     IFMACRO(dimension,2)
         real slope1=(free2-free1)/LL, slope2=(draft2-draft1)/LL;
@@ -40,9 +40,9 @@ macro setLinearThickeningCavity(Height1, Height2, draft1, draft2)
             cout<<"Dimension should be 2 to use this routine with linear thickening. I am returning a uniform version instead."<<endl;
         }
         int[int] lb1=[1,6,3,4,1,1];
-        ThCavity=cube(LL/tth*N1,N1,N1,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb1); 
+        ThCavity=cube(LL/tth*N1,N1,N1,[LL*x,-HH+(HH-dd)*y,tth*z],label=lb1);
     ENDIFMACRO
-        
+
     IFMACRO(dimension,2)
         real slope1=(draft2-draft1)/LL, slope2=(Height2-Height1)/LL;
         real intercept1=draft1, intercept2=Height1;
@@ -236,26 +236,26 @@ macro iceBEDMAP2(nborders, isBuild)
 
 /*Macro to refine the mesh. Works on ThIce and ThCavity and refines the mesh
   The macros contain two options
-  1) isUniRef to toggle uniform refinement. 
+  1) isUniRef to toggle uniform refinement.
   True: Uniform refinement over the meshes
   False: To refine with the thickness of the ice. Start with a small value.
 */
 macro refineMesh(isWriteFile)
 {
-    if(mpirank==0){        
+    if(mpirank==0){
         cout<<"Imported Ice Mesh (proc 0)..."<<endl;
         cout<<"Refining Ice Mesh (proc 0) ..."<<endl;
-        cout<<"Ice : Before Refinement, NBV = "<<ThIce.nv<<endl;       
+        cout<<"Ice : Before Refinement, NBV = "<<ThIce.nv<<endl;
         real metricFuncIce=getARGV("-hsize",0.1);
-        ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);        
+        ThIce=adaptmesh(ThIce,metricFuncIce,IsMetric=1,nbvx=2e6);
         cout<<"Ice : After Refinement, NBV = "<<ThIce.nv<<endl;
 	if(isWriteFile)
-	  savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.mesh");        
+	  savemesh(ThIce,SolutionDir+"2_Modes/iceMesh.mesh");
     }
     else if(mpirank==1){
-        cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;       
+        cout<<"Cavity : Before Refinement, NBV = "<<ThCavity.nv<<endl;
         real metricFuncCav=getARGV("-hsize",0.1);
-        ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);   
+        ThCavity=adaptmesh(ThCavity,metricFuncCav,IsMetric=1,nbvx=2e6);
         cout<<"Cavity : After Refinement, NBV = "<<ThCavity.nv<<endl;
 	if(isWriteFile)
 	  savemesh(ThCavity,SolutionDir+"2_Modes/cavMesh.mesh");
@@ -265,11 +265,11 @@ macro refineMesh(isWriteFile)
 }//EOM"
 
 macro iceshelf2iceberg()
-{    
+{
     int[int] lbl=[3,3,2,1,1,1,1,1];
     ThIce=change(ThIce,label=lbl);
     lbl=[1,1,6,5,3,3,4,4];
-    ThCavity=change(ThCavity,label=lbl);   
+    ThCavity=change(ThCavity,label=lbl);
 }//EOM"
 
 // -- END of MESHES.idp

@@ -3,11 +3,11 @@
 
 //Compute the reflection coefficient of the Diffraction problem
 //TODO - varying draft in the case of iceberg.
-macro getRefCoeff(bInd,phi,Ref){   
+macro getRefCoeff(bInd,phi,Ref){
     complex[int] aa(NModes+1), bb(NModes+1), c(NModes+1);
     for(int m=0; m<NModes+1; m++)
     {
-        func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
+        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
         aa(m) = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
     }
     complex [int] f(NModes+1), g(NModes+1);
@@ -32,7 +32,7 @@ macro getRefModes(bInd,phi,Ref){
     complex [int] aa(NModes+1), bb(NModes+1);
     for(int m=0; m<NModes+1; m++)
     {
-        func eigenfunc = exp(1i*kd[m]*(y+dd))*((1+exp(-2*1i*kd[m]*(y+HH)))/(1+exp(-2*1i*kd[m]*(-dd+HH))));
+        func eigenfunc = cos(kd[m]*(y+HH))/cos(kd[m]*(HH-dd));
         aa[m] = intN1(ThCavity,bInd,qforder=10)(phi*eigenfunc);
     }
     complex [int] c1(NModes+1);

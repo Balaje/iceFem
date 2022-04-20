@@ -22,12 +22,13 @@ setLinearThickeningCavity(H1, H2, d1, d2);
 iceshelf2iceberg;
 
 //Uniform mesh refinement
-refineMesh(false);
+//refineMesh(false);
 
 //Solve the eigenvalue problem associated with the ice.
 solveEigen;
 //Store the eigenvalue problem
-writeEigen(1,1);
+//writeEigen(1,1);
+//readEigen;
 
 //SplitMesh for domain decomposition between processors
 splitMesh(isSplit);
@@ -48,6 +49,9 @@ matrix<complex> BCMAT=MQ1+MQ2; //Add up all the boundary contributions
 
 //Diffraction problem requires the boundary matrix and forcing vector.
 solveDiffractionProblem(BCMAT, chi1);
+complex[int] RefD(NModes+1);
+getRefCoeff(4, phi, RefD)
+if(mpirank==0) cout<<RefD<<endl;
 
 //Radition problems require only the in-vacuo modes and the boundary matrix
 solveRadiationProblem(BCMAT);
@@ -63,15 +67,21 @@ solveReducedSystem;
 buildFinalSolution;
 
 if(mpirank==0)
- {
-     complex[int] RefR(NModes+1), RefT(NModes+1);
-     getRefCoeff(4, phi, RefR);
-     getRefModes(5, phi, RefT);
-     cout<<"\nReflection Coeff = "<<RefR[0]<<endl;
-     cout<<"Transmission Coeff = "<<RefT[0]<<endl;
-     cout<<"Energy conservation = "<<sqrt(abs(RefR[0])^2+abs(RefT[0])^2)<<endl;
+{
+    complex[int] RefR(NModes+1), RefT(NModes+1);
+    getRefCoeff(4, phi, RefR);
+    getRefModes(5, phi, RefT);
+    cout<<"\nReflection Coeff = "<<RefR[0]<<endl;
+    cout<<"Transmission Coeff = "<<RefT[0]<<endl;
+    cout<<"Energy conservation = "<<sqrt(abs(RefR[0])^2+abs(RefT[0])^2)<<endl;
 
-     int[int] Order1=[1,1,1],Order=[1,1];
-     savevtk(SolutionDir+"/sol1_"+iter+".vtu",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
-     savevtk(SolutionDir+"/solCavity"+iter+".vtu",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1);
- }
+    //int[int] Order1=[1,1,1],Order=[1,1];
+    //savevtk(SolutionDir+"/sol1_"+iter+".vtk",ThIce,[real(etax),real(etay)],[imag(etax),imag(etay)], dataname="ReDisp ImDisp",order=Order);
+    //savevtk(SolutionDir+"/solCavity"+iter+".vtk",ThCavity,[real(phi),imag(phi),abs(phi)],dataname="Phi",order=Order1);
+
+    Vh iceDispReal = real(etay), iceDispImag = imag(etay), iceDispAbs = abs(etay);
+    ofstream file(SolutionDir+"/solDisp"+iter+".dat");
+    real[int] xvals = 0:0.01:LL;
+    for(int m=0; m<xvals.n; m++)
+        file<<xvals[m]<<"\t"<<iceDispReal(xvals[m], -dd)<<"\t"<<iceDispImag(xvals[m], -dd)<<"\t"<<iceDispAbs(xvals[m], -dd)<<endl;
+}
