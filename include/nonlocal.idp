@@ -28,11 +28,11 @@ macro getMat(A, f, g, MM, MMt){
     A = 0.; MM = 0.; MMt = 0.; f = 0.; g = 0.;
     for(int m=0; m<NModes+1; m++)
     {
-        A(m,m) = k[m]*innerproduct(k[m], k[m], HH, 0);
-        f(m) = Ap*innerproduct(k[0], kd[m], HH, dd);
+        A(m,m) = k[m]*innerproduct(k[m], k[m], HH, 0)/cos(k[m]*HH)^2;
+        f(m) = Ap*innerproduct(k[0], kd[m], HH, dd)/(cos(k[0]*HH)*cos(kd[m]*(HH-dd)));
         for(int n=0; n<NModes+1; n++)
         {
-            MM(m,n) = innerproduct(k[n], kd[m], HH, dd);
+            MM(m,n) = innerproduct(k[n], kd[m], HH, dd)/(cos(k[n]*HH)*cos(kd[m]*(HH-dd)));
             MMt(n,m) = MM(m,n);
         }
     }
